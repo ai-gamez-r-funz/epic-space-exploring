@@ -10,7 +10,7 @@ const no = (reason) => ({ ok: false, reason });
 export const COND_KEYS = new Set([
   'credits', 'fuel', 'supplies', 'hull', 'morale', 'item', 'cargo', 'flag', 'notFlag', 'flagEq', 'rep', 'upgrade', 'skill',
   'crewRole', 'crew', 'day', 'mission', 'missionDone', 'codex', 'survey', 'system', 'planetType', 'feature', 'phenomenon',
-  'random', 'not', 'any', 'counter', 'orbit', 'docked', 'visited',
+  'random', 'not', 'any', 'counter', 'orbit', 'docked', 'visited', 'ringed',
 ]);
 
 function ctxSystem(g, ctx) {
@@ -82,6 +82,11 @@ function evalOne(g, key, val, ctx, opts) {
       const s = st.galaxy.systems.find((x) => x.id === val || x.story === val);
       return s && (s.status === 'visited' || s.status === 'charted') ? ok() : no('Not yet visited');
     }
+    case 'ringed': {
+      const sys = ctxSystem(g, ctx);
+      const p = ctxPlanet(g, ctx, sys);
+      return (p ? !!p.ringed : false) === !!val || (!p && sys && sys.planets.some((x) => x.ringed) === !!val) ? ok() : no('Needs a ringed world');
+    }
     case 'orbit': return st.orbit ? ok() : no('Must be in orbit');
     case 'docked': return st.docked ? ok() : no('Must be docked');
     case 'system': {
@@ -114,6 +119,7 @@ function evalOne(g, key, val, ctx, opts) {
       const sys = ctxSystem(g, ctx);
       const p = ctxPlanet(g, ctx, sys);
       if (ctx && ctx.feature === val) return ok();
+      if (val === 'ringed') return (p ? p.ringed : sys && sys.planets.some((x) => x.ringed)) ? ok() : no('Needs a ringed world');
       return p && p.features.includes(val) ? ok() : no('Nothing like that here');
     }
     case 'phenomenon': {

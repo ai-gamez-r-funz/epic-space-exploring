@@ -162,7 +162,7 @@ function pickDestination(g, policy, mem, rnd) {
   }
   // 2. retire when ready
   const sv = g.surveyProgress();
-  if ((policy === 'cautious' && sv.pct >= 78) || (policy === 'greedy' && sv.pct >= 95)) {
+  if ((policy === 'cautious' && sv.pct >= 65) || (policy === 'greedy' && sv.pct >= 85)) {
     if (g.canRetire().ok) return null; // handled by caller
     const r = route(g, (s) => s.station && (s.station.faction === 'concord' || /meridian/i.test(s.station.name)));
     if (r) return r;
@@ -190,9 +190,16 @@ function actCareful(g, policy, mem, rnd) {
     if (sys.station && !mem.hailed.has(sys.id)) { mem.hailed.add(sys.id); g.hail(); if (st.pending) return; }
   }
   if (sys.station) { manage(g, policy, mem, rnd); if (st.pending || st.phase === 'ended') return; }
+  // social time: chat with the crew now and then, rest occasionally (keeps morale up, exercises idle/crew events)
+  if (!st.pending && st.docked && (st.day - (mem.lastChat || 0)) > 9) {
+    mem.lastChat = st.day;
+    const c = rnd.pick(st.crew); if (c) g.crewTalk(c.id);
+    if (st.pending) return;
+    if (rnd.chance(0.5) && st.ship.supplies > 10) { g.rest(1); if (st.pending) return; }
+  }
   if (g.canRetire().ok) {
     const sv = g.surveyProgress();
-    if ((policy === 'cautious' && sv.pct >= 78) || (policy === 'greedy' && sv.pct >= 95)) { g.retire(); return; }
+    if ((policy === 'cautious' && sv.pct >= 65) || (policy === 'greedy' && sv.pct >= 85)) { g.retire(); return; }
   }
   // fuel safety: if the next hop would leave us below the return reserve, go to a station first
   const margin = policy === 'cautious' ? 3 : 1;
@@ -215,6 +222,13 @@ function actCareful(g, policy, mem, rnd) {
   const can = g.canJump(nxt);
   if (!can.ok) { g.rest(1); return; }
   const wasDocked = st.docked;
+  // loop breaker: a player who keeps revisiting the same harbour gives up on the jobs causing it
+  mem.recent = mem.recent || [];
+  mem.recent.push(st.pos); if (mem.recent.length > 20) mem.recent.shift();
+  if (mem.recent.filter((x) => x === st.pos).length >= 5) {
+    for (const m of st.missions.active.slice()) if (m.arc !== 'main') g.abandonMission(m.id);
+    mem.recent = [];
+  }
   if (wasDocked) g.undock();
   g.jump(nxt);
   mem.holdDays = (mem.holdDays || 0) + can.days;
@@ -248,7 +262,7 @@ function actRandom(g, mem, rnd) {
 
 // ---------------------------------------------------------------------------------------------------------------
 /** Play one full game. Returns a result record. */
-export function playGame({ seed = 1, policy = 'cautious', maxDays = 800, maxSteps = 8000, difficulty = 'standard', onEvent } = {}) {
+export function playGame({ seed = 1, policy = 'cautious', maxDays = 600, maxSteps = 8000, difficulty = 'standard', onEvent } = {}) {
   const rnd = new RNG(hashString(`bot:${policy}:${seed}`));
   const res = { seed, policy, ending: null, kind: null, day: 0, credits: 0, steps: 0, stuck: false, timeout: false, error: null, events: [], tows: 0, survey: 0, score: 0, missions: 0 };
   let g;
@@ -304,7 +318,7 @@ function summarize(results, policy) {
 }
 
 function parseArgs(argv) {
-  const a = { runs: 200, policy: 'cautious', seed: 1, days: 800, difficulty: 'standard', verbose: false };
+  const a = { runs: 200, policy: 'cautious', seed: 1, days: 600, difficulty: 'standard', verbose: false };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--runs') a.runs = +argv[++i];

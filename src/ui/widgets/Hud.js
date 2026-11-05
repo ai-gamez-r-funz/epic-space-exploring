@@ -6,6 +6,7 @@ import { Label } from '../kit/Label.js';
 import { Tooltip } from '../kit/Tooltip.js';
 import { Button, IconButton } from '../kit/Button.js';
 import { centerOn } from '../kit/layout.js';
+import { arcSeg } from '../kit/draw.js';
 import { Anim } from '../kit/anim.js';
 import { S } from '../services.js';
 
@@ -50,7 +51,7 @@ export class Hud extends Container {
   _drawRing() {
     this.shown += (this.pct - this.shown) * 0.1; const g = this.ring; g.clear(); const r = 15;
     g.circle(0, 0, r).stroke({ width: 5, color: 0x05060f }); g.circle(0, 0, r).stroke({ width: 3, color: 0x1c2050 });
-    if (this.shown > 0.5) g.arc(0, 0, r, -Math.PI / 2, -Math.PI / 2 + (this.shown / 100) * Math.PI * 2).stroke({ width: 4, color: C.tealLight, cap: 'round' });
+    if (this.shown > 0.5) arcSeg(g, 0, 0, r, -Math.PI / 2, -Math.PI / 2 + (this.shown / 100) * Math.PI * 2).stroke({ width: 4, color: C.tealLight, cap: 'round' });
     this.ringL.setText(`${Math.round(this.shown)}%`); centerOn(this.ringL, 1226, 25);
   }
   refresh() {

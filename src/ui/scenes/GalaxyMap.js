@@ -8,6 +8,7 @@ import { Tooltip } from '../kit/Tooltip.js';
 import { Input } from '../kit/input.js';
 import { Anim, Eases } from '../kit/anim.js';
 import { centerOn } from '../kit/layout.js';
+import { arcSeg } from '../kit/draw.js';
 import { Hud } from '../widgets/Hud.js';
 import { STAR_NAMES } from '../widgets/Viewscreen.js';
 import { makeBackdrop } from '../widgets/Backdrop.js';
@@ -132,7 +133,7 @@ export class GalaxyMap extends Scene {
       g.circle(0, 0, 7.5).fill({ color: col }); g.circle(-1.5, -1.5, 2.4).fill({ color: 0xffffff, alpha: 0.7 });
       const pl = s.planets.length, sc = s.planets.filter((p) => p.scanned).length;
       if (s.status === 'charted') g.circle(0, 0, 13).stroke({ width: 2.5, color: C.brassLight });
-      else { g.circle(0, 0, 13).stroke({ width: 2.5, color: 0x1c2050, alpha: 0.9 }); if (pl && sc) g.arc(0, 0, 13, -Math.PI / 2, -Math.PI / 2 + (sc / pl) * Math.PI * 2).stroke({ width: 2.5, color: C.tealLight }); }
+      else { g.circle(0, 0, 13).stroke({ width: 2.5, color: 0x1c2050, alpha: 0.9 }); if (pl && sc) arcSeg(g, 0, 0, 13, -Math.PI / 2, -Math.PI / 2 + (sc / pl) * Math.PI * 2).stroke({ width: 2.5, color: C.tealLight }); }
     } else {
       g.circle(0, 0, 9).fill({ color: C.textDim, alpha: 0.08 }); g.circle(0, 0, 6).stroke({ width: 1.8, color: C.textDim, alpha: 0.85 }); g.circle(0, 0, 1.6).fill({ color: C.textDim });
     }
@@ -236,7 +237,7 @@ export class GalaxyMap extends Scene {
     this.jumping = true; this.ui.holdEvents = true; Tooltip.hide(); sfx('jump');
     Anim.to(this.side, { alpha: 0, x: this.side.x + 40 }, 300); this.planBtn.eventMode = 'none';
     // ship glides along the lane
-    const ship = S.gfx.ship({ kind: 'halcyon', scale: 0.5, thrust: 1 }); this.shipLayer.addChild(ship); ship.x = A.x; ship.y = A.y; ship.rotation = Math.atan2(B.y - A.y, B.x - A.x);
+    const ship = S.gfx.ship({ kind: 'halcyon', scale: 0.32, thrust: 1 }); this.shipLayer.addChild(ship); ship.x = A.x; ship.y = A.y; ship.rotation = Math.atan2(B.y - A.y, B.x - A.x);
     const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2; const zoom = Math.min(1.4, Math.max(0.8, 520 / (Math.hypot(A.x - B.x, A.y - B.y) + 80)));
     this.centerOn(mx, my, true, zoom);
     await Anim.wait(500);
@@ -270,7 +271,7 @@ export class GalaxyMap extends Scene {
       g.circle(cur.x, cur.y, 20 + pulse * 6).stroke({ width: 2, color: C.tealLight, alpha: 0.9 - pulse * 0.5 });
       g.poly([cur.x, cur.y - 26 - pulse * 3, cur.x - 6, cur.y - 36 - pulse * 3, cur.x + 6, cur.y - 36 - pulse * 3]).fill(C.tealLight);
       for (const [id, n] of this.nodes) if (n.neigh && id !== this.sel) { const ok = this.game.state.ship.fuel >= n.neigh.fuelCost; g.circle(n.sys.x, n.sys.y, 18).stroke({ width: 1.5, color: ok ? C.teal : C.coral, alpha: 0.35 }); }
-      if (this.sel) { const s = this.game.system(this.sel); if (s) for (let k = 0; k < 6; k++) { const a = this.t + k * Math.PI / 3; g.arc(s.x, s.y, 24, a, a + 0.55).stroke({ width: 2.5, color: C.mustard }); } }
+      if (this.sel) { const s = this.game.system(this.sel); if (s) for (let k = 0; k < 6; k++) { const a = this.t + k * Math.PI / 3; arcSeg(g, s.x, s.y, 24, a, a + 0.55).stroke({ width: 2.5, color: C.mustard }); } }
     }
   }
   exit() { super.exit(); this.ui.holdEvents = false; }

@@ -67,3 +67,6 @@ export function drawPill(g, w, h, color, { alpha = 1, stroke } = {}) {
 
 export function makeGraphics() { return new Graphics(); }
 export { mix, lighten, darken };
+
+/** Add an arc segment WITHOUT a connecting line from the previous point (Pixi's arc() draws one). Call .stroke() after. */
+export function arcSeg(g, cx, cy, r, a0, a1) { g.moveTo(cx + Math.cos(a0) * r, cy + Math.sin(a0) * r); g.arc(cx, cy, r, a0, a1); return g; }

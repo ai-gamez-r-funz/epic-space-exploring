@@ -5,7 +5,7 @@ import { Tooltip } from '../kit/Tooltip.js';
 import { Input } from '../kit/input.js';
 import { Anim } from '../kit/anim.js';
 import { centerOn } from '../kit/layout.js';
-import { drawWell } from '../kit/draw.js';
+import { drawWell, arcSeg } from '../kit/draw.js';
 import { S, sfx } from '../services.js';
 import { makeBackdrop } from './Backdrop.js';
 
@@ -65,7 +65,7 @@ export class Viewscreen extends Container {
     });
     // phenomena
     sys.phenomena.forEach((ph, i) => {
-      const x = this.sw * 0.34 + i * 150, y = i % 2 ? this.sh - 78 : 76 + (n ? 0 : 20);
+      const x = this.sw * 0.34 + i * 150, y = i % 2 ? this.sh - 78 : 122;
       this._addItem({ kind: 'phen', id: ph, obj: ph, x, y, r: 36, make: () => S.gfx.phenomenon(ph, { size: 72 }), name: PHEN_NAMES[ph] || ph });
     });
     if (sys.station) this._addItem({ kind: 'station', id: 'station', obj: sys.station, x: this.sw - 90, y: this.sh - 84, r: 34, make: () => this._stationNode(sys.station), name: sys.station.name });
@@ -80,6 +80,7 @@ export class Viewscreen extends Container {
     if (arrive) { this.scene.alpha = 0; this.ship.x = -80; Anim.to(this.scene, { alpha: 1 }, 700); this.bg.alpha = 0.2; Anim.to(this.bg, { alpha: 1 }, 900); }
   }
   _stationNode(st) {
+    const real = S.rawGfx?.station; if (real) { try { const n = real({ kind: st.kind, size: 70 }); if (n) return n; } catch (e) { /* fall back */ } }
     const c = new Container(); const g = new Graphics(); g.circle(0, 0, 30).fill({ color: 0x0b0d1e, alpha: 0.7 }); g.circle(0, 0, 30).stroke({ width: 3, color: C.brass }); g.circle(0, 0, 23).stroke({ width: 1.5, color: C.teal, alpha: 0.6 }); c.addChild(g);
     const ic = S.gfx.icon('station', { size: 34, color: C.cream }); centerOn(ic, 0, 0); c.addChild(ic);
     c.update = (dt) => { g.rotation += dt * 0.05; }; return c;
@@ -128,7 +129,7 @@ export class Viewscreen extends Container {
     if (this.ship) { const tg = this.shipTarget; this.ship.x += (tg.x - this.ship.x) * Math.min(1, dt * 2.2); this.ship.y += (tg.y - this.ship.y) * Math.min(1, dt * 2.2) + Math.sin(this.t * 1.3) * 0.12; this.ship.update?.(dt); this.ship.rotation = Math.sin(this.t * 0.9) * 0.03; }
     // selection ring
     const g = this.selG; g.clear();
-    const mark = (it, col, a) => { const r = it.r + 10; for (let k = 0; k < 4; k++) { const s = this.t * 0.8 + k * Math.PI / 2; g.arc(it.node.x, it.node.y, r, s, s + 0.9).stroke({ width: 2.5, color: col, alpha: a }); } };
+    const mark = (it, col, a) => { const r = it.r + 10; for (let k = 0; k < 4; k++) { const s = this.t * 0.8 + k * Math.PI / 2; arcSeg(g, it.node.x, it.node.y, r, s, s + 0.9).stroke({ width: 2.5, color: col, alpha: a }); } };
     if (this.sel) { const it = this.items.find((x) => x.kind === this.sel.kind && x.id === this.sel.id); if (it) mark(it, C.mustard, 0.95); }
     const oi = this.orbitId && this.items.find((x) => x.kind === 'planet' && x.id === this.orbitId); if (oi) g.circle(oi.node.x, oi.node.y, oi.r + 18).stroke({ width: 1.5, color: C.tealLight, alpha: 0.5 + 0.3 * Math.sin(this.t * 3) });
     for (const it of this.items) if (it.hover && !(this.sel && this.sel.id === it.id)) g.circle(it.node.x, it.node.y, it.r + 8).stroke({ width: 1.5, color: C.cream, alpha: 0.5 });
