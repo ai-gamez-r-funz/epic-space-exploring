@@ -503,6 +503,7 @@ export const ITEM_DEFS = {
   storm_glass: { id: "storm_glass", name: "Storm Glass", kind: "artifact", desc: "A glass that clouds before an ionstorm." },
   ghost_log_cube: { id: "ghost_log_cube", name: "Ghost-Log Cube", kind: "artifact", desc: "A small cube replaying a derelict ship's last log, politely." },
   aurora_thread: { id: "aurora_thread", name: "Aurora Thread", kind: "artifact", desc: "A fine thread of shimmering light spun by aurora-beings." },
+  story_knot: { id: "story_knot", name: "Story Knot", kind: "gift", desc: "A drifter knot-cord, one tale per knot." },
   rift_chime: { id: "rift_chime", name: "Rift Chime", kind: "artifact", desc: "A chime that rings when near a singing rift." },
   ice_chime: { id: "ice_chime", name: "Ice Chime", kind: "artifact", desc: "A chime carved from singing ice." },
   polite_seed: { id: "polite_seed", name: "Polite Seed", kind: "gift", desc: "A seed from a courteous plant. It will grow, and say thank you." },
