@@ -3,7 +3,6 @@
 // ITEMS: (invented item ids; WORLD may rename/describe)
 //   pulsar_tape       - Pulsar Concert Tape: a reel recording of the Choir's finest broadcast; plays beautifully on any speaker.
 //   storm_glass       - Storm-Glass: a bottle of ion-storm lightning, lovely on the bridge shelf, humming mildly.
-//   comet_ice         - Comet Ice: a cooler of frost that tastes of a thousand years of space; excellent in tea.
 //   aurora_thread     - Aurora Thread: a filament of living light the aurora-beings left behind; the lounge glows when it is near.
 //   ghost_log_cube    - Ghost-Log Cube: a memory cube from a derelict, holding one very long conversation.
 //   lantern_shard     - Lantern Shard: a fragment of beacon-light, warm in the hand, pointing faintly toward the next Lantern.
@@ -109,6 +108,7 @@ export default [
           { label: `Bottle some lightning in an insulated flask`, tag: 'science', check: { skill: 'engineering', diff: 3 },
             pass: { text: `{crew:engineering} traps a small ball of storm in a thermos and a prayer. It hums contentedly on the bridge shelf. It also charges one fuel cell, quietly, on the side.`, fx: [{ item: { storm_glass: 1 } }, { fuel: 1 }, { xp: { engineering: 2 } }] },
             fail: { text: `The flask fills. The flask also leaks. The bridge smells of ozone for a week; every doorknob has become mildly argumentative.`, fx: [{ morale: -2 }, { hull: -2 }] } },
+          { label: `Ride it out with the barrel-roll gyros`, tag: 'flee', if: [{ upgrade: 'barrel_roll_gyro' }], do: { text: `The gyros spin up with a happy whine. The ship rolls up the face of the swell like a seal, and out the far side with the tanks topped off. {crew:piloting} files a request to make this a standing order.`, fx: [{ fuel: 3 }, { morale: 8 }, { codex: 'codex_ion_surfing' }] } },
           { label: `Detour around the storm`, tag: 'wait', do: { text: `A long, quiet loop. The storm shrugs behind you, sparkling and unbothered. Nobody has lost anything but time and a bit of fuel.`, fx: [{ fuel: -1 }, { days: 1 }] } },
         ],
       },
@@ -130,10 +130,11 @@ export default [
       a: {
         text: `A small, stable wormhole, no wider than a hangar door, yawns in the dark. Beyond it, a different star. The sensors state, with some pride, that the throat is "approximately safe". The chief engineer sighs the sigh of a person who has heard that word before.`,
         choices: [
-          { label: `Take the micro-jump`, tag: 'flee', goto: 'b', do: { text: `The ship slides into the throat. The stars stretch and fold into a sheet of silver. For a heartbeat, there is no ship, no crew, no tea. Then there is.`, goto: 'b' } },
+          { label: `Take the micro-jump`, tag: 'flee', do: { text: `The ship slides into the throat. The stars stretch and fold into a sheet of silver. For a heartbeat, there is no ship, no crew, no tea. Then there is.`, goto: 'b' } },
           { label: `Study the throat before committing`, tag: 'science', check: { skill: 'science', diff: 3 },
             pass: { text: `{crew:science} maps the throat's wobble, finding its safe window. The jump will cost nothing and shave days off the journey. The codex is delighted.`, fx: [{ xp: { science: 2 } }, { codex: 'codex_microjump' }], goto: 'b' },
             fail: { text: `The throat's wobble refuses to be mapped. You decide, with admirable caution, to go anyway, but with the cargo lashed down.`, fx: [{ days: 1 }], goto: 'b' } },
+          { label: `Jump at once, trusting the stabiliser core`, tag: 'flee', if: [{ upgrade: 'wormhole_stabiliser' }], do: { text: `The stabiliser hums a calm, even note. The throat opens like a courteous door and the stars pour past in neat ribbons. You arrive without so much as a spilled cup, and a whole sector charted in your head.`, fx: [{ reveal: { radius: 4 } }, { codex: 'codex_microjump' }, { morale: 4 }] } },
           { label: `Leave it be; mark it on the chart`, tag: 'wait', do: { text: `You log the wormhole for the Meridian Society and move on. Someone braver will need it one day. Possibly you.`, fx: [{ reveal: { radius: 1 } }, { codex: 'codex_microjump' }] } },
         ],
       },
@@ -257,7 +258,7 @@ export default [
         text: `A comet sweeps by, tail glowing like a spilled tin of silver paint. The nav computer calculates a rendezvous in four hours and adds, very quietly, "tea is made from water, and comets are mostly water." Everyone looks at each other.`,
         choices: [
           { label: `Rendezvous and harvest comet ice`, tag: 'science', check: { skill: 'piloting', diff: 3 },
-            pass: { text: `You match speed to within a hair. The scoop gathers a hold of sparkling ice, cold as a promise. It tastes of a thousand years and a faint hint of vanilla.`, fx: [{ item: { comet_ice: 1 } }, { supplies: 3 }, { xp: { piloting: 2 } }, { codex: 'codex_comet_harvest' }] },
+            pass: { text: `You match speed to within a hair. The scoop gathers a hold of sparkling ice, cold as a promise. It tastes of a thousand years and a faint hint of vanilla.`, fx: [{ cargo: { comet_ice: 2 } }, { supplies: 3 }, { xp: { piloting: 2 } }, { codex: 'codex_comet_harvest' }] },
             fail: { text: `The comet is faster than the forecast. The scoop bends, the ship rattles, and a shower of ice rains across the hull like applause.`, fx: [{ hull: -3 }, { supplies: 1 }] } },
           { label: `Stream the comet's spectrum`, tag: 'science', check: { skill: 'science', diff: 2 },
             pass: { text: `{crew:science} finds organic compounds that smell, improbably, of cinnamon. A paper is drafted. A cup of tea is raised. Both are well received.`, fx: [{ xp: { science: 2 } }, { morale: 3 }, { codex: 'codex_comet_harvest' }] },
@@ -310,7 +311,7 @@ export default [
       a: {
         text: `Ribbons of green and gold unfurl across the viewscreen. They shift, braid, and, with a clarity that raises hairs on the back of every neck, answer to the ship's running lights. The aurora is alive, and curious.`,
         choices: [
-          { label: `Flash the running lights in greeting`, tag: 'diplomacy', goto: 'b', do: { text: `The aurora ripples. A dozen ribbons turn together toward the ship, like sunflowers. One flares green, then gold, then green again. They are mimicking the pattern. They are learning it.`, goto: 'b' } },
+          { label: `Flash the running lights in greeting`, tag: 'diplomacy', do: { text: `The aurora ripples. A dozen ribbons turn together toward the ship, like sunflowers. One flares green, then gold, then green again. They are mimicking the pattern. They are learning it.`, goto: 'b' } },
           { label: `Record the spectrum for the codex`, tag: 'science', check: { skill: 'science', diff: 3 },
             pass: { text: `The ribbons carry structure: a pattern of pulses that repeats with variations. It is language, or the thing a language grows from. {crew:science} cannot stop grinning.`, fx: [{ xp: { science: 2 } }, { codex: 'codex_aurora_beings' }], goto: 'b' },
             fail: { text: `The spectrum is too fluid to catch. The ribbons seem amused by the scanner and drift past it, trailing glitter.`, goto: 'b' } },
@@ -372,7 +373,7 @@ export default [
       a: {
         text: `This Lantern is brighter than the first. As the ship approaches, its light resolves into a series of pulses: three short, one long, then an unmistakable pause, a held breath. A question mark, in light. It is waiting for an answer.`,
         choices: [
-          { label: `Answer: "We are looking for you."`, tag: 'persuade', goto: 'b', do: { text: `The Lantern brightens, delighted. Its pulses stutter, then settle into a rhythm like laughter. "Good," it seems to say. "Come closer." The ship edges in.`, goto: 'b' } },
+          { label: `Answer: "We are looking for you."`, tag: 'persuade', do: { text: `The Lantern brightens, delighted. Its pulses stutter, then settle into a rhythm like laughter. "Good," it seems to say. "Come closer." The ship edges in.`, goto: 'b' } },
           { label: `Answer: "We are lost, and happy about it."`, tag: 'diplomacy', check: { skill: 'diplomacy', diff: 3 },
             pass: { text: `The Lantern flickers in amusement. A rope of gold light unspools toward the ship and ties itself in a bow around the antenna. This is, apparently, a compliment.`, fx: [{ rep: { archivists: 1 } }], goto: 'b' },
             fail: { text: `The Lantern considers your answer for a long moment. It pulses a gentler version of the question. Honesty seems to be valued. You try again, with less wit.`, fx: [], goto: 'b' } },

@@ -11,7 +11,7 @@ const EMPTY = () => ({
   REGIONS: {}, STORY_SYSTEMS: [], CHAPTERS: [], ENDINGS: {}, ENDING_ORDER: [], INTRO_TEXT: [], TIPS: [], RANKS: [],
   STARTING_ITEMS: {}, STARTING_RESOURCES: {}, ITEM_DEFS: {},
   CODEX: [],
-  NAMES: { SYSTEM_NAME_PARTS: null, PLANET_SUFFIXES: null, STATION_NAMES: null, CREW_NAME_POOLS: null, SHIP_NAME_SUGGESTIONS: null },
+  NAMES: { SYSTEM_NAME_PARTS: null, PLANET_SUFFIXES: null, STATION_NAMES: null, CREW_NAME_POOLS: null, SHIP_NAME_SUGGESTIONS: null, systemName: null, planetName: null, stationName: null, crewName: null },
   EVENTS: [],
 });
 

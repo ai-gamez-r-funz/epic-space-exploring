@@ -138,7 +138,7 @@ export default [
     nodes: {
       a: {
         speaker: { name: 'Gardener Thelu-Mar', species: 'vesperine' },
-        text: `*A soft chord, translated by the comm array:* "We are pruning the evening shoots. They grow toward sound. Please do not ring anything. Please also hold this very delicate trellis, if your hands are steady."`,
+        text: `*A soft chord, translated by the comm array:* "We are pruning the evening sprouts. They grow toward sound. Please do not ring anything. Please also hold this very delicate trellis, if your hands are steady."`,
         choices: [
           { label: `Hold the trellis steady (piloting hands)`, tag: 'persuade', check: { skill: 'piloting', diff: 3 },
             pass: { text: `You hold it so still the crystal dust settles on your sleeves. The gardener hums in gratitude, and presses three tuning crystals into your palm.`, fx: [{ cargo: { tuning_crystals: 3 } }, { rep: { vesperine: 4 } }] },
@@ -204,7 +204,7 @@ export default [
             fail: { text: `You lose the thread of the story three times. The dockmistress accepts three dry biscuits, kindly, and tells you the harbour is open regardless.`, fx: [{ cargo: { ration_bars: -1 } }, { rep: { drifters: 1 } }] } },
           { label: `Trade at the floating market`, tag: 'trade', do: { text: `The kelp-weavers want hand-loomed cloth and medical kits; they pay in sea-silk, easy to resell. The market is shaped like a snail and entirely made of bargains.`, fx: [{ credits: 40 }, { codex: 'codex_kelp_cities' }] } },
           { label: `Offer hand looms as a gift`, tag: 'trade', if: [{ cargo: { hand_looms: 1 } }],
-            do: { text: `The weavers burst into delighted argument over which pattern to try first. In the confusion you are given a lamp, a dinner invitation, and lifetime moorage rights.`, fx: [{ cargo: { hand_looms: -1 } }, { item: { kelp_lantern: 1 } }, { rep: { drifters: 6 } }, { flag: 'kelp_city_friend' }, { codex: 'codex_kelp_cities' }] } },
+            do: { text: `The weavers burst into delighted argument over which pattern to try first. In the confusion you are given a lamp, a quilt-hung lounge, and lifetime moorage rights.`, fx: [{ cargo: { hand_looms: -1 } }, { item: { kelp_lantern: 1 } }, { upgrade: 'drifter_quilt_lounge' }, { rep: { drifters: 6 } }, { flag: 'kelp_city_friend' }, { codex: 'codex_kelp_cities' }] } },
         ],
       },
     },

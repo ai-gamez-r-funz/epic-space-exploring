@@ -27,7 +27,7 @@
 //                     planetType?:type, phenomenon?:id, count?:n }  done after count scans (g.scanPlanet / g.investigate) in matched system(s)
 //   type 'chart'  : { target:Selector, count?:n }                   done when n systems matching the selector are 'charted'
 //   type 'flag'   : { flag:'name', value?:any }                     done when state.flags[name] is truthy / equals value
-//   type 'event'  : { event:'eventId' }                             done when that event has been resolved (engine records seen events)
+//   type 'event'  : { event:'eventId' }                             done when that event has been resolved (engine records seen events)   (use sparingly; only for event ids that exist in events/)
 //   Any type may carry `hidden:true` (not listed until the previous objective is done) and `optional:true`.
 //
 // SELECTOR GRAMMAR  (target of goto/scan/chart/have.deliverTo; also `offerAt`; resolved ONCE at acceptance and cached
@@ -122,7 +122,7 @@ export const MISSIONS = [
     offerWhen: [{ flag: 'lantern_2' }], offerAt: { faction: 'archivists', station: true }, ordered: true,
     objectives: [
       { id: 'o1', type: 'goto', target: 'hollow_archive', docked: true, text: 'Dock at the Central Catalogue' },
-      { id: 'o2', type: 'event', event: 'archive_welcome', text: 'Present your question at the front desk' },
+      { id: 'o2', type: 'have', item: 'tea_tin', qty: 1, deliverTo: 'hollow_archive', consume: true, text: 'Present a tin of tea with your question (librarians appreciate a gift)' },
     ],
     reward: { credits: 300, rep: { archivists: 10 }, item: { archive_reader_card: 1 }, codex: 'hollow_archive' },
     onComplete: [{ flag: 'archive_key' }],
@@ -269,7 +269,7 @@ export const MISSIONS = [
     offerWhen: [{ missionDone: 'm_quillari_2_wedding' }, { rep: { quillari: 30 } }], offerAt: 'pennywhistle', ordered: true,
     objectives: [
       { id: 'o1', type: 'goto', target: 'lantern_brightwater', docked: true, text: 'Meet the western clan at Brightwater' },
-      { id: 'o2', type: 'event', event: 'quillari_soup_summit', text: 'Broker the Soup Accord' },
+      { id: 'o2', type: 'have', good: 'ration_bars', qty: 4, deliverTo: 'lantern_brightwater', consume: true, text: 'Bring 4 ration bars for the Soup Accord and broker the peace' },
     ],
     reward: { credits: 650, rep: { quillari: 12 }, upgrade: 'quillari_trade_licence' },
   },
@@ -304,7 +304,7 @@ export const MISSIONS = [
     accept: 'The cantor shimmers. "Stand, listen, and do not clap until the end."',
     offerWhen: [{ missionDone: 'm_vesperine_2_missing_chord' }, { rep: { vesperine: 30 } }], offerAt: 'cantabile', ordered: true,
     objectives: [
-      { id: 'o1', type: 'event', event: 'vesperine_grand_harmonic', text: 'Hold the rest at the Grand Harmonic' },
+      { id: 'o1', type: 'have', item: 'vesperine_tuning_fork', qty: 1, deliverTo: 'cantabile', text: 'Bring the silver tuning fork to Cantabile and hold the rest at the Grand Harmonic' },
     ],
     reward: { credits: 600, rep: { vesperine: 12 }, upgrade: 'vesperine_harmonic_resonator', codex: 'grand_harmonic' },
   },
@@ -331,7 +331,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'scan', target: { phenomenon: 'rift' }, what: 'phenomenon', phenomenon: 'rift', text: 'Investigate a singing rift' },
       { id: 'o2', type: 'goto', target: { faction: 'archivists', station: true }, docked: true, text: 'Present your answer to the Archive' },
     ],
-    reward: { credits: 400, rep: { archivists: 10 }, codex: 'singing_rifts' },
+    reward: { credits: 400, rep: { archivists: 10 }, codex: 'codex_singing_rifts' },
   },
   {
     id: 'm_archivist_3_index', title: 'The Index of Everything Else', kind: 'story', arc: 'archivists',
@@ -377,7 +377,7 @@ export const MISSIONS = [
     accept: 'Marrow pulls out the chair. It is surprisingly well-worn.',
     offerWhen: [{ missionDone: 'm_drifter_2_loom_run' }, { rep: { drifters: 30 } }], offerAt: 'long_table', ordered: true,
     objectives: [
-      { id: 'o1', type: 'event', event: 'drifter_long_table_feast', text: 'Take your seat at the Long Table' },
+      { id: 'o1', type: 'have', item: 'drifter_story_knot', qty: 1, deliverTo: 'long_table', text: 'Take your seat at the Long Table and share the story knot' },
     ],
     reward: { credits: 600, rep: { drifters: 12 }, upgrade: 'drifter_quilt_lounge' },
   },
@@ -440,8 +440,7 @@ export const MISSIONS = [
     accept: 'Okoro folds her hands. "The tea comes first. Everything else comes after."',
     offerWhen: [{ missionDone: 'm_mediation_2_toll_ladder' }], offerAt: { faction: 'concord', station: true }, ordered: true,
     objectives: [
-      { id: 'o1', type: 'have', item: 'tea_tin', qty: 2, text: 'Bring two tins of Meridian tea' },
-      { id: 'o2', type: 'event', event: 'tea_summit', text: 'Host the Summit of Tea' },
+      { id: 'o1', type: 'have', item: 'tea_tin', qty: 2, deliverTo: 'pennywhistle', consume: true, text: 'Host the Summit of Tea at Pennywhistle with two tins of Meridian tea' },
     ],
     reward: { credits: 520, rep: { concord: 8, quillari: 8 }, item: { mediators_gavel: 1 }, codex: 'tea_summit' },
   },
@@ -502,7 +501,7 @@ export const MISSIONS = [
     giver: { name: 'An Unmarked Signal', species: 'unknown', faction: 'none' },
     blurb: 'You hum a few bars of the rift\'s song to a passing Vesperine, who gasps and gives you a set of coordinates. The song, it turns out, has a second verse.',
     accept: 'Somewhere across the fold, something is humming along.',
-    offerWhen: [{ codex: 'singing_rifts' }, { flag: 'lantern_3' }], ordered: true,
+    offerWhen: [{ codex: 'codex_singing_rifts' }, { flag: 'lantern_3' }], ordered: true,
     objectives: [
       { id: 'o1', type: 'goto', target: 'whispering_rift', text: 'Travel to the Whispering Rift' },
       { id: 'o2', type: 'scan', target: 'whispering_rift', what: 'phenomenon', phenomenon: 'rift', text: 'Hum back and listen' },

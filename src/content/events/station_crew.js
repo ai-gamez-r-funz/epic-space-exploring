@@ -5,7 +5,8 @@
 //   festival_ribbon  - Festival Ribbon: a hand-dyed ribbon from the Dock Festival, worn on the bridge for luck.
 //   luggage_tag      - Brass Luggage Tag: proof you once reunited a stranger with a very small, very important suitcase.
 //   recipe_card      - Galley Recipe Card: Gus-7's triumphant "Five-Star Stew", hand-lettered.
-//   (also reuses from other files: ice_chime, tea_sample, comet_ice, pulsar_tape - all optional gates, never required)
+//   (also reuses: ice_chime, tea_sample (planets.js); cargo good comet_ice; upgrade tea_service - all optional gates, never required)
+//   festival_ribbon is shared with missions.js (WORLD).
 //
 // CODEX: (ids used in {codex:..}; WORLD please cover each)
 //   codex_dock_festival    - Dock Festival Customs
@@ -198,7 +199,7 @@ export default [
     start: 'a',
     nodes: {
       a: {
-        speaker: { name: '{crew:engineering}', species: 'human' },
+        speaker: { name: 'Chief Engineer', species: 'human' },
         text: `The engine room hums its steady bass. {crew:engineering} wipes their hands on a rag that has seen better decades. "Captain, I talk to the warp coils. Is that strange? They talk back, sort of. In vibrations. I think they miss the Gate."`,
         choices: [
           { label: `Ask what the coils are saying`, tag: 'science', do: { text: `They hum a pattern {crew:engineering} has been charting for weeks: a quiet, rising figure that repeats. "I think it's a lullaby," they say, ears pink. "The coils sing it to themselves." You sit in the hum for a while.`, fx: [{ mood: { random: 8 } }, { morale: 4 }, { xp: { engineering: 2 } }], goto: 'b' } },
@@ -209,7 +210,7 @@ export default [
         ],
       },
       b: {
-        speaker: { name: '{crew:engineering}', species: 'human' },
+        speaker: { name: 'Chief Engineer', species: 'human' },
         text: `"Thanks, Captain. Honestly. Most captains want the engines faster. You ask what they're feeling." A pause. A small wrench is pressed into your hand. "For luck. Don't lose it. It's my second-favourite wrench."`,
         choices: [
           { label: `Accept it as a mark of trust`, tag: 'diplomacy', do: { text: `The wrench goes on a hook in your cabin. It doesn't do anything. It does, however, make the cabin feel more like yours.`, fx: [{ morale: 5 }, { mood: { random: 6 } }] } },
@@ -231,7 +232,7 @@ export default [
     start: 'a',
     nodes: {
       a: {
-        speaker: { name: '{crew:science}', species: 'human' },
+        speaker: { name: 'Science Officer', species: 'human' },
         text: `{crew:science} is staring at a data-slate with the expression of someone who has found a grain of sand and fears it may be a planet. "Captain, I've a theory about the Lanterns. It's too neat. I distrust it. Will you hear it anyway?"`,
         choices: [
           { label: `Hear it out`, tag: 'science', do: { text: `The theory takes forty minutes and three diagrams. It involves a lot of light, some patience, and a sentence that begins "what if they were never meant to be found by accident?" You nod. It might be right.`, fx: [{ xp: { science: 2 } }, { mood: { random: 8 } }], goto: 'b' } },
@@ -242,7 +243,7 @@ export default [
         ],
       },
       b: {
-        speaker: { name: '{crew:science}', species: 'human' },
+        speaker: { name: 'Science Officer', species: 'human' },
         text: `"I became a scientist because I wanted to know. And now I know a lot, and I find I mostly want to know what I don't. Is that an odd thing to say on a survey ship?" They wait. They really wait.`,
         choices: [
           { label: `"It's the right thing to say."`, tag: 'diplomacy', do: { text: `"Then we're in the right place," says {crew:science}, grinning. They go back to the slate. The glow of its screen lights their face in a way that looks, quite specifically, like happiness.`, fx: [{ mood: { random: 10 } }, { morale: 5 }] } },
@@ -264,7 +265,7 @@ export default [
     start: 'a',
     nodes: {
       a: {
-        speaker: { name: '{crew:medicine}', species: 'human' },
+        speaker: { name: 'Ship\'s Medic', species: 'human' },
         text: `Sickbay is quiet. {crew:medicine} sits among the neatly labelled drawers, polishing a stethoscope that does not need polishing. "Captain. Nobody's ill. I should be happy. Instead I keep wondering who I'm for, when nobody needs me."`,
         choices: [
           { label: `Sit down with them and offer tea`, tag: 'diplomacy', do: { text: `You pour two cups. You sit. The medic talks, then doesn't, then talks again. Eventually, a quiet settles that feels like medicine. "Thank you, Captain. This helped. This was the appointment."`, fx: [{ mood: { random: 10 } }, { morale: 5 }, { supplies: -1 }], goto: 'b' } },
@@ -275,10 +276,10 @@ export default [
         ],
       },
       b: {
-        speaker: { name: '{crew:medicine}', species: 'human' },
+        speaker: { name: 'Ship\'s Medic', species: 'human' },
         text: `"I'll tell you my secret," says {crew:medicine}. "The best cure I know is somebody noticing. So: I noticed you haven't slept well. Take this. It's a mild sedative and a lot of caring." A small paper packet, hand-labelled, is pressed into your palm.`,
         choices: [
-          { label: `Accept the packet, and the advice`, tag: 'diplomacy', do: { text: `You sleep eight hours for the first time in a fortnight. The packet is mostly chamomile. You never tell the medic you suspected.`, fx: [{ morale: 6 }, { hull: 0 }, { mood: { random: 6 } }, { xp: { medicine: 1 } }] } },
+          { label: `Accept the packet, and the advice`, tag: 'diplomacy', do: { text: `You sleep eight hours for the first time in a fortnight. The packet is mostly chamomile. You never tell the medic you suspected.`, fx: [{ morale: 6 }, { mood: { random: 6 } }, { xp: { medicine: 1 } }] } },
         ],
       },
     },
@@ -297,7 +298,7 @@ export default [
     start: 'a',
     nodes: {
       a: {
-        speaker: { name: '{crew:diplomacy}', species: 'human' },
+        speaker: { name: 'Comms Officer', species: 'human' },
         text: `{crew:diplomacy} sits at the comms console, headphones askew. "Captain, I speak eleven languages and I've just realised I've no one to be quiet with in any of them. Do you ever feel like a bridge that everybody walks across?"`,
         choices: [
           { label: `Teach them to be quiet`, tag: 'wait', do: { text: `You offer a game: ten minutes of silence, no translation, no agenda. It is surprisingly hard, and then it isn't. By the end, {crew:diplomacy} is grinning at the ceiling.`, fx: [{ mood: { random: 10 } }, { morale: 5 }], goto: 'b' } },
@@ -308,7 +309,7 @@ export default [
         ],
       },
       b: {
-        speaker: { name: '{crew:diplomacy}', species: 'human' },
+        speaker: { name: 'Comms Officer', species: 'human' },
         text: `"You know, I think what I like about this ship is that nobody here needs me to translate who we are. Thank you for that." A pause. "Also, I've been meaning to tell you: your hailing voice is much better than you think."`,
         choices: [
           { label: `Laugh, and say thank you`, tag: 'diplomacy', do: { text: `It is the nicest thing anyone has said about your voice. You log it quietly under 'confidence' and carry it with you.`, fx: [{ mood: { random: 8 } }, { morale: 4 }, { xp: { diplomacy: 1 } }] } },
@@ -388,10 +389,11 @@ export default [
         text: `Gus-7 arrives with a tray, a pot, and a small embroidered cloth. "Captain, the Meridian Society recommends a ceremonial tea at least once a fortnight. I have taken the liberty. Shall we?"`,
         choices: [
           { label: `Brew the ship's standard blend`, tag: 'wait', do: { text: `It is a good cup, and an honest one. The crew drifts in, mugs in hand, and the lounge fills with quiet talk and the clink of spoons. Not a drama in sight.`, fx: [{ morale: 6 }, { supplies: -1 }, { codex: 'codex_ship_tea' }] } },
-          { label: `Brew something special: comet ice or cloud tea`, tag: 'science', if: [{ any: [{ item: 'comet_ice' }, { item: 'tea_sample' }] }],
+          { label: `Brew something special: comet ice or cloud tea`, tag: 'science', if: [{ any: [{ cargo: { comet_ice: 1 } }, { item: 'tea_sample' }] }],
             do: { text: `The water tastes of a thousand years; the leaves, of bergamot and impossible weather. The crew takes one sip, then another, then simply stops, with eyes closed. It is a spiritual experience, politely.`, fx: [{ morale: 14 }, { mood: { all: 5 } }, { codex: 'codex_ship_tea' }] } },
           { label: `Chime in on the cups`, tag: 'persuade', if: [{ item: 'ice_chime' }],
             do: { text: `You tap the ice-chime on the rim of each cup, and it rings a perfect fifth. The tea seems to settle into itself. The crew sits for a long, glowing moment.`, fx: [{ morale: 12 }, { codex: 'codex_ship_tea' }] } },
+          { label: `Serve it from the proper tea service`, tag: 'diplomacy', if: [{ upgrade: 'tea_service' }], do: { text: `Gus-7 unpacks the good china, the strainer and the little spoons. The lounge falls into the hush of a very civilised sunset. Everyone sits up straighter, then slumps happily.`, fx: [{ morale: 10 }, { mood: { all: 3 } }, { codex: 'codex_ship_tea' }] } },
           { label: `Skip it; the day is busy`, tag: 'flee', do: { text: `Gus-7 sets the tray aside with great dignity. "I shall keep it warm," it says. It does. It is waiting, quite patiently, when you return.`, fx: [{ morale: -1 }] } },
         ],
       },
