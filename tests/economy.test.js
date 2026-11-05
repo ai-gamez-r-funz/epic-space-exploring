@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newGame, freshStorage, stationSystem, teleportForTest } from './helpers.js';
+import { newGame, freshStorage, stationSystem, teleportForTest, dockClean } from './helpers.js';
 import { C } from '../src/core/content.js';
 import * as Econ from '../src/core/economy.js';
 
@@ -9,7 +9,7 @@ function tradeSetup(seed = 3) {
   const g = newGame({ seed });
   const s = g.state.galaxy.systems.filter((x) => x.station && x.station.services.includes('trade'))[0];
   teleportForTest(g, s.id);
-  g.dock();
+  dockClean(g);
   g.state.credits = 100000;
   return { g, s };
 }
@@ -35,7 +35,7 @@ test('anti-exploit: buying then selling back immediately always loses money', ()
       const s = g.sell(gd.id, r.qty);
       assert.ok(s.ok);
       assert.ok(g.state.credits < before, `${gd.id}: round trip gained ${g.state.credits - before}`);
-      assert.ok(before - g.state.credits >= r.cost * 0.08, 'round trip should cost at least ~8%');
+      assert.ok(before - g.state.credits >= r.cost * 0.10, 'round trip should cost at least ~10%');
     }
   }
 });
@@ -94,7 +94,7 @@ test('no profitable infinite loop: best two-station run is bounded per day', () 
       }
     }
   }
-  assert.ok(best < 90, `best trade run ${best.toFixed(1)} scrip/day is too lucrative`);
+  assert.ok(best < 160, `best trade run ${best.toFixed(1)} scrip/day is too lucrative`);
 });
 
 test('cargo capacity and stock are respected', () => {

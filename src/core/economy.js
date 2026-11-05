@@ -26,8 +26,8 @@ function biasFor(system, goodId) {
   if (B[f] && B[f][goodId]) m *= B[f][goodId];
   const reg = B['region:' + system.region];
   if (reg && reg[goodId]) m *= reg[goodId];
-  // clamp compounded bias to a sane band
-  return clamp(m, 0.45, 1.9);
+  // damp the compounded bias so cross-system spreads stay trade-worthy but not absurd (0.6 -> 0.74, 1.5 -> 1.27)
+  return clamp(Math.pow(m, 0.6), 0.72, 1.3);
 }
 
 /** Whether (and how much) this system trades a good. */
@@ -51,7 +51,7 @@ const hasQuillariLicence = (state) => hasSpecial(state, 'trade_licence_quillari'
 export function midPrice(state, system, good, day = state.day) {
   const p = profile(state, system, good);
   const vol = clamp(good.volatility ?? 0.3, 0, 1);
-  const drift = 1 + vol * (0.22 * noise(state.seed, system.id, good.id, day, 6, 'a') + 0.12 * noise(state.seed, system.id, good.id, day, 29, 'b'));
+  const drift = 1 + vol * (0.15 * noise(state.seed, system.id, good.id, day, 6, 'a') + 0.08 * noise(state.seed, system.id, good.id, day, 29, 'b'));
   return good.base * p.prod * p.bias * drift;
 }
 
@@ -101,11 +101,11 @@ export function sideMultipliers(state, system, good) {
   if (fac) { if ((fac.likes || []).includes(good.id)) taste = 1.06; else if ((fac.dislikes || []).includes(good.id)) taste = 0.94; }
   const buy = (1 + R.spread / 2) * (1 - disc) * diff.price;
   let sell = (1 - R.spread) * (1 + bonus) * taste * (diff.price >= 1 ? 1 : 1);
-  sell = Math.min(sell, buy * 0.9); // anti-exploit: an immediate round trip must lose >= 10 %
+  sell = Math.min(sell, buy * 0.85); // anti-exploit: an immediate round trip must lose >= ~10 % even after impact
   return { buy, sell };
 }
 
-function unitImpact(good) { return RULES().tradeImpact * (0.5 + clamp(good.volatility ?? 0.3, 0, 1)); }
+function unitImpact(good) { return 2 * RULES().tradeImpact * (0.6 + clamp(good.volatility ?? 0.3, 0, 1)); }
 
 /** Total cost of buying `qty` units now, walking the price up per unit. */
 export function quoteBuy(state, system, goodId, qty) {
@@ -115,9 +115,8 @@ export function quoteBuy(state, system, goodId, qty) {
   const { buy } = sideMultipliers(state, system, good);
   const mid = m.prices[goodId];
   const imp = unitImpact(good);
-  const stockFactor = clamp(1 + 0.25 * (1 - (m.stock[goodId] || 0) / Math.max(1, profile(state, system, good).targetStock)), 0.85, 1.3);
   let total = 0;
-  for (let k = 0; k < qty; k++) total += mid * stockFactor * (1 + (m.impact[goodId] || 0) + imp * k) * buy;
+  for (let k = 0; k < qty; k++) total += mid * (1 + (m.impact[goodId] || 0) + imp * k) * buy;
   return Math.ceil(total);
 }
 export function quoteSell(state, system, goodId, qty) {
@@ -127,10 +126,8 @@ export function quoteSell(state, system, goodId, qty) {
   const { sell } = sideMultipliers(state, system, good);
   const mid = m.prices[goodId];
   const imp = unitImpact(good);
-  const p = profile(state, system, good);
-  const stockFactor = clamp(1 + 0.25 * (1 - (m.stock[goodId] || 0) / Math.max(1, p.targetStock)), 0.85, 1.3);
   let total = 0;
-  for (let k = 0; k < qty; k++) total += mid * stockFactor * Math.max(0.35, 1 + (m.impact[goodId] || 0) - imp * k) * sell;
+  for (let k = 0; k < qty; k++) total += mid * Math.max(0.35, 1 + (m.impact[goodId] || 0) - imp * k) * sell;
   return Math.floor(total);
 }
 

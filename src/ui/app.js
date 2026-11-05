@@ -18,6 +18,9 @@ import { Intro } from './scenes/Intro.js';
 import { Bridge } from './scenes/Bridge.js';
 import { GalaxyMap } from './scenes/GalaxyMap.js';
 import { KitDemo } from './dev/KitDemo.js';
+import { installPrefs, Prefs } from './overlays/parts2/prefs.js';
+import { TutorialHints } from './overlays/parts2/tutorial.js';
+import { Responsive } from './responsive.js';
 
 const SCENES = { Title, NewGame, Intro, Bridge, GalaxyMap, KitDemo };
 const MUSIC = { Title: 'title', NewGame: 'title', Intro: 'wonder', Bridge: 'bridge', GalaxyMap: 'map' };
@@ -39,14 +42,17 @@ export class App {
     app.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     app.stage.eventMode = 'static';
     const L = this.layers = {};
-    for (const n of ['scene', 'overlay', 'toast', 'tooltip', 'fader', 'glitch']) { L[n] = new Container(); L[n].label = n; app.stage.addChild(L[n]); }
+    for (const n of ['scene', 'hints', 'overlay', 'toast', 'tooltip', 'fader', 'glitch']) { L[n] = new Container(); L[n].label = n; app.stage.addChild(L[n]); }
     this.fader = new Fader(); L.fader.addChild(this.fader);
     Modal.layer = L.overlay; Toasts.init(L.toast); Tooltip.init(L.tooltip);
     Anim.onError = (e) => this.fail(e);
-    Input.init();
+    Input.init(); installPrefs();
+    this.tutorial = new TutorialHints(this, L.hints);
+    this.resp = new Responsive(this);
     this.popBase = Input.pushLayer({ root: L.scene, name: 'scene' });
     try { S.gfx.init(app); } catch (e) { console.warn('gfx.init failed', e); }
-    this._fit(); window.addEventListener('resize', () => this._fit()); window.addEventListener('orientationchange', () => setTimeout(() => this._fit(), 120));
+    this.resp.install(); this._fit();
+    Prefs.on((k) => { if (k === 'largeUI') this._fit(); });
     const unlock = () => { try { S.audio.init(); } catch (e) { /* */ } };
     window.addEventListener('pointerdown', unlock, { once: true, capture: true }); window.addEventListener('keydown', unlock, { once: true, capture: true });
     app.ticker.add((t) => this._frame(Math.min(0.1, t.deltaMS / 1000)));
@@ -56,22 +62,18 @@ export class App {
     return this;
   }
 
-  /** Letterbox: CSS-scale the canvas to fit the window and render at dpr*scale so text/graphics stay crisp. */
-  _fit() {
-    const iw = window.innerWidth, ih = window.innerHeight; const scale = Math.min(iw / W, ih / H);
-    const dpr = window.devicePixelRatio || 1; const res = Math.max(0.75, Math.min(3, dpr * scale));
-    Display.scale = scale; Display.dpr = dpr; Display.res = res; Display.touch = matchMedia('(pointer: coarse)').matches;
-    this.pixi.renderer.resize(W, H, res);
-    const s = this.canvas.style; s.width = Math.round(W * scale) + 'px'; s.height = Math.round(H * scale) + 'px';
-    s.left = Math.round((iw - W * scale) / 2) + 'px'; s.top = Math.round((ih - H * scale) / 2) + 'px';
-    this.scene?.resize?.();
-    if (ih > iw * 1.1 && iw < 700 && !this._rotHint) { this._rotHint = true; setTimeout(() => Toasts.push('Tip: rotate your device for a bigger bridge.', { tone: 'info', ms: 5000 }), 1500); }
-  }
+  /** Letterbox + phone/tablet layout live in responsive.js (kept out of this file's hot path). */
+  _fit() { this.resp.fit(); this.scene?.resize?.(); }
+  applyLayout() { this._fit(); }
+  get fullscreenSupported() { return this.resp.fullscreenSupported; }
+  isFullscreen() { return this.resp.isFullscreen(); }
+  toggleFullscreen() { return this.resp.toggleFullscreen(); }
 
   _frame(dt) {
     try {
       Anim.step(dt);
       if (!this._glitch) this.scene?.update?.(dt);
+      this.tutorial?.update(dt);
     } catch (e) { this.fail(e); }
   }
 
@@ -156,6 +158,20 @@ export class App {
     if (this.busy || this.holdEvents || !this.scene) { this._eventQueued = true; return; }
     this.openOverlay('EventDialog', {});
   }
+  /** Jump to the Chart and spotlight system(s) — used by the mission log's "Show on map". */
+  async showOnMap(ids, title) {
+    ids = [].concat(ids || []).filter(Boolean); const g = this.game; if (!ids.length || !g) return;
+    this.mapFocus = { ids, title }; if (typeof window !== 'undefined' && window.__halcyon) window.__halcyon.mapFocus = this.mapFocus;
+    if (this.sceneName !== 'GalaxyMap') await this.goto('GalaxyMap', { focus: ids }, { kind: 'wipe', dir: 'left', ms: 350 });
+    const sc = this.scene; if (this.sceneName !== 'GalaxyMap' || !sc) return;
+    const sys = g.system(ids[0]); if (!sys) return;
+    try { sc.select?.(ids[0]); sc.centerOn?.(sys.x, sys.y, true); } catch (e) { console.warn('showOnMap', e); }
+    if (sc.world) for (const id of ids) {
+      const t = g.system(id); if (!t) continue; const ring = new Graphics(); ring.x = t.x; ring.y = t.y; sc.world.addChild(ring); let life = 7;
+      Anim.watch(ring, (dt, tm) => { life -= dt; ring.clear(); const k = (tm * 1.4) % 1; ring.circle(0, 0, 18 + k * 46).stroke({ width: 3, color: C.mustard, alpha: Math.max(0, (1 - k) * Math.min(1, life)) }); ring.circle(0, 0, 14).stroke({ width: 2, color: C.cream, alpha: Math.min(1, life) * 0.8 }); if (life <= 0) ring.destroy(); });
+    }
+    if (title) this.toast(`Mission target: ${title}`, 'info');
+  }
   openPause() { if (['Title', 'NewGame', 'KitDemo', 'Intro'].includes(this.sceneName)) return; this.openOverlay('Pause'); }
 
   // ------------------------------------------------------------------ error boundary
@@ -198,6 +214,7 @@ export class App {
       scenes: Object.keys(SCENES),
       overlays: Object.keys(OVERLAYS),
       goto: (n, p) => self.goto(n, p),
+      showOnMap: (ids, t) => self.showOnMap(ids, t),
       openOverlay: (n, p) => self.openOverlay(n, p),
       quickStart: (o) => self.quickStart(o),
       get errors() { return self.errors; },

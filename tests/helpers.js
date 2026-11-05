@@ -29,3 +29,6 @@ export function teleportForTest(g, id) {
 export function stationSystem(g, service = 'trade') {
   return g.state.galaxy.systems.find((s) => s.station && s.station.services.includes(service));
 }
+
+/** dock and clear any station event that pops up */
+export function dockClean(g) { const r = g.dock(); drain(g); return r; }

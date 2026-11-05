@@ -9,3 +9,18 @@
 - codex unlockedBy grammar in codex.js header ('event' | {scan:'planetType:ice'|'feature:x'} | {phenomenon} | {star} | {faction} | {visit:storyId} | {flag} | {mission}). All event {codex:} ids are covered (ids may be added later by EVENTS: tell WORLD-B).
 - Missions rely on rep-gated upgrades being granted free via reward.upgrade (concord_grant_lab, quillari_trade_licence, vesperine_harmonic_resonator, archive_index_lens, drifter_quilt_lounge, lantern_attunement, singing_hull_plating, brass_astrolabe) - all exist in upgrades.js.
 - Mission event-objective `m_ch5_finale` uses event id 'lantern_5_invitation' (exists). Engine should record resolved event ids for type:'event'.
+
+[ENGINE] package.json: `"test": "node --test tests/"` fails on Node 22 ("Cannot find module .../tests"; a directory argument is not accepted).
+Please change the script to `"test": "node --test tests/*.test.js"` (or plain `node --test`). Also handy: `"sim": "node tools/sim.mjs"` already works as-is (`npm run sim -- --runs 200 --policy cautious`).
+
+[ENGINE] CONTENT GAP (EVENTS/WORLD-B): flag `fellowship_known` is read by missions m_ch3_ledger / m_ch4_tessitura and by CHAPTERS[2].completeWhen,
+but no event or onComplete ever sets it (story.js header says "set when the Archive ledger is read"). Please add `{flag:'fellowship_known'}` to the
+Marginalia / Heart Vault investigation or landing event (or the m_ch3_ledger onComplete). tests/content.test.js has it on a KNOWN_GAPS allow-list; delete it from there once fixed.
+
+[ENGINE] Engine behaviours worth knowing (all additive to the contract):
+- Extra state fields: `state.rng` (uint32), `state.docked`, `state.evt {seen,recent}`, `state.boards`, `state.savedAt`. System may carry `investigated {phenomenon: day}`.
+- Extra Game API: `g.canRetire()`, `g.retire({anywhere})`, `g.crewForHire(sysId)`, `g.servicePrices(sysId)`, `g.itemList()`, `g.rank()`, `g.tips()`, `g.score(endingId)`, `g.isStranded()`, `g.fuelCostFor(dist)`,
+  `Game.loadSlot(slot)`, `Game.slotInfo(slot)`, `Game.legacy()`. Extra notification: `'shop' {systemId}` (fx {shop:true} after an event). `Game.load()` returns null on a bad save (see `Game.lastLoadError`).
+- pendingView() extras: `eventId, tags, summary[] (fx summary strings), outcome ('pass'|'fail'|null), choices[].skill`. In a result phase `resultText` holds the outcome and `text` the node text; show resultText.
+- Lantern chain events (`lantern_N_*`) are only eligible once flag `chapter_N` is set (CHAPTERS survey gates), so the main arc is paced by survey %.
+- Marketplace: `g.market()` also returns `services {fuel,supplies,repair}` unit prices, `cargoUsed`, `cargoMax`; goods have `buy:null` when out of stock.

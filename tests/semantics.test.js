@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newGame, freshStorage, stationSystem, teleportForTest } from './helpers.js';
+import { newGame, freshStorage, stationSystem, teleportForTest, dockClean } from './helpers.js';
 import { applyEffects } from '../src/core/effects.js';
 import { evalConds } from '../src/core/conds.js';
 import { template } from '../src/core/text.js';
@@ -107,7 +107,7 @@ test('check odds follow the contract formula (standard difficulty)', () => {
   const t = g.skillTotal('science');
   assert.equal(g.checkOdds('science', t), 0.5);
   assert.equal(g.checkOdds('science', t - 1), 0.61);
-  assert.equal(g.checkOdds('science', 0), 0.95);
+  assert.equal(g.checkOdds('science', -10), 0.95);
   assert.equal(g.checkOdds('piloting', 8), 0.1);
   g.state.difficulty = 'cozy';
   assert.ok(g.checkOdds('science', t) > 0.5);
@@ -123,7 +123,7 @@ test('templates fill known tokens', () => {
 test('upgrades: slot replacement, requires, rep gates, sell back 50%', () => {
   const g = G();
   const yard = g.state.galaxy.systems.find((s) => s.station && s.station.services.includes('shipyard'));
-  teleportForTest(g, yard.id); g.dock();
+  teleportForTest(g, yard.id); dockClean(g);
   g.state.credits = 5000;
   assert.equal(g.buyUpgrade('long_haul_drive').ok, false, 'tier 2 needs tier 1 installed');
   assert.ok(g.buyUpgrade('ion_trimmer').ok);

@@ -783,7 +783,7 @@ export class Game {
     this.state.credits -= stt.price;
     const r = Ship.installUpgrade(this.state, id);
     this.emit('sfx', { name: 'powerup' });
-    this.log('ship', `Installed ${up.name}${r.replaced ? ` (replacing ${Ship.upgradeStatus ? (IDX.upgrade[r.replaced] || {}).name : r.replaced})` : ''}.`);
+    this.log('ship', `Installed ${up.name}${r.replaced ? ` (replacing ${(IDX.upgrade[r.replaced] || {}).name || r.replaced})` : ''}.`);
     this.toast(`Installed ${up.name}`, 'good');
     this._settle();
     return { ok: true, price: stt.price, replaced: r.replaced };
@@ -911,7 +911,7 @@ export class Game {
     const g0 = this._guard(); if (g0) return g0;
     const st = this.state;
     days = Math.max(1, Math.min(10, Math.floor(Number(days) || 1)));
-    if (st.ship.supplies < 1) return { ok: false, reason: 'Not enough supplies to linger' };
+    if (st.ship.supplies < 1) { this._settle(); return { ok: false, reason: 'Not enough supplies to linger' }; }
     this.advanceDays(days, { rest: true });
     this.log('ship', `Rested ${days} day${days > 1 ? 's' : ''}.`);
     this.emit('sfx', { name: 'hum' });
