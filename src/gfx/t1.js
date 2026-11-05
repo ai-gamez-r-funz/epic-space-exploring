@@ -1,0 +1,11 @@
+import { Application, Container } from 'pixi.js';
+import { createPlanet } from './planets.js';
+const app = new Application();
+await app.init({ width: 1280, height: 520, background: 0x0b0d1e, preference: 'webgl', antialias: true });
+document.body.appendChild(app.canvas);
+const types = ['terran','ocean','desert','ice','lava','gas','barren','jungle','crystal','toxic'];
+const kids=[];
+types.forEach((t,i)=>{ const p=createPlanet({type:t,seed:i+3,radius:55,ringed:t==='gas'||t==='ice',moons:i%3,life:i%4===0?'civilized':'none'}); p.x=80+(i%5)*250; p.y=140+Math.floor(i/5)*250; app.stage.addChild(p); kids.push(p);});
+app.ticker.add(t=>kids.forEach(k=>k.update(t.deltaMS/1000)));
+window.READY=true;
+window.addEventListener('error',e=>console.log('ERR',e.message));
