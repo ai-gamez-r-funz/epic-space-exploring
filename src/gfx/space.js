@@ -25,6 +25,22 @@ export function gradRect(w, h, stops, horizontal = false) {
   const s = new Sprite(gradTex(stops, horizontal ? 256 : 4, horizontal ? 4 : 256, horizontal)); s.width = w; s.height = h; return s;
 }
 
+const streakCache = new LRU(16);
+/** soft-edged streak: head at left (x=0), fading along +x, gaussian across */
+export function streakTex(rgbCol, head = 0.9, power = 1.5) {
+  return streakCache.memo(`${rgbCol}|${head}|${power}`, () => {
+    const W = 256, H = 48, c = makeCanvas(W, H), g = c.getContext('2d'), img = g.createImageData(W, H);
+    const r = (rgbCol >> 16) & 255, gg = (rgbCol >> 8) & 255, b = rgbCol & 255;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const u = x / W, v = (y + 0.5) / H * 2 - 1;
+      const wid = 0.35 + 0.65 * u; // widens slightly toward the tail
+      const a = head * Math.pow(1 - u, power) * Math.exp(-(v * v) / (0.18 * wid * wid + 0.02)) * Math.min(1, u * 30 + 0.2);
+      const k = (y * W + x) * 4; img.data[k] = r; img.data[k + 1] = gg; img.data[k + 2] = b; img.data[k + 3] = a * 255;
+    }
+    g.putImageData(img, 0, 0); return Texture.from(c);
+  });
+}
+
 // -------------------------------------------------- starfield
 const tileCache = new LRU(24);
 function starTile(seed, layer, size, n, bright) {
@@ -208,8 +224,8 @@ function accretionTex() {
     const S = 512, c = makeCanvas(S, S), g = c.getContext('2d'), img = g.createImageData(S, S), N = makeNoise(5);
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
       const px = (x + 0.5) / S * 2 - 1, py = (y + 0.5) / S * 2 - 1, r = Math.hypot(px, py), k = (y * S + x) * 4;
-      if (r > 1 || r < 0.32) continue;
-      const u = (r - 0.32) / 0.68, ang = Math.atan2(py, px);
+      if (r > 1 || r < 0.26) continue;
+      const u = (r - 0.26) / 0.74, ang = Math.atan2(py, px);
       const swirl = N.fbm(Math.cos(ang + u * 3) * 2 + 3, Math.sin(ang + u * 3) * 2, u * 6, 4);
       let a = Math.pow(1 - u, 1.5) * sstep(0, 0.06, u) * (0.45 + swirl * 0.9);
       const dop = 0.55 + 0.45 * Math.cos(ang - Math.PI); // brighter on left side
@@ -236,10 +252,7 @@ export function createStar({ type = 'yellow', radius = 40 } = {}) {
   if (type === 'neutron') {
     const jets = [];
     for (const dir of [-1, 1]) {
-      const st = dir < 0 ? [[0, 'rgba(160,210,255,0.0)'], [0.5, 'rgba(190,225,255,0.55)'], [1, 'rgba(255,255,255,0.9)']] : [[0, 'rgba(255,255,255,0.9)'], [0.5, 'rgba(190,225,255,0.55)'], [1, 'rgba(160,210,255,0.0)']];
-      const j = new Sprite(gradTex(st, 4, 128));
-      j.anchor.set(0.5, dir > 0 ? 0 : 1); j.width = radius * 0.3; j.height = radius * 5; j.blendMode = 'add';
-      jets.push(j);
+      const j = new Sprite(streakTex(0xcfe6ff, 1, 1.1)); j.anchor.set(0, 0.5); j.rotation = dir * Math.PI / 2; j.width = radius * 3.6; j.height = radius * 0.7; j.blendMode = 'add'; jets.push(j);
     }
     const holder = new Container(); holder.addChild(...jets); holder.rotation = 0.5;
     const s = singleStar('neutron', radius * 0.32, true);
@@ -249,20 +262,18 @@ export function createStar({ type = 'yellow', radius = 40 } = {}) {
   }
   if (type === 'blackhole') {
     const halo = glowSprite(0xff8a3a, radius * 4, 0.25, 2.4);
-    const back = new Sprite(accretionTex()); back.anchor.set(0.5); back.width = back.height = radius * 4.2; back.blendMode = 'add';
+    const back = new Sprite(accretionTex()); back.anchor.set(0.5); back.width = back.height = radius * 5; back.blendMode = 'add';
     const holder = new Container(); holder.rotation = -0.25; holder.scale.y = 0.26; holder.addChild(back);
-    const lens = new Sprite(accretionTex()); lens.anchor.set(0.5); lens.width = lens.height = radius * 2.9; lens.blendMode = 'add'; lens.alpha = 0.8; lens.rotation = 0;
-    const lensHold = new Container(); lensHold.rotation = -0.25; lensHold.addChild(lens); lensHold.scale.set(1, 0.9);
     const ring = new Graphics().circle(0, 0, radius * 1.08).stroke({ width: radius * 0.1, color: 0xffd8a0, alpha: 0.85 });
     const ring2 = new Graphics().circle(0, 0, radius * 1.08).stroke({ width: radius * 0.3, color: 0xff9a50, alpha: 0.2 });
     const hole = new Graphics().circle(0, 0, radius).fill(0x000000);
     // front half of disc passes in front of the hole
-    const frontDisc = new Sprite(accretionTex()); frontDisc.anchor.set(0.5); frontDisc.width = frontDisc.height = radius * 4.2; frontDisc.blendMode = 'add';
+    const frontDisc = new Sprite(accretionTex()); frontDisc.anchor.set(0.5); frontDisc.width = frontDisc.height = radius * 5; frontDisc.blendMode = 'add';
     const fh = new Container(); fh.rotation = -0.25; fh.scale.y = 0.26; fh.addChild(frontDisc);
     const m = new Graphics().rect(-radius * 3, 0, radius * 6, radius * 3).fill(0xffffff);
     m.rotation = -0.25; fh.mask = m; root.addChild(m);
-    root.addChild(halo, holder, ring2, hole, ring, lensHold, fh);
-    root.update = (dt) => { t += dt; back.rotation += dt * 0.35; frontDisc.rotation = back.rotation; lens.rotation -= dt * 0.2; halo.alpha = 0.22 + 0.05 * Math.sin(t * 0.8); ring.alpha = 0.75 + 0.15 * Math.sin(t * 1.4); };
+    root.addChild(halo, holder, ring2, hole, ring, fh);
+    root.update = (dt) => { t += dt; back.rotation += dt * 0.35; frontDisc.rotation = back.rotation; halo.alpha = 0.22 + 0.05 * Math.sin(t * 0.8); ring.alpha = 0.75 + 0.15 * Math.sin(t * 1.4); };
     return root;
   }
   const s = singleStar(type, radius); root.addChild(s);

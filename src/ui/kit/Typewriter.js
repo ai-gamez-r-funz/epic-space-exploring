@@ -23,12 +23,12 @@ export class Typewriter extends Container {
     const st = this.t.style.clone(); st.wordWrap = true; st.wordWrapWidth = this.o.w; st.breakWords = true;
     const m = CanvasTextMetrics.measureText(String(text), st);
     this.full = m.lines.join('\n'); this.pos = 0; this.done = !this.full.length; this._acc = 0;
-    this.t.style = st; this.t.style.wordWrap = false; this.t.text = ''; this._height = m.height; this._lines = m.lines;
+    this.t.style = st; this.t.style.wordWrap = false; this.t.text = ''; this._th = m.height; this._lines = m.lines;
     this.finished = new Promise((r) => (this._fin = r));
     if (this.done) this._fin();
-    this.hitArea = { contains: (x, y) => x >= 0 && x <= this.o.w && y >= 0 && y <= this._height };
+    this.hitArea = { contains: (x, y) => x >= 0 && x <= this.o.w && y >= 0 && y <= this._th };
   }
-  get textHeight() { return this._height; }
+  get textHeight() { return this._th; }
   skip() { if (this.done) return false; this.pos = this.full.length; this.t.text = this.full; this._finish(); return true; }
   _finish() { this.done = true; this.o.onDone?.(); this._fin?.(); }
   _tick(dt) {

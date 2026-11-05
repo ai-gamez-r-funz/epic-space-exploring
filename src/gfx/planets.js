@@ -28,7 +28,7 @@ export const ATMO = {
   terran: [0x7fc4ff, 0.9], ocean: [0x6fb8ff, 1.0], desert: [0xf0b58a, 0.7], ice: [0xcfe8ff, 0.8], lava: [0xff7a4a, 0.55],
   gas: [0xf0d8a8, 0.65], barren: [0x9aa3c7, 0.22], jungle: [0x8fe0a0, 0.9], crystal: [0xe0b0ff, 0.8], toxic: [0xd4e060, 0.85],
 };
-const CLOUD_TINT = { terran: 0xffffff, ocean: 0xffffff, desert: 0xf4dcc0, ice: 0xf4faff, jungle: 0xffffff, toxic: 0xe8f08a, lava: 0x6a4040 };
+const CLOUD_TINT = { terran: 0xffffff, ocean: 0xffffff, desert: 0xf4dcc0, ice: 0xf4faff, jungle: 0xffffff, toxic: 0xd8e07a, lava: 0x6a4040 };
 
 const GAS_PALETTES = [
   [[0, 0xf3e3c3], [0.25, 0xd9a86a], [0.45, 0xb5683e], [0.62, 0xe8cfa0], [0.8, 0x9a6a4a], [1, 0xf1dcb4]],           // jupiter
@@ -115,10 +115,10 @@ function makeSurface(type, seed, life) {
         const h = N.fbm(x * 3 + off[0], y * 3, z * 3 + off[1], 6);
         base(h, o.rgb);
         const dark = sstep(0.62, 0.8, N2.fbm(x * 2 + 4, y * 2, z * 2, 4));
-        mixc(o.rgb, C(0x5f98c4), dark * 0.5);
+        mixc(o.rgb, C(0x6a9cc8), dark * 0.7);
         const r1 = N.ridged(x * 3.2 + 8, y * 3.2, z * 3.2 + off[2], 4);
-        const crack = sstep(0.9, 0.975, r1);
-        mixc(o.rgb, C(0x4a86b8), crack * 0.75);
+        const crack = sstep(0.82, 0.95, r1);
+        mixc(o.rgb, C(0x3a76a8), crack * 0.85);
         const r2 = N2.ridged(x * 7, y * 7, z * 7, 2);
         mixc(o.rgb, C(0x8fbce0), sstep(0.93, 0.99, r2) * 0.5);
         o.spec = 0.45; o.emis = 0;
@@ -191,9 +191,9 @@ function makeSurface(type, seed, life) {
       };
     }
     case 'crystal': {
-      const cols = [C(0x8f6ad6), C(0xd470b8), C(0x5fc6e0), C(0xb8a0f0), C(0xf0e4ff), C(0x6a7ae0)];
+      const cols = [C(0x6a4ab8), C(0xa8509a), C(0x3f9ec0), C(0x8a78d8), C(0xc8b8f0), C(0x4a5ab8)];
       const hs = (a, b, c) => { let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
-      const SC = 4.2;
+      const SC = 3.2;
       return (x, y, z, lat, lon, o) => {
         const px = x * SC + off[0], py = y * SC + off[1], pz = z * SC + off[2];
         const ix = Math.floor(px), iy = Math.floor(py), iz = Math.floor(pz);
@@ -204,24 +204,24 @@ function makeSurface(type, seed, life) {
           const d = (px - fx) ** 2 + (py - fy) ** 2 + (pz - fz) ** 2;
           if (d < f1) { f2 = f1; f1 = d; id = hs(cx + 11, cy + 13, cz + 17); } else if (d < f2) f2 = d;
         }
-        const col = cols[(id * cols.length) | 0], br = 0.55 + 0.45 * hs(Math.floor(id * 977), 5, 9);
+        const col = cols[(id * cols.length) | 0], br = 0.6 + 0.5 * hs(Math.floor(id * 977), 5, 9);
         const gx = N.fbm(x * 3, y * 3, z * 3, 3);
         o.rgb[0] = col[0] * br * (0.8 + gx * 0.4); o.rgb[1] = col[1] * br * (0.8 + gx * 0.4); o.rgb[2] = col[2] * br * (0.8 + gx * 0.4);
-        const edge = sstep(0.16, 0.0, Math.sqrt(f2) - Math.sqrt(f1));
-        mixc(o.rgb, C(0xfff0ff), edge * 0.75);
-        o.emis = edge * 0.9; o.spec = 0.9; o.cloud = 0;
+        const edge = sstep(0.1, 0.0, Math.sqrt(f2) - Math.sqrt(f1));
+        mixc(o.rgb, C(0xe8d8ff), edge * 0.4);
+        o.emis = edge * 0.35 + br * 0.08; o.spec = 0.8; o.cloud = 0;
         cityLayer(x, y, z, edge < 0.2 && Math.abs(y) < 0.8, o);
       };
     }
     case 'toxic': {
-      const pal = ramp([[0, 0x4a2f5e], [0.25, 0x5b7a2c], [0.5, 0xb7d94a], [0.75, 0xe6d24a], [1, 0xf4efa0]]);
+      const pal = ramp([[0, 0x3a2350], [0.25, 0x4a6a2a], [0.5, 0x8fb83a], [0.75, 0xc8c43a], [1, 0xe8e68a]]);
       return (x, y, z, lat, lon, o) => {
         const qx = N.fbm(x * 1.8 + off[0], y * 1.8, z * 1.8, 4), qy = N.fbm(x * 1.8, y * 1.8 + 5, z * 1.8 + 2, 4);
         const r = N2.fbm(x * 2 + qx * 3, y * 2 + qy * 3, z * 2 + off[1], 5);
         pal(r * 1.25 - 0.1, o.rgb);
         const sw = N2.ridged(x * 3 + qx * 2, y * 3 + qy * 2, z * 3, 3);
         mixc(o.rgb, C(0x3c2a4a), sstep(0.82, 0.96, sw) * 0.5);
-        o.cloud = sstep(0.5, 0.78, N.fbm(x * 2.6 + qx * 2.5, y * 3 + qy * 2.5, z * 2.6, 5)) * 0.8;
+        o.cloud = sstep(0.55, 0.8, N.fbm(x * 2.6 + qx * 2.5, y * 3 + qy * 2.5, z * 2.6, 5)) * 0.55;
         o.emis = 0; o.spec = 0.1;
         cityLayer(x, y, z, r < 0.5, o);
       };

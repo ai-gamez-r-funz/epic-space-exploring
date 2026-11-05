@@ -48,3 +48,10 @@ export function anchor(obj, rect, where = 'tl', { dx = 0, dy = 0 } = {}) {
   obj.y = Math.round((vy === 't' ? 0 : vy === 'b' ? rect.h - oh : (rect.h - oh) / 2) + dy);
   return obj;
 }
+
+/** centerOn(obj, cx, cy) — position obj so its LOCAL BOUNDS are centred on (cx,cy). Handy for icons (origin may differ). Returns obj. */
+export function centerOn(obj, cx, cy) {
+  const b = obj.getLocalBounds();
+  obj.x = cx - (b.x + b.width / 2) * (obj.scale?.x ?? 1); obj.y = cy - (b.y + b.height / 2) * (obj.scale?.y ?? 1);
+  return obj;
+}

@@ -64,7 +64,7 @@ export class ChoiceList extends Container {
       bg.roundRect(1.5, 1.5, w - 3, rh - 3, 11).fill(enabled ? grad([[0, hov ? 0x4a52a8 : 0x353b86], [1, hov ? 0x2e3478 : 0x232859]]) : { color: 0x181b40 });
       if (enabled && hov) bg.roundRect(0, 0, w, rh, 12).stroke({ width: 2, color: C.brassLight, alpha: 0.9 });
     };
-    row.paint(false); row.addChild();
+    row.paint(false);
     // number badge
     const nb = new Graphics(); nb.circle(0, 0, 14).fill({ color: enabled ? C.mustard : 0x3b3f78 }); nb.circle(0, 0, 14).stroke({ width: 2, color: C.brassDark });
     nb.x = 24; nb.y = rh / 2; row.addChild(nb);

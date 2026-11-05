@@ -1,0 +1,223 @@
+// App: Pixi Application, letterboxed 1280×720 stage, scene manager, overlay stack, input, error boundary, debug handle.
+import { Application, Container, Graphics } from 'pixi.js';
+import { W, H, C, Display, loadFonts } from './kit/theme.js';
+import { Anim } from './kit/anim.js';
+import { Input } from './kit/input.js';
+import { Tooltip } from './kit/Tooltip.js';
+import { Toasts } from './kit/Toast.js';
+import { Modal } from './kit/Modal.js';
+import { Fader } from './kit/Fader.js';
+import { Panel } from './kit/Panel.js';
+import { Button } from './kit/Button.js';
+import { Label } from './kit/Label.js';
+import { S, loadServices, sfx } from './services.js';
+import { OVERLAYS } from './overlays/index.js';
+import { Title } from './scenes/Title.js';
+import { NewGame } from './scenes/NewGame.js';
+import { Intro } from './scenes/Intro.js';
+import { Bridge } from './scenes/Bridge.js';
+import { GalaxyMap } from './scenes/GalaxyMap.js';
+import { KitDemo } from './dev/KitDemo.js';
+
+const SCENES = { Title, NewGame, Intro, Bridge, GalaxyMap, KitDemo };
+const MUSIC = { Title: 'title', NewGame: 'title', Intro: 'wonder', Bridge: 'bridge', GalaxyMap: 'map' };
+
+export class App {
+  constructor() {
+    this.game = null; this.scene = null; this.sceneName = null; this.busy = false;
+    this._changedFns = new Set(); this._offs = []; this.overlays = []; this._eventQueued = false; this._glitch = null; this.errors = [];
+    this.S = S;
+  }
+
+  async init() {
+    await Promise.all([loadFonts(), loadServices()]);
+    const app = this.pixi = new Application();
+    await app.init({ width: W, height: H, background: C.ink, antialias: true, resolution: 1, autoDensity: false, preference: 'webgl', powerPreference: 'high-performance' });
+    const host = document.getElementById('game') || document.body;
+    this.canvas = app.canvas; host.appendChild(app.canvas);
+    Object.assign(app.canvas.style, { position: 'absolute', touchAction: 'none' });
+    app.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    app.stage.eventMode = 'static';
+    const L = this.layers = {};
+    for (const n of ['scene', 'overlay', 'toast', 'tooltip', 'fader', 'glitch']) { L[n] = new Container(); L[n].label = n; app.stage.addChild(L[n]); }
+    this.fader = new Fader(); L.fader.addChild(this.fader);
+    Modal.layer = L.overlay; Toasts.init(L.toast); Tooltip.init(L.tooltip);
+    Anim.onError = (e) => this.fail(e);
+    Input.init();
+    this.popBase = Input.pushLayer({ root: L.scene, name: 'scene' });
+    try { S.gfx.init(app); } catch (e) { console.warn('gfx.init failed', e); }
+    this._fit(); window.addEventListener('resize', () => this._fit()); window.addEventListener('orientationchange', () => setTimeout(() => this._fit(), 120));
+    const unlock = () => { try { S.audio.init(); } catch (e) { /* */ } };
+    window.addEventListener('pointerdown', unlock, { once: true, capture: true }); window.addEventListener('keydown', unlock, { once: true, capture: true });
+    app.ticker.add((t) => this._frame(Math.min(0.1, t.deltaMS / 1000)));
+    window.addEventListener('error', (e) => this.fail(e.error || e.message));
+    window.addEventListener('unhandledrejection', (e) => this.fail(e.reason));
+    this._debugHandle();
+    return this;
+  }
+
+  /** Letterbox: CSS-scale the canvas to fit the window and render at dpr*scale so text/graphics stay crisp. */
+  _fit() {
+    const iw = window.innerWidth, ih = window.innerHeight; const scale = Math.min(iw / W, ih / H);
+    const dpr = window.devicePixelRatio || 1; const res = Math.max(0.75, Math.min(3, dpr * scale));
+    Display.scale = scale; Display.dpr = dpr; Display.res = res; Display.touch = matchMedia('(pointer: coarse)').matches;
+    this.pixi.renderer.resize(W, H, res);
+    const s = this.canvas.style; s.width = Math.round(W * scale) + 'px'; s.height = Math.round(H * scale) + 'px';
+    s.left = Math.round((iw - W * scale) / 2) + 'px'; s.top = Math.round((ih - H * scale) / 2) + 'px';
+    this.scene?.resize?.();
+    if (ih > iw * 1.1 && iw < 700 && !this._rotHint) { this._rotHint = true; setTimeout(() => Toasts.push('Tip: rotate your device for a bigger bridge.', { tone: 'info', ms: 5000 }), 1500); }
+  }
+
+  _frame(dt) {
+    try {
+      Anim.step(dt);
+      if (!this._glitch) this.scene?.update?.(dt);
+    } catch (e) { this.fail(e); }
+  }
+
+  // ------------------------------------------------------------------ game wiring
+  setGame(g) {
+    this._offs.forEach((f) => f()); this._offs = []; this.game = g;
+    if (!g) return;
+    let hadPending = !!g.state.pending;
+    this._offs.push(
+      g.on('changed', () => {
+        const pending = !!g.state.pending;
+        for (const f of [...this._changedFns]) { try { f(); } catch (e) { this.fail(e); } }
+        const ev = this.overlays.find((o) => o instanceof OVERLAYS.EventDialog);
+        if (ev) ev.refresh?.();
+        if (hadPending && !pending) this.autosave();
+        hadPending = pending;
+      }),
+      g.on('event', () => this.openEvent()),
+      g.on('toast', (t) => Toasts.push(t.text, { tone: t.tone })),
+      g.on('sfx', (s) => sfx(s.name)),
+      g.on('arrive', () => this.autosave()),
+      g.on('discovery', (d) => { Toasts.push(d.text || 'Discovery logged.', { tone: 'good', icon: 'star', ms: 5000 }); sfx('discovery'); }),
+      g.on('ended', (e) => { setTimeout(() => this.openOverlay('EndScreen', { ending: e?.ending || g.state.ending }), 400); }),
+    );
+  }
+  onChanged(fn) { this._changedFns.add(fn); return () => this._changedFns.delete(fn); }
+  autosave() { try { if (this.game && S.Game.writeSave) S.Game.writeSave(this.game, 'auto'); } catch (e) { console.warn('autosave failed', e); } }
+  saveTo(slot) { try { return !!S.Game.writeSave(this.game, slot); } catch (e) { return false; } }
+  newGame(opts) { const g = S.Game.create(opts); this.setGame(g); return g; }
+  loadSlot(slot = 'auto') {
+    try {
+      const raw = S.Game.readSave(slot); if (!raw) return null;
+      const g = typeof raw === 'string' ? S.Game.load(raw) : (raw.state ? raw : S.Game.load(JSON.stringify(raw)));
+      this.setGame(g); return g;
+    } catch (e) { console.warn('load failed', e); this.toast('That save could not be read.', 'bad'); return null; }
+  }
+  hasSave(slot = 'auto') { try { return !!S.Game.hasSave(slot); } catch (e) { return false; } }
+  quickStart(opts = {}) { return this.newGame({ seed: 4242, captainName: 'Rhea Okonkwo', shipName: 'ISV Halcyon', difficulty: 'standard', ...opts }); }
+
+  // ------------------------------------------------------------------ helpers for scenes/overlays
+  toast(text, tone = 'info', o = {}) { Toasts.push(text, { tone, ...o }); }
+  sfx(n, o) { sfx(n, o); }
+  music(m) { try { S.audio.music(m); } catch (e) { /* */ } }
+  get sceneBlocked() { return this.busy || this.overlays.length > 0; }
+
+  // ------------------------------------------------------------------ scenes
+  async goto(name, params = {}, { kind = 'fade', dir = 'right', ms = 300 } = {}) {
+    const Cls = SCENES[name]; if (!Cls) throw new Error('Unknown scene ' + name);
+    if (this.busy) return;
+    if (name === 'Bridge' || name === 'GalaxyMap') { if (!this.game) this.quickStart(); }
+    this.busy = true;
+    try {
+      if (this.scene) await this.fader.out({ kind, dir, ms });
+      this._glitch?.destroy({ children: true }); this._glitch = null;
+      this.overlays.slice().forEach((o) => o.close?.(true));
+      if (this.scene) { try { this.scene.destroy(); } catch (e) { console.warn(e); } this.scene = null; }
+      Tooltip.hide();
+      const sc = new Cls(this); this.layers.scene.addChild(sc.view);
+      this.scene = sc; this.sceneName = name;
+      await sc.enter(params);
+      this.music(MUSIC[name] || 'bridge');
+      await this.fader.in({ ms: ms + 40 });
+    } catch (e) { this.fail(e); await this.fader.in({ ms: 100 }).catch(() => {}); }
+    this.busy = false; this.holdEvents = false;
+    this._flush();
+  }
+  _flush() { if (this._eventQueued && this.game?.state.pending) { this._eventQueued = false; this.openEvent(); } else this._eventQueued = false; }
+
+  // ------------------------------------------------------------------ overlays
+  openOverlay(name, params = {}) {
+    const Cls = OVERLAYS[name]; if (!Cls) { console.warn('no overlay', name); return null; }
+    const existing = this.overlays.find((o) => o instanceof Cls); if (existing) return existing;
+    const o = new Cls(this); this.overlays.push(o);
+    o.onClosed = () => { const i = this.overlays.indexOf(o); if (i >= 0) this.overlays.splice(i, 1); this.scene?.onOverlayClosed?.(name); };
+    try { o.open(params); } catch (e) { const i = this.overlays.indexOf(o); if (i >= 0) this.overlays.splice(i, 1); this.fail(e); }
+    return o;
+  }
+  closeOverlay(name) { this.overlays.filter((o) => !name || o instanceof OVERLAYS[name]).forEach((o) => o.close()); }
+  /** Called when the engine says an event is pending. Hook for src/ui/overlays/EventDialog.js */
+  openEvent() {
+    if (!this.game?.state.pending) return;
+    if (this.busy || this.holdEvents || !this.scene) { this._eventQueued = true; return; }
+    this.openOverlay('EventDialog', {});
+  }
+  openPause() { if (['Title', 'NewGame', 'KitDemo', 'Intro'].includes(this.sceneName)) return; this.openOverlay('Pause'); }
+
+  // ------------------------------------------------------------------ error boundary
+  fail(err) {
+    const msg = String(err?.message || err || 'unknown error');
+    console.error('[halcyon] console glitch:', err);
+    this.errors.push({ msg, stack: err?.stack || '', t: Date.now() });
+    if (this._glitch || this.errors.length > 25) return;
+    try { this._showGlitch(msg, err?.stack || ''); } catch (e2) { this._domGlitch(msg); }
+  }
+  _showGlitch(msg, stack) {
+    const c = this._glitch = new Container(); this.layers.glitch.addChild(c);
+    c.addChild(new Graphics().rect(0, 0, W, H).fill({ color: 0x05060f, alpha: 0.82 }));
+    c.eventMode = 'static';
+    const p = new Panel({ w: 640, h: 360, title: 'CONSOLE GLITCH', tone: 'coral', rivets: true, lights: true });
+    p.x = (W - 640) / 2; p.y = (H - 360) / 2; c.addChild(p);
+    p.content.addChild(new Label({ text: 'Something on the bridge console has hiccuped.', preset: 'bodyB', size: 22, w: 590, color: C.cream }));
+    const l2 = new Label({ text: 'The crew assures you it is nothing serious, and has put the kettle on. Your voyage is safe; you can carry on, or reboot the console.', preset: 'body', w: 590, color: C.cream }); l2.y = 40; p.content.addChild(l2);
+    const l3 = new Label({ text: msg.slice(0, 220), preset: 'mono', size: 12, w: 590, color: 0xffd9c9, maxLines: 3 }); l3.y = 120; p.content.addChild(l3);
+    const close = () => { c.destroy({ children: true }); this._glitch = null; this.errors.length = Math.min(this.errors.length, 10); };
+    const mk = (label, x, variant, fn) => { const b = new Button({ label, w: 180, h: 44, variant, onClick: fn }); b.x = x; b.y = 235; p.content.addChild(b); };
+    mk('Carry on', 0, 'primary', close);
+    mk('Back to title', 195, 'brass', () => { close(); this.goto('Title'); });
+    mk('Reboot console', 390, 'coral', () => location.reload());
+  }
+  _domGlitch(msg) {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0b0d1e;color:#f2e3b8;font:18px system-ui;z-index:99;text-align:center;padding:20px';
+    d.innerHTML = '<h2>CONSOLE GLITCH</h2><p>Something hiccuped. The crew has put the kettle on.</p><button style="font:18px system-ui;padding:10px 20px" onclick="location.reload()">Reboot console</button><pre style="opacity:.6;max-width:80vw;white-space:pre-wrap">' + msg.replace(/</g, '&lt;') + '</pre>';
+    document.body.appendChild(d);
+  }
+
+  _debugHandle() {
+    const self = this;
+    window.__halcyon = {
+      app: self,
+      get game() { return self.game; },
+      get scene() { return self.sceneName; },
+      get state() { return self.game?.state; },
+      scenes: Object.keys(SCENES),
+      overlays: Object.keys(OVERLAYS),
+      goto: (n, p) => self.goto(n, p),
+      openOverlay: (n, p) => self.openOverlay(n, p),
+      quickStart: (o) => self.quickStart(o),
+      get errors() { return self.errors; },
+      services: S, anim: Anim,
+      get busy() { return self.busy; },
+    };
+  }
+}
+
+export async function boot() {
+  const app = new App();
+  try {
+    await app.init();
+    const q = new URLSearchParams(location.search);
+    const first = q.get('scene') || 'Title';
+    if (q.get('quick') === '1') app.quickStart();
+    document.getElementById('boot')?.remove();
+    await app.goto(first, {}, { ms: 400 });
+  } catch (e) {
+    console.error(e); app._domGlitch(String(e?.message || e)); document.getElementById('boot')?.remove();
+  }
+  return app;
+}

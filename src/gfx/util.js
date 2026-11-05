@@ -91,7 +91,7 @@ export function glowTexture(colour = 0xffffff, size = 128, hard = 0.0, power = 2
     const t = i / steps;
     const a = Math.pow(1 - t, power);
     const [r, gg, b] = [(colour >> 16) & 255, (colour >> 8) & 255, colour & 255];
-    gr.addColorStop(hard + t * (1 - hard), `rgba(${r},${gg},${b},${a.toFixed(3)})`);
+    gr.addColorStop(t, `rgba(${r},${gg},${b},${a.toFixed(3)})`);
   }
   void col;
   g.fillStyle = gr; g.fillRect(0, 0, size, size);

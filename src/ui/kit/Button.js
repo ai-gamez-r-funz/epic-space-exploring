@@ -62,10 +62,11 @@ export class Button extends Container {
     const pad = 12; let iconSz = o.iconSize || (o.vertical ? Math.min(34, this.h * 0.42) : Math.min(26, this.h - 14));
     if (o.icon) { this.iconObj = S.gfx.icon(o.icon, { size: iconSz, color: v.text }); this.content.addChild(this.iconObj); }
     if (o.label != null && o.label !== '') {
-      this.labelObj = new Label({ text: o.label, preset: 'button', size: o.fontSize, color: v.text, upper: o.upper !== false, w: o.vertical ? this.w - 10 : undefined, fit: true, align: o.vertical ? 'center' : 'left', h: o.vertical ? 20 : undefined });
-      if (!o.vertical) { // fit horizontally
+      if (o.vertical) this.labelObj = new Label({ text: o.label, preset: 'button', size: o.fontSize, color: v.text, upper: o.upper !== false, w: this.w - 10, fit: true, align: 'center', h: 20 });
+      else {
+        this.labelObj = new Label({ text: o.label, preset: 'button', size: o.fontSize, color: v.text, upper: o.upper !== false });
         const avail = this.w - pad * 2 - (this.iconObj ? iconSz + 8 : 0) - (o.hotkey ? 14 : 0);
-        this.labelObj.setOpts({ w: avail, fit: true, align: o.align || (this.iconObj ? 'left' : 'center') });
+        if (this.labelObj.textWidth > avail) this.labelObj.setOpts({ w: avail, fit: true });
       }
       this.content.addChild(this.labelObj);
     }
@@ -77,12 +78,12 @@ export class Button extends Container {
       if (this.iconObj) { this._placeIcon(this.iconObj, this.w / 2, y + iconSz / 2); y += iconSz + gap; }
       if (this.labelObj) { this.labelObj.x = 5; this.labelObj.y = y; }
     } else {
-      const lw = this.labelObj ? Math.min(this.labelObj.textWidth, this.labelObj.opts.w || 999) : 0;
+      const lw = this.labelObj ? this.labelObj.textWidth : 0;
       const total = (this.iconObj ? iconSz + (lw ? 8 : 0) : 0) + lw;
       const centered = (o.align || 'center') === 'center';
       let x = centered ? (this.w - total) / 2 : pad;
       if (this.iconObj) { this._placeIcon(this.iconObj, x + iconSz / 2, this.h / 2); x += iconSz + 8; }
-      if (this.labelObj) { this.labelObj.x = x; this.labelObj.y = (this.h - this.labelObj.textHeight) / 2; this.labelObj.setOpts({ align: 'left', w: undefined }); }
+      if (this.labelObj) { this.labelObj.x = x; this.labelObj.y = Math.round((this.h - this.labelObj.textHeight) / 2); }
     }
     if (o.hotkey) {
       this.badge?.destroy({ children: true });

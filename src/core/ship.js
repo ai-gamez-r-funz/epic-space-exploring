@@ -129,7 +129,7 @@ export function checkOdds(state, skill, diff, opts = {}) {
     if (b.trait === 'steady_hands' && (skill === 'medicine' || skill === 'engineering')) bonus += 0.05;
     if (b.trait === 'bluntly_literal' && skill === 'diplomacy' && (opts.faction === 'archivists' || opts.species === 'archivist')) total += 1;
   }
-  return clamp(0.5 + 0.11 * (total - diff) + bonus, 0.1, 0.95);
+  return Math.round(clamp(0.5 + 0.11 * (total - diff) + bonus, 0.1, 0.95) * 100) / 100;
 }
 
 // ---- upgrades ----------------------------------------------------------------------------------------------

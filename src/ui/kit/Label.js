@@ -54,9 +54,9 @@ export class Label extends Container {
       }
       if (o.maxLines && tooBig() && !o.fit) { /* ellipsis fallback */ }
     }
-    this._position();
+    this._place();
   }
-  _position() {
+  _place() {
     const o = this.opts; const t = this.t; const w = o.w || t.width;
     if (o.align === 'center') t.x = (w - t.width) / 2; else if (o.align === 'right') t.x = w - t.width; else t.x = 0;
     const h = o.h || t.height;

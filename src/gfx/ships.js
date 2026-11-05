@@ -29,8 +29,8 @@ function halcyon(root) {
     g.circle(x + len / 2 - 3, y, h * 0.3).fill({ color: P.teal, alpha: 0.9 });
   };
   // rear pod + pylon
-  g.poly([-52, -12, -34, -12, -42, -24, -62, -24]).fill(0x8a6a2a);
-  pod(-62, -30, 72, 14, 0xb88f3a, P.teal, 0xef6f5e);
+  g.poly([-56, -8, -22, -8, -30, -20, -58, -20]).fill(0x8a6a2a);
+  pod(-46, -27, 70, 14, 0xb88f3a, P.teal, 0xef6f5e);
   // hull
   g.ellipse(0, 3, 63, 15).fill(0x8a6a2a);
   g.ellipse(0, 0, 62, 15).fill(0xd9a441);
@@ -55,26 +55,20 @@ function halcyon(root) {
   g.poly([-27, -72, -17, -72, -22, -77]).fill(0xd9a441);
   g.circle(-22, -79, 1.5).fill(0xd9a441);
   // front pod + pylon
-  g.poly([-46, 14, -26, 14, -30, 26, -52, 26]).fill(0xb98a30);
-  pod(-62, 33, 74, 15, 0xe2b24a, P.coral, 0x3fc1b0);
+  g.poly([-58, 8, -20, 8, -24, 21, -58, 21]).fill(0xc99a3a);
+  g.poly([-58, 8, -20, 8, -22, 12, -58, 12]).fill({ color: 0xffffff, alpha: 0.2 });
+  pod(-46, 29, 74, 15, 0xe2b24a, P.coral, 0x3fc1b0);
   root.addChild(g);
   const lanternGlow = glowSprite(0xffd070, 26, 0.85, 2); lanternGlow.position.set(-22, -66); root.addChild(lanternGlow);
   const f1 = flame(34, 9, 0x8fe0ff), f2 = flame(36, 10, 0x8fe0ff);
-  f1.position.set(-99, -30); f2.position.set(-99, 33); root.addChild(f1, f2);
+  f1.position.set(-81, -27); f2.position.set(-83, 29); root.addChild(f1, f2);
   const l1 = light(40, 2, P.coral, 2), l2 = light(-10, -12.5, 0x7fd18b, 1.6), l3 = light(-30, 0, P.mustard, 1.6); root.addChild(l1, l2, l3);
   return { flames: [f1, f2], blink: [[l1, 1.3], [l2, 0.9], [l3, 2.1]], glow: lanternGlow, bounds: 150 };
 }
 
 function quillari(root) {
   const g = new Graphics();
-  // tail/crest feathers fan
   const fan = [[-0.55, 0xe8b94a], [-0.3, 0x3fc1b0], [-0.05, 0xef6f5e], [0.2, 0x3fc1b0], [0.45, 0xe8b94a]];
-  for (const [a, c] of fan) {
-    g.ellipse(-50, 0, 46, 7).fill({ color: c, alpha: 0.92 });
-    g.ellipse(-50, 0, 46, 7).stroke({ width: 1, color: 0xf2e3b8, alpha: 0.4 });
-    const last = g.context ? 0 : 0; void last;
-  }
-  g.clear();
   for (const [a, c] of fan) {
     const gg = new Graphics(); gg.ellipse(-44, 0, 44, 6.5).fill(c); gg.ellipse(-44, 0, 44, 6.5).stroke({ width: 1, color: 0xf2e3b8, alpha: 0.45 }); gg.ellipse(-52, 0, 32, 1.2).fill({ color: 0xffffff, alpha: 0.35 });
     gg.pivot.set(-6, 0); gg.rotation = a * 0.9; gg.position.set(-6, 0); root.addChild(gg);

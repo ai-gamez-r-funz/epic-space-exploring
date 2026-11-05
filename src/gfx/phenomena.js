@@ -1,6 +1,6 @@
 import { Container, Sprite, Graphics, Texture } from 'pixi.js';
 import { rng, makeNoise, LRU, makeCanvas, glowSprite, TAU, hashStr, clamp, lerp, animated } from './util.js';
-import { gradTex, nebulaTexture } from './space.js';
+import { gradTex, nebulaTexture, streakTex } from './space.js';
 import { palette } from './palette.js';
 
 const cache = new LRU(24);
@@ -35,7 +35,7 @@ function spiralTex() {
     g.putImageData(img, 0, 0); return Texture.from(c);
   });
 }
-function beamTex() { return gradTex([[0, 'rgba(255,255,255,0)'], [0.08, 'rgba(210,235,255,0.9)'], [1, 'rgba(120,180,255,0)']], 128, 4, true); }
+function beamTex() { return streakTex(0xd8ecff, 0.95, 0.9); }
 
 function rockPoly(R, r) {
   const n = R.int(7, 10), pts = [];
@@ -64,7 +64,7 @@ export function createPhenomenon(kind, { size = 120 } = {}) {
   const seedN = hashStr(kind);
   switch (kind) {
     case 'nebula': {
-      const a = new Sprite(cloudTex(seedN, [230, 110, 170], [90, 190, 200])), b = new Sprite(cloudTex(seedN + 1, [120, 90, 210], [240, 170, 120])), c = new Sprite(cloudTex(seedN + 2, [90, 200, 190], [250, 220, 170]));
+      const a = new Sprite(cloudTex(seedN, [255, 120, 180], [90, 210, 230])), b = new Sprite(cloudTex(seedN + 1, [120, 90, 210], [240, 170, 120])), c = new Sprite(cloudTex(seedN + 2, [90, 200, 190], [250, 220, 170]));
       for (const [sp, k, al] of [[a, 2.1, 0.9], [b, 1.7, 0.75], [c, 1.25, 0.6]]) { sp.anchor.set(0.5); sp.width = sp.height = size * k * 0.75; sp.alpha = al; }
       b.blendMode = 'add'; c.blendMode = 'add';
       root.addChild(a, b, c);
@@ -75,7 +75,7 @@ export function createPhenomenon(kind, { size = 120 } = {}) {
     case 'pulsar': {
       const halo = glowSprite(0x9cc8ff, s * 1.1, 0.5, 2);
       const beams = new Container();
-      for (const d of [0, Math.PI]) { const b = new Sprite(beamTex()); b.anchor.set(0, 0.5); b.width = s * 2.4; b.height = s * 0.28; b.rotation = d; b.blendMode = 'add'; beams.addChild(b); }
+      for (const d of [0, Math.PI]) { const b = new Sprite(beamTex()); b.anchor.set(0, 0.5); b.width = s * 2.6; b.height = s * 0.34; b.rotation = d; b.blendMode = 'add'; beams.addChild(b); }
       const rings = []; for (let i = 0; i < 3; i++) { const g = new Graphics().circle(0, 0, s * 0.3).stroke({ width: 1.5, color: 0xbcdcff, alpha: 0.5 }); rings.push(g); root.addChild(g); }
       const core = glowSprite(0xffffff, s * 0.22, 1, 1.4, 0.2);
       root.addChild(halo, beams, core);
@@ -84,7 +84,7 @@ export function createPhenomenon(kind, { size = 120 } = {}) {
       break;
     }
     case 'ionstorm': {
-      const a = new Sprite(cloudTex(seedN + 9, [90, 60, 150], [60, 170, 190])), b = new Sprite(cloudTex(seedN + 10, [140, 90, 190], [90, 210, 220]));
+      const a = new Sprite(cloudTex(seedN + 9, [120, 70, 200], [60, 200, 220])), b = new Sprite(cloudTex(seedN + 10, [190, 120, 240], [120, 240, 240]));
       a.anchor.set(0.5); b.anchor.set(0.5); a.width = a.height = size * 1.6; b.width = b.height = size * 1.2; b.blendMode = 'add'; b.alpha = 0.7;
       const bolts = new Graphics(), flash = glowSprite(0xcfa8ff, s * 0.9, 0, 2);
       root.addChild(a, b, flash, bolts);
@@ -115,7 +115,7 @@ export function createPhenomenon(kind, { size = 120 } = {}) {
     case 'asteroids': {
       const rocks = [];
       for (let i = 0; i < 22; i++) {
-        const rr = R.range(2.5, 9) * (size / 120), g = rockSprite(R, rr);
+        const rr = R.range(3.5, 12) * (size / 120), g = rockSprite(R, rr);
         const ang = R() * TAU, dist = s * R.range(0.15, 0.95);
         rocks.push({ g, ang, dist, sp: R.range(0.05, 0.16) * (R() < 0.5 ? 1 : 1), rot: R.range(-0.8, 0.8), sq: R.range(0.4, 0.55) });
         root.addChild(g);
@@ -140,7 +140,7 @@ export function createPhenomenon(kind, { size = 120 } = {}) {
       g.ellipse(-3 * k, -5 * k, 34 * k, 5 * k).stroke({ width: 1, color: 0xf2e3b8, alpha: 0.12 });
       const holder = new Container(); holder.addChild(g); holder.rotation = -0.2;
       const blink = glowSprite(0xef6f5e, 14 * k, 1, 2); blink.x = 4 * k; blink.y = -31 * k;
-      const dot = new Graphics().circle(0, 0, 1.8 * k).fill(0xffb0a0); dot.position.copy(blink.position);
+      const dot = new Graphics().circle(0, 0, 1.8 * k).fill(0xffb0a0); dot.position.set(blink.x, blink.y);
       holder.addChild(blink, dot);
       const bits = []; for (let i = 0; i < 6; i++) { const b = new Graphics().poly(rockPoly(R, R.range(1.5, 3.5) * k)).fill(0x353a58); b.x = R.range(-s, s); b.y = R.range(-s * 0.5, s * 0.5); bits.push([b, R.range(-0.5, 0.5)]); root.addChild(b); }
       root.addChild(holder);
@@ -148,10 +148,10 @@ export function createPhenomenon(kind, { size = 120 } = {}) {
       break;
     }
     case 'comet': {
-      const tailI = new Sprite(gradTex([[0, 'rgba(160,215,255,0.9)'], [0.4, 'rgba(110,170,255,0.3)'], [1, 'rgba(90,140,255,0)']], 128, 4, true));
-      tailI.anchor.set(0, 0.5); tailI.width = s * 1.9; tailI.height = s * 0.2; tailI.blendMode = 'add'; tailI.rotation = 0.35;
-      const tailD = new Sprite(gradTex([[0, 'rgba(255,225,170,0.8)'], [0.5, 'rgba(255,190,120,0.25)'], [1, 'rgba(255,170,110,0)']], 128, 4, true));
-      tailD.anchor.set(0, 0.5); tailD.width = s * 1.6; tailD.height = s * 0.42; tailD.blendMode = 'add'; tailD.rotation = 0.62;
+      const tailI = new Sprite(streakTex(0x9fd0ff, 0.95, 1.2));
+      tailI.anchor.set(0, 0.5); tailI.width = s * 2.1; tailI.height = s * 0.26; tailI.blendMode = 'add'; tailI.rotation = 0.35;
+      const tailD = new Sprite(streakTex(0xffd49a, 0.85, 1.0));
+      tailD.anchor.set(0, 0.5); tailD.width = s * 1.7; tailD.height = s * 0.6; tailD.blendMode = 'add'; tailD.rotation = 0.62;
       const coma = glowSprite(0xcfeaff, s * 0.65, 0.85, 1.8);
       const nuc = new Graphics().poly(rockPoly(R, s * 0.1)).fill(0xe8e4dc);
       const holder = new Container(); holder.addChild(tailD, tailI, coma, nuc); holder.x = -s * 0.55; holder.y = -s * 0.25;
@@ -175,7 +175,7 @@ export function createPhenomenon(kind, { size = 120 } = {}) {
               const rot = -0.5; const X = x * Math.cos(rot) - y * Math.sin(rot), Y = x * Math.sin(rot) + y * Math.cos(rot);
               if (i === 0) g.moveTo(X, Y); else g.lineTo(X, Y);
             }
-            g.stroke({ width: pass ? 1.2 : 5, color: cols[r], alpha: pass ? 0.9 : 0.16 + 0.06 * Math.sin(t * 3 + r), cap: 'round', join: 'round' });
+            g.stroke({ width: pass ? 1.8 : 7, color: cols[r], alpha: pass ? 0.9 : 0.16 + 0.06 * Math.sin(t * 3 + r), cap: 'round', join: 'round' });
           }
         }
         glow.alpha = 0.4 + 0.1 * Math.sin(t * 2); });
