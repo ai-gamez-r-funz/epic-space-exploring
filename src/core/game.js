@@ -414,6 +414,21 @@ export class Game {
       if (this.spawnDistress()) st.counters.nextDistressDay = 1e9;
     }
     this._rivalMove();
+    this._rivalSummon();
+  }
+  /** By day ~18 word reaches the player that Captain Vell's freighter has put in somewhere close, so the first meeting happens around day 20-30. */
+  _rivalSummon() {
+    const st = this.state;
+    const r = st.rival;
+    if (!r || st.flags.rival_met || r.summoned || st.day < 18) return;
+    const d = bfs(st.galaxy, st.pos);
+    const near = this._tradeStations().filter((x) => (x.status === 'visited' || x.status === 'charted') && d[x.id] !== undefined && d[x.id] <= 3)
+      .sort((a, b) => d[a.id] - d[b.id] || (a.id < b.id ? -1 : 1));
+    const pick = near.find((x) => x.id !== st.pos) || near[0];
+    if (!pick) return;
+    r.prevId = r.systemId; r.systemId = pick.id; r.summoned = true; r.nextMoveDay = st.day + 10;
+    this.toast(`Dock gossip: Captain Tamsin Vell's freighter has put in at ${pick.name}.`, 'info');
+    this.log('event', `Word on the docks: Captain Tamsin Vell's freighter has put in at ${pick.name}.`);
   }
   /** Market news (festivals, gluts, shortages) for a trade system: [{kind,title,text,goods,mult,startDay,endDay,daysLeft,active,upcoming}] */
   marketNews(sysId = this.state.pos) { return Econ.newsFor(this.state, this.system(sysId)); }
@@ -720,9 +735,10 @@ export class Game {
     Missions.check(this);
     // travel event
     if (st.phase === 'play' && !started) {
-      const p = clamp((0.34 + 0.06 * dest.danger) * (st.difficulty === 'cozy' ? 0.85 : 1), 0.1, 0.7);
+      let p = clamp((0.34 + 0.06 * dest.danger) * (st.difficulty === 'cozy' ? 0.85 : 1), 0.1, 0.7);
+      if ((st.stats.jumps || 0) <= 2 && st.day <= 9) p = 1; // the first two hops always carry a (tutorial-flavoured) encounter
       if (this.rng.chance(p)) {
-        const ev = Events.pickEvent(this, 'travel', { systemId: toId });
+        const ev = Events.pickEvent(this, 'travel', { systemId: toId }, { not: /^lane_/ });
         if (ev) started = Events.startEvent(this, ev, { systemId: toId }, { afterArrive: true });
       }
     }
@@ -748,7 +764,10 @@ export class Game {
       this.toast(`Rough space: ${r.summary.join(', ')}`, 'bad');
       return false;
     }
-    return Events.startEvent(this, SP.hazardEvent(dest, dmgMult), { systemId: dest.id }, { afterArrive: true });
+    // authored lane hazards (lane_*) first; the built-in decision event is the fallback
+    const authored = Events.pickEvent(this, 'travel', { systemId: dest.id }, { only: /^lane_/ });
+    if (authored) return Events.startEvent(this, authored, { systemId: dest.id }, { afterArrive: true });
+    return Events.startEvent(this, SP.hazardEvent(dest, dmgMult, st.day), { systemId: dest.id }, { afterArrive: true });
   }
   _arrive(firstVisit) {
     const st = this.state;
@@ -827,7 +846,7 @@ export class Game {
     Missions.noteScan(this, sys, p);
     this._tryChart(sys);
     let ev = false;
-    if (this.rng.chance(0.3)) {
+    if (this.rng.chance(0.5)) {
       const e = Events.pickEvent(this, 'planet', { systemId: sys.id, planetId });
       if (e) ev = Events.startEvent(this, e, { systemId: sys.id, planetId });
     }
@@ -922,7 +941,7 @@ export class Game {
     this.emit('sfx', { name: 'hail' });
     const ctx = { systemId: sys.id, factionId: faction };
     // authored hails are mostly one-shot; the engine's faction hail keeps the channel useful (gossip, goodwill) forever
-    const authored = this.rng.chance(0.55) ? Events.pickEvent(this, 'hail', ctx) : null;
+    const authored = this.rng.chance(0.85) ? Events.pickEvent(this, 'hail', ctx) : null;
     Events.startEvent(this, authored || SP.hailEvent(this, faction, this.rng), ctx);
     this._settle();
     return { ok: true, event: true };
@@ -949,7 +968,7 @@ export class Game {
     let started = false;
     // the rival trader, festival shore leave
     const rv = st.rival;
-    if (rv && rv.systemId === sys.id && st.day - (rv.lastMetDay ?? -99) >= 6 && this.rng.chance(0.6)) {
+    if (rv && rv.systemId === sys.id && st.day - (rv.lastMetDay ?? -99) >= 6 && this.rng.chance(st.counters.rival_met ? 0.6 : 1)) {
       rv.lastMetDay = st.day;
       st.counters.rival_met = (st.counters.rival_met || 0) + 1; st.flags.rival_met = true;
       const ctx = { systemId: sys.id };

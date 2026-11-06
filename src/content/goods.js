@@ -62,7 +62,7 @@ export const GOODS = [
     flavor: 'Warp, weft, and a decent amount of gossip.',
   },
   {
-    id: 'aurora_silk', name: 'Aurora Silk', category: 'luxury', base: 210, volatility: 0.45, bulk: 1,
+    id: 'aurora_silk', name: 'Aurora Silk', category: 'luxury', base: 150, volatility: 0.3, bulk: 2,
     desc: 'Threads spun from shed aurora-life, shimmering in three colours that do not exist in daylight.',
     flavor: 'Wear it once and be asked where you got it forever.',
   },
@@ -132,12 +132,12 @@ export const GOODS = [
 
   // ---- curio ------------------------------------------------------------
   {
-    id: 'curios', name: 'Lantern-Reach Curios', category: 'curio', base: 180, volatility: 0.6, bulk: 1,
+    id: 'curios', name: 'Lantern-Reach Curios', category: 'curio', base: 130, volatility: 0.4, bulk: 2,
     desc: 'Odd trinkets from ruins and rift-edges: ticking glass, humming seeds, a very small orrery. Value depends entirely on who is looking.',
     flavor: 'Possibly priceless. Possibly a doorstop.',
   },
   {
-    id: 'lantern_glass', name: 'Lantern-Glass Shards', category: 'curio', base: 260, volatility: 0.7, bulk: 1,
+    id: 'lantern_glass', name: 'Lantern-Glass Shards', category: 'curio', base: 260, volatility: 0.5, bulk: 1,
     desc: 'Cooled slivers from the Lantern beacons. They glow faintly when someone nearby is telling the truth.',
     flavor: 'The most expensive thing on the market, and nobody can say what it does.',
   },
@@ -172,7 +172,7 @@ export const ECONOMY_BIAS = {
   // ---- by station kind --------------------------------------------------
   trade: {
     // ordinary market: slight demand for luxury, surplus of bulk staples
-    ration_bars: 0.95, machine_parts: 0.95, curios: 1.05, teletype_ribbon: 0.9, shoal_glass_beads: 1.05,
+    ration_bars: 0.95, machine_parts: 0.95, curios: 1.02, teletype_ribbon: 0.9, shoal_glass_beads: 1.05,
   },
   outpost: {
     // remote: fuel/food dear, finished goods fair
@@ -182,36 +182,36 @@ export const ECONOMY_BIAS = {
     machine_parts: 0.8, slide_rule_blanks: 0.9, salvage_lace: 1.2, fuel_cells: 0.9,
   },
   embassy: {
-    vellum_sheets: 1.2, glass_brandy: 1.25, star_charts: 1.1, curios: 1.1, teletype_ribbon: 1.2,
+    vellum_sheets: 1.2, glass_brandy: 1.25, star_charts: 1.1, curios: 1.05, teletype_ribbon: 1.2,
   },
   archive: {
-    vellum_sheets: 0.8, curios: 0.85, slide_rule_blanks: 0.9, teletype_ribbon: 0.8,
-    machine_parts: 1.3, glass_brandy: 0.9, star_charts: 1.4, lantern_glass: 1.3,
+    vellum_sheets: 0.8, curios: 0.92, slide_rule_blanks: 0.9, teletype_ribbon: 0.8,
+    machine_parts: 1.3, glass_brandy: 0.9, star_charts: 1.4, lantern_glass: 1.14,
   },
   habitat: {
-    hand_looms: 0.65, salvage_lace: 0.6, curios: 0.85, comet_ice: 0.8, tamsin_marmalade: 0.7, rimlight_lanterns: 0.75,
+    hand_looms: 0.65, salvage_lace: 0.6, curios: 0.92, comet_ice: 0.8, tamsin_marmalade: 0.7, rimlight_lanterns: 0.75,
     glass_brandy: 1.4, ration_bars: 1.3, machine_parts: 1.4, fuel_cells: 1.3, medical_kits: 1.35, seed_vault_crates: 1.25,
   },
 
   // ---- by controlling faction ------------------------------------------
   concord: {
     ration_bars: 0.8, medical_kits: 0.8, machine_parts: 0.9, fuel_cells: 0.85, seed_vault_crates: 0.8, teletype_ribbon: 0.8, felt_tip_cartridges: 0.85, shoal_glass_beads: 1.2,
-    glass_brandy: 1.2, smuggler_spice: 1.45, hand_looms: 1.25, aurora_silk: 1.2, tuning_crystals: 1.15,
+    glass_brandy: 1.2, smuggler_spice: 1.45, hand_looms: 1.25, aurora_silk: 1.1, tuning_crystals: 1.07,
   },
   quillari: {
-    glass_brandy: 0.65, nebula_tea: 0.9, smuggler_spice: 0.85, curios: 0.95, shoal_glass_beads: 0.7, rimlight_lanterns: 1.3, tamsin_marmalade: 1.3,
-    star_charts: 1.35, vellum_sheets: 1.25, hand_looms: 1.2, tuning_crystals: 1.25, ration_bars: 1.25, medical_kits: 1.15, aurora_silk: 1.2,
+    glass_brandy: 0.65, nebula_tea: 0.9, smuggler_spice: 0.85, curios: 0.97, shoal_glass_beads: 0.7, rimlight_lanterns: 1.3, tamsin_marmalade: 1.3,
+    star_charts: 1.35, vellum_sheets: 1.25, hand_looms: 1.2, tuning_crystals: 1.12, ration_bars: 1.25, medical_kits: 1.15, aurora_silk: 1.1,
   },
   vesperine: {
-    tuning_crystals: 0.6, aurora_silk: 0.8, nebula_tea: 0.75, comet_ice: 0.9,
-    machine_parts: 1.5, fuel_cells: 1.3, glass_brandy: 1.1, vellum_sheets: 1.3, curios: 1.2, slide_rule_blanks: 1.2, rimlight_lanterns: 1.25,
+    tuning_crystals: 0.77, aurora_silk: 0.89, nebula_tea: 0.75, comet_ice: 0.9,
+    machine_parts: 1.5, fuel_cells: 1.3, glass_brandy: 1.1, vellum_sheets: 1.3, curios: 1.1, slide_rule_blanks: 1.2, rimlight_lanterns: 1.25,
   },
   archivists: {
-    vellum_sheets: 0.82, lantern_glass: 1.25, curios: 0.9, slide_rule_blanks: 0.9,
-    tuning_crystals: 1.2, star_charts: 1.35, machine_parts: 1.2, antiserum_vials: 1.2, felt_tip_cartridges: 1.3,
+    vellum_sheets: 0.82, lantern_glass: 1.12, curios: 0.95, slide_rule_blanks: 0.9,
+    tuning_crystals: 1.1, star_charts: 1.35, machine_parts: 1.2, antiserum_vials: 1.2, felt_tip_cartridges: 1.3,
   },
   drifters: {
-    hand_looms: 0.7, salvage_lace: 0.65, smuggler_spice: 0.8, comet_ice: 0.85, curios: 0.85,
+    hand_looms: 0.7, salvage_lace: 0.65, smuggler_spice: 0.8, comet_ice: 0.85, curios: 0.92,
     glass_brandy: 1.35, machine_parts: 1.35, fuel_cells: 1.3, ration_bars: 1.25, medical_kits: 1.3, star_charts: 0.9, vellum_sheets: 1.2,
   },
   none: {

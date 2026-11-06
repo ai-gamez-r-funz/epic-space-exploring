@@ -31,8 +31,8 @@ const E = (id, title, ctx, tags, when, scene, text, choices, o = {}) => ({
   nodes: { a: { ...(o.speaker ? { speaker: o.speaker } : {}), text, choices } },
 });
 // D: plain choice. K: skill check. R: weighted random.
-const D = (label, tag, text, fx, extra) => ({ label, tag, ...(extra || {}), do: { text, fx } });
-const K = (label, tag, skill, diff, pt, pfx, ft, ffx, extra) => ({ label, tag, ...(extra || {}), check: { skill, diff }, pass: { text: pt, fx: pfx }, fail: { text: ft, fx: ffx } });
+const D = (label, tag, text, fx, extra) => { const { goto, ...rest } = extra || {}; return { label, tag, ...rest, do: { text, fx, ...(goto ? { goto } : {}) } }; };
+const K = (label, tag, skill, diff, pt, pfx, ft, ffx, extra) => { const { goto, ...rest } = extra || {}; const g = goto ? { goto } : {}; return { label, tag, ...rest, check: { skill, diff }, pass: { text: pt, fx: pfx, ...g }, fail: { text: ft, fx: ffx, ...g } }; };
 const R = (label, tag, rows, extra) => ({ label, tag, ...(extra || {}), rand: rows.map(([w, text, fx]) => [w, { text, fx }]) });
 
 export default [

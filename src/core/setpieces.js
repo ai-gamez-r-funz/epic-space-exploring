@@ -10,21 +10,47 @@ const trunc = (s, n = 48) => { const w = String(s || '').split(/\s+/); return w.
 
 // ------------------------------------------------------------------ rough lane
 const HAZARD_TEXT = {
-  ionstorm: 'An ion squall is boiling across the lane, all violet lightning and static. Dobbin reads out the forecast in a very small voice.',
-  asteroids: 'The lane threads a tumbling rock-field. Nothing is aimed at you, which is the trouble: nothing is aimed at anything.',
-  pulsar: 'The pulsar sweeps the lane with a lighthouse beam of radio noise. Every console in the ship begins to hum the same note.',
-  rift: 'Space creases ahead like a folded page. The helm shivers and the kettle slides gently sideways.',
-  nebula: 'Thick nebula gas drags at the hull and the sensors go milky. Visibility is a matter of opinion.',
+  ionstorm: [
+    'An ion squall is boiling across the lane, all violet lightning and static. Dobbin reads out the forecast in a very small voice.',
+    'The lane runs straight through a curtain of ionised weather. Every loose screw on the ship starts to sing in sympathy.',
+    'St. Elmo\'s fire crawls along the hull and the kettle develops a faint halo. The squall ahead is wide and not remotely sorry.',
+  ],
+  asteroids: [
+    'The lane threads a tumbling rock-field. Nothing is aimed at you, which is the trouble: nothing is aimed at anything.',
+    'A scatter of ice-clad boulders drifts across the route, turning slowly like sleepy cattle. Some of them are the size of cathedrals.',
+    'Gravel rattles faintly against the plating, then less faintly. The chart calls it "debris, light." The chart is an optimist.',
+  ],
+  pulsar: [
+    'The pulsar sweeps the lane with a lighthouse beam of radio noise. Every console in the ship begins to hum the same note.',
+    'Ahead, a neutron star ticks like a metronome the size of a city. The comm channel fills with perfect, relentless static.',
+    'Pulses of hard light wash the viewscreen every few seconds. Ilse mutters about calibration and then about tea.',
+  ],
+  rift: [
+    'Space creases ahead like a folded page. The helm shivers and the kettle slides gently sideways.',
+    'A rift hums across the lane, and the stars on the far side are subtly the wrong colour. The deck tilts a degree and a half.',
+    'The lane bends around a singing fold in space. It is beautiful, and it is also not entirely where the chart said it was.',
+  ],
+  nebula: [
+    'Thick nebula gas drags at the hull and the sensors go milky. Visibility is a matter of opinion.',
+    'The lane dives into a bank of luminous fog. Somewhere inside, a very large and patient current is pulling at the ship.',
+    'Pastel gas swirls past the ports, pretty as a watercolour and about as navigable. Dobbin recommends caution and a lamp.',
+  ],
+  generic: [
+    'The lane is ugly with space weather: shear, grit and bad manners. Nothing fatal, but nothing free either.',
+    'A knot of turbulent plasma has drifted into the lane overnight. The helm reports it feels "personal."',
+    'Conflicting currents slosh across the route like a tide in a bathtub. The Halcyon creaks in several languages.',
+    'Sensors flag a patch of uncharted shear ahead. The crew exchange the look people exchange before a bump.',
+  ],
 };
-export function hazardPhenomenon(dest) { return dest.phenomena.find((p) => HAZARD_TEXT[p]) || null; }
-export function hazardEvent(dest, mult = 1) {
+export function hazardPhenomenon(dest) { return dest.phenomena.find((p) => HAZARD_TEXT[p] && p !== 'generic') || null; }
+export function hazardEvent(dest, mult = 1, day = 1) {
   const d = Math.max(1, dest.danger);
   const ph = hazardPhenomenon(dest);
   const hull = Math.round((4 + 3 * d) * mult);
   return ev('core_hazard', 'travel', 'Rough Lane', { scene: ph && ['ionstorm', 'asteroids', 'pulsar', 'rift'].includes(ph) ? ph : 'nebula' }, {
     a: {
       speaker: { name: 'Dobbin', species: 'robot' },
-      text: (ph ? HAZARD_TEXT[ph] : 'The lane is ugly with space weather: shear, grit and bad manners. Nothing fatal, but nothing free either.') + ' How shall we take it, Captain?',
+      text: (() => { const arr = HAZARD_TEXT[ph || 'generic']; return arr[(day + dest.id.length * 7 + (dest.danger || 0)) % arr.length]; })() + [' How shall we take it, Captain?', ' Your orders, Captain?', ' Dobbin awaits instruction.', ' What\'s the plan, Captain?'][(day + dest.danger) % 4],
       choices: [
         one('Push straight through', 'The Halcyon shudders, rattles and holds. The hull will want attention at the next harbour.', [{ hull: -hull }]),
         one('Slow burn around the worst of it', 'You take the long way round, patiently. The paint survives; the fuel gauge does not approve.', [{ fuel: -(1 + d) }, { days: 1 }]),

@@ -48,8 +48,10 @@ function weightOf(g, e, ctx) {
 }
 
 /** Choose an event for a context (or null). Honors the anti-repeat window when alternatives exist. */
-export function pickEvent(g, kind, ctx = {}) {
-  const all = eligible(g, kind, ctx);
+export function pickEvent(g, kind, ctx = {}, opts = {}) {
+  let all = eligible(g, kind, ctx);
+  if (opts.only) all = all.filter((e) => opts.only.test(e.id));
+  if (opts.not) all = all.filter((e) => !opts.not.test(e.id));
   if (!all.length) return null;
   const recent = new Set(g.state.evt.recent);
   const fresh = all.filter((e) => !recent.has(e.id));
