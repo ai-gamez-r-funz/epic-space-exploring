@@ -1,9 +1,6 @@
 // Resolves the real ENGINE / GFX / AUDIO / content modules, or thin mocks when they are missing/throw (or ?mock=1).
 // UI code must reach those systems ONLY through `S` (S.Game, S.gfx, S.audio, S.content) so a half-landed module never
 // blanks the screen. S.gfx / S.audio are "safe" facades: each call tries the real module, falls back to the mock.
-import { mockGfx } from './dev/mocks/mockGfx.js';
-import { mockAudio } from './dev/mocks/mockAudio.js';
-import { MOCK_CONTENT } from './dev/mocks/mockContent.js';
 
 const globs = import.meta.glob([
   '../core/game.js', '../gfx/index.js', '../audio/index.js',
@@ -12,12 +9,16 @@ const globs = import.meta.glob([
 ]);
 
 const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
-export const forceMock = params.get('mock') === '1';
+const DEV = !!import.meta.env.DEV;
+/** Debug hooks (window.__halcyon, ?quick=1, ?mock=1) exist only in dev builds or with ?debug=1. */
+export const DEBUG = DEV || params.get('debug') === '1';
+export const forceMock = DEV && params.get('mock') === '1';
+let mockGfx = {}, mockAudio = {};
 const warned = new Set();
 const warnOnce = (k, e) => { if (!warned.has(k)) { warned.add(k); console.warn('[ui] ' + k, e?.message || e || ''); } };
 
 export const S = {
-  Game: null, gfx: null, audio: null, content: { ...MOCK_CONTENT },
+  Game: null, gfx: null, audio: null, content: {},
   real: { game: false, gfx: false, audio: false, content: {} },
   rawGfx: null, rawAudio: null,
 };
@@ -46,6 +47,10 @@ async function tryImport(path) {
 }
 
 export async function loadServices() {
+  if (DEV) { // mocks are dev-only and never reach the production bundle
+    mockGfx = (await import('./dev/mocks/mockGfx.js')).mockGfx; mockAudio = (await import('./dev/mocks/mockAudio.js')).mockAudio;
+    Object.assign(S.content, (await import('./dev/mocks/mockContent.js')).MOCK_CONTENT);
+  }
   let gfxMod = null, audMod = null, gameMod = null;
   if (!forceMock) {
     gameMod = await tryImport('../core/game.js');

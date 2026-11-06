@@ -108,6 +108,12 @@ export const TRAITS = {
     desc: 'Speaks in even tones. Has never been seen to hurry.',
     effect: 'Vesperine rep gains +1 when positive; calms crew nearby.',
   },
+  storm_dancer: {
+    id: 'storm_dancer', name: 'Storm Dancer',
+    desc: 'Flies toward bad weather the way other people walk toward a bakery: knowing exactly where it ends.',
+    effect: 'Travel hazards are 15% less likely.',
+    ability: 'weather_eye',
+  },
   ledger_eyes: {
     id: 'ledger_eyes', name: 'Ledger Eyes',
     desc: 'Reads a price list the way other people read poetry: for the tension.',
@@ -189,9 +195,10 @@ const S = (science = 0, engineering = 0, medicine = 0, diplomacy = 0, piloting =
 export const CREW_START = [
   {
     id: 'chief_engineer', name: 'Adaeze Okonkwo', species: 'human', role: 'engineering',
-    skills: S(1, 4, 0, 0, 1), trait: 'poet_of_the_engine_room', hireCost: 0, portraitSeed: 101,
+    skills: S(1, 4, 0, 0, 2), trait: 'poet_of_the_engine_room', hireCost: 0, portraitSeed: 101,
     bio: 'Chief Engineer of the Halcyon and its fiercest defender. She has named every valve, and she will tell you which ones are sulking.',
     quote: '"She is not noisy. She is expressive."',
+    // cross-trained on the helm during the Gate transit (piloting 2)
   },
   {
     id: 'science_officer', name: 'Ilse Vo', species: 'human', role: 'science',
@@ -207,7 +214,7 @@ export const CREW_START = [
   },
   {
     id: 'comms_officer', name: 'Lt. Odalys Brandt', species: 'human', role: 'diplomacy',
-    skills: S(0, 1, 0, 4, 1), trait: 'optimist', hireCost: 0, portraitSeed: 104,
+    skills: S(0, 1, 0, 4, 2), trait: 'optimist', hireCost: 0, portraitSeed: 104,
     bio: 'Communications Officer and translator-at-large. Speaks eleven languages and whistles in three more, to be safe.',
     quote: '"I am quite sure they meant that as a compliment."',
   },
@@ -351,6 +358,12 @@ export const CREW_POOL = [
     skills: S(0, 1, 0, 0, 2), trait: 'optimist', hireCost: 60, portraitSeed: 222,
     bio: 'A cheerful flight cadet looking for her first posting. Flies like she is carrying a tray of full teacups, which is exactly the standard we need.',
     quote: '"Steady, steady... and tea has not spilled!"',
+  },
+  {
+    id: 'skipper_dibble', name: 'Skipper Pell Dibble', species: 'human', role: 'piloting',
+    skills: S(0, 1, 0, 1, 3), trait: 'storm_dancer', hireCost: 110, portraitSeed: 232,
+    bio: 'A harbour-tug skipper from the Gate Anchorage who has docked everything from ferries to a very surprised whale-barge. Works cheap because he is bored of tugs.',
+    quote: '"Left a bit. A bit more. Lovely. Now watch the weather, it\'s shifting."',
   },
   {
     id: 'purser_halloran', name: 'Purser Edmund Halloran', species: 'human', role: 'diplomacy',

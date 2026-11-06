@@ -10,7 +10,7 @@ import { Fader } from './kit/Fader.js';
 import { Panel } from './kit/Panel.js';
 import { Button } from './kit/Button.js';
 import { Label } from './kit/Label.js';
-import { S, loadServices, sfx } from './services.js';
+import { S, loadServices, sfx, DEBUG } from './services.js';
 import { OVERLAYS } from './overlays/index.js';
 import { Title } from './scenes/Title.js';
 import { NewGame } from './scenes/NewGame.js';
@@ -58,7 +58,7 @@ export class App {
     app.ticker.add((t) => this._frame(Math.min(0.1, t.deltaMS / 1000)));
     window.addEventListener('error', (e) => this.fail(e.error || e.message));
     window.addEventListener('unhandledrejection', (e) => this.fail(e.reason));
-    this._debugHandle();
+    if (DEBUG) this._debugHandle();
     return this;
   }
 
@@ -229,8 +229,8 @@ export async function boot() {
   try {
     await app.init();
     const q = new URLSearchParams(location.search);
-    const first = q.get('scene') || 'Title';
-    if (q.get('quick') === '1') app.quickStart();
+    const first = (DEBUG && q.get('scene')) || 'Title';
+    if (DEBUG && q.get('quick') === '1') app.quickStart();
     document.getElementById('boot')?.remove();
     await app.goto(first, {}, { ms: 400 });
   } catch (e) {

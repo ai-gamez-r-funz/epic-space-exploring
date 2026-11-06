@@ -72,6 +72,46 @@
 
 export const MISSIONS = [
   // ===========================================================================
+  // TUTORIAL-ISH WELCOME JOBS at the Gate station (day 1; ~120 scrip + a useful item in total)
+  // ===========================================================================
+  {
+    id: 'm_tut_1_first_chart', title: 'Welcome Job: Chart the Neighbours', kind: 'survey', arc: 'tutorial',
+    giver: { name: 'Dockmaster Oswin Pell', species: 'human', faction: 'concord' },
+    blurb: 'Open the Chart (C), click the nearest unexplored system, Jump there, and Scan its planets. Easy money and an easy way to learn the buttons.',
+    accept: '"Chart, jump, scan," says Pell. "Then come back and I\'ll pretend I\'m surprised."',
+    offerWhen: [], offerAt: 'gate_anchorage',
+    objectives: [
+      { id: 'o1', type: 'chart', target: { nearest: 'uncharted', notHere: true, maxHops: 3 }, text: 'Chart the nearest uncharted system (jump there, then Scan each planet)' },
+    ],
+    reward: { credits: 50, rep: { concord: 2 } },
+    deadlineDays: 40,
+  },
+  {
+    id: 'm_tut_2_first_delivery', title: 'Welcome Job: A Small Delivery', kind: 'delivery', arc: 'tutorial',
+    giver: { name: 'Dockmaster Oswin Pell', species: 'human', faction: 'concord' },
+    blurb: 'Buy two ration bars at the market here (Dock, then Trade), fly to the nearest other station, and hand them over. You will learn Docking, Trading and Delivering in one afternoon.',
+    accept: '"Two ration bars," says Pell. "Keep the receipt. I like receipts."',
+    offerWhen: [], offerAt: 'gate_anchorage',
+    objectives: [
+      { id: 'o1', type: 'have', good: 'ration_bars', qty: 2, deliverTo: { nearest: 'station', notHere: true, maxHops: 3 }, consume: true, text: 'Buy 2 ration bars, then deliver them to the nearest other station' },
+    ],
+    reward: { credits: 40, rep: { concord: 2 } },
+    deadlineDays: 40,
+  },
+  {
+    id: 'm_tut_3_first_scan', title: 'Welcome Job: Look at the Neighbourhood', kind: 'survey', arc: 'tutorial',
+    giver: { name: 'Dockmaster Oswin Pell', species: 'human', faction: 'concord' },
+    blurb: 'Pick a planet in this very system, click it, and press Scan. The Society wants to know what Teacup is made of. Nobody has asked in at least a week.',
+    accept: '"Scan the planets," says Pell, "and take a spare set of charts. You will need them for the first friendly stranger."',
+    offerWhen: [], offerAt: 'gate_anchorage',
+    objectives: [
+      { id: 'o1', type: 'scan', target: 'gate_anchorage', what: 'planets', count: 1, text: 'Scan any planet at Gate Anchorage' },
+    ],
+    reward: { credits: 30, rep: { concord: 1 }, item: { sector_charts: 2 } },
+    deadlineDays: 40,
+  },
+
+  // ===========================================================================
   // MAIN ARC: "Who Lit the Lanterns"
   // Robustness rules: the lantern_N flag is the only REQUIRED objective of a Lantern mission (goto/scan steps are
   // optional breadcrumbs), so the mission completes however the player gets the flag. Offers are gated by the
@@ -533,7 +573,7 @@ export const MISSIONS = [
     giver: { name: 'Captain Tamsin Vell', species: 'human', faction: 'none' },
     blurb: 'A free-trader in a very shiny ship leans on your hull and bets you a round of tea that she can deliver four ration bars faster than you. She cannot. Probably.',
     accept: 'Vell grins and tips an imaginary hat. "Loser pays for the tea. Winner gets to be insufferable."',
-    offerWhen: [{ survey: 5 }], offerAt: { station: true },
+    offerWhen: [], offerAt: { station: true },
     objectives: [
       { id: 'o1', type: 'have', good: 'ration_bars', qty: 4, deliverTo: { nearest: 'trade', notHere: true, minHops: 2, maxHops: 5 }, consume: true, text: 'Race Vell: deliver 4 ration bars to the nearest trade station 2-5 hops away' },
     ],
@@ -613,6 +653,33 @@ export const MISSIONS = [
     reward: { credits: 340, rep: { drifters: 8 }, item: { story_knot: 1 } },
     deadlineDays: 16,
     failFx: [{ rep: { drifters: -2 } }, { morale: -3 }],
+  },
+
+  {
+    id: 'm_distress_power_failure', title: 'Distress: Lights Out at the Outpost', kind: 'relief', arc: 'distress', distress: true, repeatable: true,
+    giver: { name: 'Outpost Keeper Marnie', species: 'human', faction: 'concord' },
+    blurb: 'An outpost has lost a coil in its generator, and everyone is sitting politely in the dark. Three machine parts would put the lights back on. Bring a torch; they asked.',
+    accept: '"We are fine," says Marnie, in the dark. "We would just like to be fine with lights."',
+    offerWhen: [{ survey: 6 }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'machine_parts', qty: 3, deliverTo: { nearest: 'outpost', notHere: true, minHops: 1, maxHops: 5 }, consume: true, text: 'Deliver 3 machine parts to the dark outpost (nearest outpost)' },
+    ],
+    reward: { credits: 260, rep: { concord: 5 } },
+    deadlineDays: 14,
+    failFx: [{ rep: { concord: -2 } }, { morale: -3 }],
+  },
+  {
+    id: 'm_distress_lost_pilgrims', title: 'Distress: Pilgrims Without a Ride', kind: 'ferry', arc: 'distress', distress: true, repeatable: true,
+    giver: { name: 'Pilgrim Elder Wren', species: 'quillari', faction: 'quillari' },
+    blurb: 'A group of pilgrims has missed the last shuttle to the Festival. They are cheerful about it and would be delighted if you gave them a lift to a trade hub. They have brought snacks.',
+    accept: '"We have snacks," says Wren. "Lots of snacks. It is your destiny to share them."',
+    offerWhen: [{ survey: 6 }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'goto', target: { nearest: 'trade', notHere: true, minHops: 1, maxHops: 4 }, docked: true, text: 'Ferry the pilgrims to the nearest trade station' },
+    ],
+    reward: { credits: 190, rep: { quillari: 5 }, item: { gossip_pin: 1 } },
+    deadlineDays: 12,
+    failFx: [{ rep: { quillari: -1 } }],
   },
 
   // ===========================================================================

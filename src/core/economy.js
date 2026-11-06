@@ -31,6 +31,26 @@ function biasFor(system, goodId) {
 }
 
 /** Whether (and how much) this system trades a good. */
+// Every market has a personality: 6 goods it produces (cheap) and 6 it craves (dear). Pairs of neighbouring markets therefore
+// almost always share two or three profitable goods in each direction - the engine of the trading loop.
+const TILT_CACHE = new Map();
+export const TILT_CHEAP = 0.76;
+export const TILT_DEAR = 1.3;
+function tiltOf(state, system, good) {
+  const key = `${state.seed}|${system.id}|${C.GOODS.length}`;
+  let t = TILT_CACHE.get(key);
+  if (!t) {
+    const ranked = C.GOODS.map((g) => [hashFloat(state.seed, system.id, g.id, 'tilt'), g.id]).sort((a, b) => a[0] - b[0]);
+    t = {};
+    const n = Math.min(6, Math.floor(ranked.length / 4));
+    ranked.slice(0, n).forEach(([, id]) => { t[id] = TILT_CHEAP; });
+    ranked.slice(-n).forEach(([, id]) => { t[id] = TILT_DEAR; });
+    if (TILT_CACHE.size > 400) TILT_CACHE.clear();
+    TILT_CACHE.set(key, t);
+  }
+  return t[good.id] || 1;
+}
+
 function profile(state, system, good) {
   const h = hashFloat(state.seed, system.id, good.id, 'prof');
   const prod = 0.85 + 0.35 * hashFloat(state.seed, system.id, good.id, 'prod'); // 0.85..1.2
@@ -39,7 +59,7 @@ function profile(state, system, good) {
   if (stationKind === 'outpost' && !['food', 'fuel', 'material', 'medical'].includes(good.category)) sold = h < 0.25;
   if (stationKind === 'archive' && ['curio', 'tech', 'luxury'].includes(good.category)) sold = true;
   if (hasQuillariLicence(state) && system.faction === 'quillari') sold = sold || h < 0.85;
-  const bias = biasFor(system, good.id);
+  const bias = biasFor(system, good.id) * tiltOf(state, system, good);
   if (bias <= 0.85) sold = true; // locally produced goods are always on the shelf
   const targetStock = Math.max(4, Math.round(RULES().stockBase * (bias < 0.85 ? 1.5 : bias > 1.15 ? 0.6 : 1) * (0.7 + 0.6 * hashFloat(state.seed, system.id, good.id, 'stk'))
     * (stationKind === 'outpost' ? 0.6 : 1)));
@@ -69,9 +89,9 @@ export function newsFor(state, system, day = state.day) {
       const name = f[Math.floor(hashFloat(state.seed, system.id, 'nf', kk) * f.length)];
       item = { kind: 'festival', title: name.charAt(0).toUpperCase() + name.slice(1), text: `${system.name} is celebrating ${name}. Luxuries and food fetch festival prices.`, goods: C.GOODS.filter((g) => ['luxury', 'food'].includes(g.category)).map((g) => g.id), mult: 1.3 };
     } else if (h < 0.34) {
-      const g = pickGood(); if (g) item = { kind: 'glut', title: `${g.name} glut`, text: `Warehouses at ${system.name} are overflowing with ${g.name}. Bargains for anyone with cargo space.`, goods: [g.id], mult: 0.78 };
+      const g = pickGood(); if (g) item = { kind: 'glut', title: `${g.name} glut`, text: `Warehouses at ${system.name} are overflowing with ${g.name}. Bargains for anyone with cargo space.`, goods: [g.id], mult: 0.68 };
     } else if (h < 0.5) {
-      const g = pickGood(['medical', 'food', 'material', 'tech']); if (g) item = { kind: 'shortage', title: `${g.name} shortage`, text: `${system.name} is running short of ${g.name}. Sellers are being thanked, loudly.`, goods: [g.id], mult: 1.3 };
+      const g = pickGood(['medical', 'food', 'material', 'tech']); if (g) item = { kind: 'shortage', title: `${g.name} shortage`, text: `${system.name} is running short of ${g.name}. Sellers are being thanked, loudly.`, goods: [g.id], mult: 1.42 };
     }
     if (item) out.push({ ...item, startDay, endDay, daysLeft: Math.max(0, endDay - day + 1), active: kk === k, upcoming: kk !== k });
   }
@@ -89,7 +109,7 @@ export function midPrice(state, system, good, day = state.day) {
   const vol = clamp(good.volatility ?? 0.3, 0, 1);
   const drift = 1 + vol * (0.15 * noise(state.seed, system.id, good.id, day, 6, 'a') + 0.08 * noise(state.seed, system.id, good.id, day, 29, 'b'));
   // news can't push the combined bias outside the normal band: keeps cross-market spreads (and trade profit/day) bounded
-  const eff = clamp(p.bias * newsMult(state, system, good.id, day), 0.72, 1.3);
+  const eff = clamp(p.bias * newsMult(state, system, good.id, day), 0.58, 1.55);
   return good.base * p.prod * eff * drift;
 }
 
@@ -137,13 +157,14 @@ export function sideMultipliers(state, system, good) {
   const fac = C.FACTIONS[system.faction];
   let taste = 1;
   if (fac) { if ((fac.likes || []).includes(good.id)) taste = 1.06; else if ((fac.dislikes || []).includes(good.id)) taste = 0.94; }
-  const buy = (1 + R.spread / 2) * (1 - disc) * diff.price;
-  let sell = (1 - R.spread) * (1 + bonus) * taste * (diff.price >= 1 ? 1 : 1);
-  sell = Math.min(sell, buy * 0.85); // anti-exploit: an immediate round trip must lose >= ~10 % even after impact
+  // same-station spread ~12-14 %; difficulty pricing applies to services, not to trade goods
+  const buy = 1.065 * (1 - disc);
+  let sell = 0.935 * (1 + bonus) * taste;
+  sell = Math.min(sell, buy * 0.88); // anti-exploit: an immediate round trip must lose >= ~10 % even after impact
   return { buy, sell };
 }
 
-function unitImpact(good) { return 2 * RULES().tradeImpact * (0.6 + clamp(good.volatility ?? 0.3, 0, 1)); }
+function unitImpact(good) { return 0.55 * RULES().tradeImpact * (0.6 + clamp(good.volatility ?? 0.3, 0, 1)); }
 
 /** Total cost of buying `qty` units now, walking the price up per unit. */
 export function quoteBuy(state, system, goodId, qty) {

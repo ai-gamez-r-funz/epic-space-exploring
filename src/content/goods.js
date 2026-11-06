@@ -219,24 +219,38 @@ export const ECONOMY_BIAS = {
     comet_ice: 0.95, salvage_lace: 1.05,
   },
 
-  // ---- by region (optional extra; engine may combine or ignore) ---------
+  // ---- by region: each region has 2 SIGNATURE EXPORTS (cheap, <1) and wants other regions' exports (dear, >1) ----
+  // Combined with kind/faction keys by the engine, damped ^0.6 and clamped 0.72..1.3 per market, so a signature
+  // export typically sells for 25-60% more one or two regions away.
+  //   gate    exports: felt_tip_cartridges, ration_bars
+  //   shoals  exports: glass_brandy, shoal_glass_beads
+  //   veil    exports: nebula_tea, tuning_crystals
+  //   choir   exports: comet_ice, aurora_silk
+  //   archive exports: vellum_sheets, slide_rule_blanks
+  //   rim     exports: hand_looms, tamsin_marmalade (+ salvage_lace, rimlight_lanterns)
   'region:gate': {
-    star_charts: 0.8, teletype_ribbon: 0.85, ration_bars: 0.9, curios: 1.15, felt_tip_cartridges: 0.75, fuel_cells: 0.9, rimlight_lanterns: 1.1,
+    felt_tip_cartridges: 0.62, ration_bars: 0.7, star_charts: 0.8, teletype_ribbon: 0.85, fuel_cells: 0.85,
+    glass_brandy: 1.4, tuning_crystals: 1.3, hand_looms: 1.35, nebula_tea: 1.3, vellum_sheets: 1.3, comet_ice: 1.3, shoal_glass_beads: 1.25, curios: 1.15, rimlight_lanterns: 1.1,
   },
   'region:shoals': {
-    glass_brandy: 0.75, nebula_tea: 1.1, hand_looms: 1.15, fuel_cells: 1.05, shoal_glass_beads: 0.8, rimlight_lanterns: 1.2, tamsin_marmalade: 1.2, medical_kits: 1.1,
+    glass_brandy: 0.58, shoal_glass_beads: 0.62, nebula_tea: 1.15, fuel_cells: 1.05, medical_kits: 1.1,
+    tuning_crystals: 1.4, vellum_sheets: 1.4, felt_tip_cartridges: 1.4, comet_ice: 1.35, slide_rule_blanks: 1.3, hand_looms: 1.3, tamsin_marmalade: 1.3, rimlight_lanterns: 1.25, aurora_silk: 1.2,
   },
   'region:veil': {
-    nebula_tea: 0.7, aurora_silk: 0.8, tuning_crystals: 0.8, machine_parts: 1.2, fuel_cells: 1.2, ration_bars: 1.15, rimlight_lanterns: 1.15,
+    nebula_tea: 0.58, tuning_crystals: 0.62, aurora_silk: 0.8,
+    glass_brandy: 1.35, vellum_sheets: 1.4, ration_bars: 1.3, machine_parts: 1.25, hand_looms: 1.3, felt_tip_cartridges: 1.3, fuel_cells: 1.2, rimlight_lanterns: 1.15, slide_rule_blanks: 1.2,
   },
   'region:choir': {
-    aurora_silk: 0.85, fuel_cells: 1.35, antiserum_vials: 1.2, curios: 0.9, lantern_glass: 0.9, ration_bars: 1.2, comet_ice: 0.8, medical_kits: 1.2,
+    comet_ice: 0.58, aurora_silk: 0.65, lantern_glass: 0.9, curios: 0.9,
+    fuel_cells: 1.4, ration_bars: 1.35, glass_brandy: 1.4, hand_looms: 1.35, nebula_tea: 1.35, felt_tip_cartridges: 1.3, medical_kits: 1.3, antiserum_vials: 1.2, tamsin_marmalade: 1.25,
   },
   'region:archive': {
-    vellum_sheets: 0.75, curios: 0.85, glass_brandy: 0.95, felt_tip_cartridges: 1.25, machine_parts: 1.15, ration_bars: 1.1,
+    vellum_sheets: 0.58, slide_rule_blanks: 0.62, curios: 0.85,
+    tuning_crystals: 1.4, glass_brandy: 1.25, felt_tip_cartridges: 1.4, ration_bars: 1.2, machine_parts: 1.2, comet_ice: 1.3, aurora_silk: 1.2, nebula_tea: 1.25,
   },
   'region:rim': {
-    hand_looms: 0.75, salvage_lace: 0.75, smuggler_spice: 0.8, fuel_cells: 1.35, medical_kits: 1.3, star_charts: 1.1, tamsin_marmalade: 0.8, rimlight_lanterns: 0.8, ration_bars: 1.2, felt_tip_cartridges: 1.2,
+    hand_looms: 0.58, tamsin_marmalade: 0.62, salvage_lace: 0.7, rimlight_lanterns: 0.7, smuggler_spice: 0.8,
+    glass_brandy: 1.4, felt_tip_cartridges: 1.35, fuel_cells: 1.4, medical_kits: 1.35, ration_bars: 1.3, tuning_crystals: 1.25, slide_rule_blanks: 1.3, comet_ice: 1.3, vellum_sheets: 1.25, star_charts: 1.1,
   },
 };
 

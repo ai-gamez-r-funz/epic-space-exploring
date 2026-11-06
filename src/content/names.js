@@ -6,7 +6,7 @@
 //                       tpl tokens: {adj} {noun} {of} (random pick each), e.g. '{adj} {noun}', 'The {noun} of {of}'
 //                       `fixed` = hand-picked evocative names; the generator should prefer these first.
 //   PLANET_SUFFIXES     { roman:[...], greek:[...], letters:[...], epithets:{ [planetType]: [...] } }
-//   STATION_NAMES       { [stationKind]: { patterns:[tpl], a:[], b:[] }, byFaction:{ [factionId]:{ prefix:[], suffix:[] } } }
+//   STATION_NAMES       { [stationKind]: { names:[full names], patterns:[tpl], a:[], b:[] }, byFaction:{ [factionId]:{ names:[full names] } } }
 //   CREW_NAME_POOLS     { [species]: { first:[], last:[], format? } }   (species: human, quillari, vesperine, archivist, drifter, robot)
 //   SHIP_NAME_SUGGESTIONS  >= 12 names for the Halcyon dialog
 //   CAPTAIN_NAME_SUGGESTIONS  for the new-game dialog
@@ -96,44 +96,84 @@ export const PLANET_SUFFIXES = {
 // STATIONS
 // ---------------------------------------------------------------------------------------------
 export const STATION_NAMES = {
+  // `names` = hand-authored full names (preferred; no tautologies by construction).
+  // `a`/`b` + `patterns` = combinatorial fallback; stationName() rejects redundant results (see isRedundantName).
   trade: {
-    patterns: ['{a} {b}', 'The {a} {b}'],
-    a: ['Copper', 'Gilded', 'Brass', 'Mulberry', 'Honeycomb', 'Gossip', 'Lantern', 'Silver Spoon', 'Teapot', 'Ledger'],
-    b: ['Exchange', 'Emporium', 'Bazaar', 'Mart', 'Counter', 'Stall', 'Arcade', 'Trading-Post'],
+    names: ['Copper Kettle Exchange', 'The Gilded Ledger', 'Honeycomb Arcade', 'Mulberry Mart', 'Gossip Row', 'The Silver Spoon', 'Lantern Lane Bazaar', 'Teapot & Tally', 'The Brass Abacus', 'Haggler\'s Rest', 'Marmalade Market', 'The Counting Cat', 'Pennyweight Plaza', 'Saffron Stall', 'The Open Ledger'],
+    patterns: ['{a} {b}'],
+    a: ['Copper', 'Gilded', 'Brass', 'Mulberry', 'Honeycomb', 'Gossip', 'Lantern', 'Teapot', 'Ledger'],
+    b: ['Exchange', 'Emporium', 'Bazaar', 'Mart', 'Arcade', 'Trading-Post'],
   },
   outpost: {
-    patterns: ['{a} {b}', '{a} {b}'],
-    a: ['Lonely', 'Quiet', 'Cheerful', 'Stopgap', 'Last', 'Wayside', 'Kettle', 'Lamp', 'Little'],
-    b: ['Waystation', 'Outpost', 'Stopover', 'Rest', 'Depot', 'Hostel', 'Pump', 'Light'],
+    names: ['Lonely Lamp', 'The Cheerful Stopgap', 'Kettle Rest', 'Wayside Light', 'Little Hearth', 'The Last Lantern', 'Quiet Pump', 'Dusk Hostel', 'Penny Depot', 'The Warm Window', 'Stopover Seven', 'Thimble Light', 'Cinder Shelter', 'The Patient Pump', 'Haven Nine'],
+    patterns: ['{a} {b}'],
+    a: ['Lonely', 'Quiet', 'Cheerful', 'Last', 'Kettle', 'Lamp', 'Little'],
+    b: ['Stopover', 'Rest', 'Depot', 'Hostel', 'Pump', 'Light'],
   },
   shipyard: {
-    patterns: ['{a} {b}', '{a} {b}'],
-    a: ['Brassworks', 'Riveter\'s', 'Gantry', 'Foundry', 'Slipway', 'Drydock', 'Torque', 'Anvil'],
-    b: ['Yard', 'Docks', 'Works', 'Berth', 'Cradle', 'Hangar', 'Spar', 'Forge'],
+    names: ['Anvil & Spar', 'The Rivet Cathedral', 'Torque Hall', 'Gantry Gardens', 'Slipway Nine', 'The Patient Drydock', 'Brassworks', 'Hammer & Hum', 'The Tinkerers\' Cradle', 'Welder\'s Rest', 'Bolt & Bracket', 'Keelhaven', 'The Tuning Berth', 'Forge of Small Wonders', 'Cog & Candle'],
+    patterns: ['{a} {b}'],
+    a: ['Gantry', 'Anvil', 'Torque', 'Bracket', 'Spar'],
+    b: ['Yard', 'Works', 'Cradle', 'Hangar', 'Forge'],
   },
   embassy: {
-    patterns: ['{a} {b}', 'The {a} {b}'],
-    a: ['Courtesy', 'Concordat', 'Accord', 'Protocol', 'Envoy', 'Amity', 'Good Offices', 'Common Ground'],
-    b: ['House', 'Legation', 'Embassy', 'Chambers', 'Pavilion', 'Hall', 'Rotunda'],
+    names: ['Courtesy House', 'The Accord Rotunda', 'Amity Pavilion', 'The Good Offices', 'Common Ground Hall', 'Envoy\'s Rest', 'The Protocol Room', 'Concordat Gardens', 'Handshake Terrace', 'The Round Table', 'Parley Point', 'Goodwill Gallery'],
+    patterns: ['{a} {b}'],
+    a: ['Courtesy', 'Accord', 'Protocol', 'Envoy', 'Amity'],
+    b: ['House', 'Legation', 'Chambers', 'Pavilion', 'Rotunda'],
   },
   archive: {
-    patterns: ['{a} {b}', 'The {a} {b}'],
-    a: ['Annex', 'Quire', 'Stacks', 'Reading-Room', 'Index', 'Folio', 'Scroll'],
-    b: ['Reading Hall', 'Lending Desk', 'Repository', 'Branch Library', 'Study', 'Vault'],
+    names: ['The Lending Desk', 'Quire & Quill', 'The Quiet Stacks', 'Annex of Small Questions', 'The Footnote Library', 'Index Hall', 'The Open Folio', 'Marginal Study', 'Cloister of Cross-References', 'The Patient Shelf', 'Vellum Reading-Room', 'The Last Page'],
+    patterns: ['{a} {b}'],
+    a: ['Index', 'Folio', 'Quire', 'Scroll', 'Colophon'],
+    b: ['Repository', 'Branch Library', 'Study', 'Vault', 'Lending Desk'],
   },
   habitat: {
-    patterns: ['{a} {b}', 'The {a} {b}'],
-    a: ['Patchwork', 'Thimble', 'Darning', 'Long', 'Mending', 'Hearthfire', 'Quilted', 'Stitched'],
-    b: ['Habitat', 'Wheel', 'Commons', 'Ring', 'Table', 'Hive', 'Ark'],
+    names: ['The Long Table', 'Thimble Wheel', 'Patchwork Commons', 'Darning Ring', 'Hearthfire Hive', 'The Mended Ark', 'Quilted Commons', 'Story-Knot Wheel', 'The Stitched Sky', 'Bobbin Ring', 'Needle & Thread Ark', 'The Slow Supper', 'Warp & Weft', 'Selvage Wheel', 'The Borrowed Hearth'],
+    patterns: ['{a} {b}'],
+    a: ['Patchwork', 'Thimble', 'Darning', 'Hearthfire', 'Stitched'],
+    b: ['Commons', 'Wheel', 'Ring', 'Ark', 'Table'],
   },
+  // Faction flavour: complete names (no prefix+suffix gluing)
   byFaction: {
-    concord: { prefix: ['Concord', 'Harbour Control', 'Ministry of'], suffix: ['Station', 'Depot', 'Platform', 'Office'] },
-    quillari: { prefix: ['Clan Vell-Aroon', 'Clan Tessk', 'Clan Wren-Quill', 'Clan Sorrel'], suffix: ['Roost', 'Perch', 'Aerie', 'Market-Nest'] },
-    vesperine: { prefix: ['Choir of', 'First', 'Third', 'Hush of'], suffix: ['Resonance', 'Hall', 'Sanctuary', 'Listening-Post'] },
-    archivists: { prefix: ['Hollow', 'Annex of', 'Sub-', 'Branch of'], suffix: ['Archive', 'Stacks', 'Reading-Room', 'Annex'] },
-    drifters: { prefix: ['Fleet of', 'Long', 'Mended', 'Stitched'], suffix: ['Habitat', 'Table', 'Commons', 'Ark'] },
+    concord: { names: ['Concord Harbour Control', 'Ministry of Small Mercies Annex', 'Harbour Office Seven', 'Concord Depot Lyra', 'The Stamping Pool', 'Committee Room Four', 'Charter Day Platform', 'Form 7-B Waystation'] },
+    quillari: { names: ['Clan Vell-Aroon Roost', 'Clan Tessk Perch', 'Clan Wren-Quill Aerie', 'Clan Sorrel Market-Nest', 'Two-Feathers Landing', 'The Honey-Tongue Perch', 'Long Perch Exchange', 'Bright-Crest Roost'] },
+    vesperine: { names: ['Choir of the Third Hush', 'First Resonance Hall', 'The Listening-Post', 'Hush of Evening Sanctuary', 'Held-Note Hall', 'The Slow Bells', 'Third Voices Sanctuary', 'Chime of Quiet'] },
+    archivists: { names: ['The Hollow Annex', 'Branch of the Fourth Stack', 'Sub-Index Reading-Room', 'The Cross-Reference Desk', 'Annex Q', 'Pending Questions Hall', 'Stack Nine', 'Catalogue Jubilee Branch'] },
+    drifters: { names: ['Fleet of Thirteen Aprils', 'The Long Table', 'Mended Commons', 'Stitched Ark Eleven', 'Selvage Commons', 'The Patchwork Supper', 'Hem & Hearth', 'Darning Needle Ark'] },
   },
 };
+
+// Words that mean "the same kind of place" - a name containing two of the same group reads as a tautology.
+const SYNONYM_GROUPS = [
+  ['dock', 'docks', 'drydock', 'slipway', 'berth', 'cradle', 'yard', 'hangar'],
+  ['works', 'brassworks', 'forge', 'foundry', 'anvil'],
+  ['station', 'depot', 'outpost', 'waystation', 'stopover', 'post'],
+  ['archive', 'stacks', 'library', 'repository', 'vault', 'reading-room', 'annex', 'branch', 'study'],
+  ['habitat', 'wheel', 'ring', 'ark', 'commons', 'hive'],
+  ['market', 'mart', 'bazaar', 'emporium', 'exchange', 'arcade', 'trading-post'],
+  ['embassy', 'legation', 'chambers', 'pavilion', 'rotunda', 'house', 'hall'],
+];
+
+/** True if a station name repeats itself ("Drydock Docks", "Wayside Waystation", "Brassworks Works"). */
+export function isRedundantName(name) {
+  const w = String(name).toLowerCase().replace(/[^a-z\- ]/g, ' ').split(/\s+/).filter(Boolean);
+  for (let i = 0; i < w.length; i++) {
+    for (let j = i + 1; j < w.length; j++) {
+      const x = w[i], y = w[j];
+      if (x === y) return true;
+      if (x.length >= 4 && y.length >= 4 && (x.startsWith(y) || y.startsWith(x) || x.slice(0, 5) === y.slice(0, 5))) return true;
+      if (x.length >= 4 && y.length >= 4 && (y.includes(x) || x.includes(y))) return true;
+    }
+  }
+  let hits = 0;
+  for (const g of SYNONYM_GROUPS) {
+    const n = new Set(w.filter((t) => g.includes(t)));
+    if (n.size >= 2) return true;
+    hits += n.size;
+  }
+  return false;
+}
 
 // ---------------------------------------------------------------------------------------------
 // CREW NAME POOLS
@@ -227,9 +267,16 @@ export function planetName(sysName, index, type, rng) {
 
 export function stationName(kind, faction, rng) {
   const f = STATION_NAMES.byFaction[faction];
-  if (f && rng() < 0.5) return `${pick(f.prefix, rng)} ${pick(f.suffix, rng)}`.replace(/ {2,}/g, ' ');
   const k = STATION_NAMES[kind] || STATION_NAMES.trade;
-  return pick(k.patterns, rng).replace('{a}', pick(k.a, rng)).replace('{b}', pick(k.b, rng));
+  for (let i = 0; i < 12; i++) {
+    let n;
+    const r = rng();
+    if (f && f.names && r < 0.4) n = pick(f.names, rng);
+    else if (k.names && r < 0.85) n = pick(k.names, rng);
+    else n = pick(k.patterns, rng).replace('{a}', pick(k.a, rng)).replace('{b}', pick(k.b, rng));
+    if (!isRedundantName(n)) return n;
+  }
+  return pick(k.names, rng);
 }
 
 export function crewName(species, rng) {
