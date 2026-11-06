@@ -6,15 +6,9 @@ const one = (id, ctx, title, text, fx = [], extra = {}) => ({
 });
 
 export const BUILTIN = {
-  landing: one('core_landing_generic', 'landing', 'Boots on the Ground',
-    'The landing party tramps about, takes samples, sketches rocks and returns with cold hands and a pocketful of pebbles. Nothing remarkable, but the data is honest and the tea afterwards is excellent.',
-    [{ credits: 14 }, { xp: { science: 1 } }, { morale: 2 }], { art: { scene: 'landing' }, result: 'Ilse labels every pebble. The pebbles seem pleased.' }),
   phenomenon: one('core_phenomenon_generic', 'phenomenon', 'Careful Observations',
     'Sensors hum and the science station fills with soft numbers. It is lovely, and quite well behaved. You record everything and add a small sketch in the margin.',
     [{ credits: 10 }, { xp: { science: 1 } }], { art: { scene: 'starfield' }, result: 'The log is a little richer than before.' }),
-  hail: one('core_hail_generic', 'hail', 'A Polite Silence',
-    'You send greetings on every polite frequency. After a respectful pause comes a short, friendly acknowledgement and nothing else. Sometimes that is all anyone needs.',
-    [{ morale: 1 }], { art: { scene: 'void' }, result: 'Manners cost nothing, as the Concord like to say.' }),
   crew: one('core_crew_chat', 'crew', 'A Quiet Word',
     '{crew:random} wanders into the lounge and you share a cup of tea. Nothing much is said, and it is exactly what both of you needed.',
     [{ morale: 1 }], { art: { scene: 'lounge' }, result: 'The kettle clicks off. The evening is a little warmer.' }),

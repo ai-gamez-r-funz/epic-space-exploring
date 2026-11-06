@@ -13,6 +13,11 @@
 //   audit_passed, drone_friend, stowaway_aboard, stowaway_resolved, festival_invited, festival_attended, pilgrims_helped,
 //   archivist_hypothesis (string), concord_forms_solved, tib_friend
 // FLAGS read: met_*, drone_friend, stowaway_aboard, festival_invited, choir_quiet_taught
+// FIX ROUND 1: 20 repeatable faction hails (hail_q_*, hail_v_*, hail_a_*, hail_d_*, hail_c_*, all gated on met_<faction> and cooldown).
+//   New flags set: pomfrey_parcel, stew_of_nine, rumour_wreck, rumour_storm_lane, wedding_toasted, ship_tuned, choir_message (carried -> hail_v_message_delivered),
+//   choir_reply_carried, archive_wish, name_in_margin, knot_pledge, apprentice_aboard / apprentice_done (hail_d_apprentice -> hail_d_apprentice_leaves),
+//   banner_ship, survey_corrections, hats_aboard, petition_decided, petition_signed, pilgrim_candle.
+//   Also deepened with extra nodes: dip_lost_pilgrims, dip_trade_dispute, dip_stowaway_aftermath.
 // CHAINS: d_stowaway -> d_stowaway_aftermath (travel ctx, via flag); d_festival_invite -> d_festival_night (via flag)
 //
 // Goods used: ration_bars, glass_brandy, tuning_crystals, vellum_sheets, hand_looms, medical_kits, fuel_cells, star_charts, curios, machine_parts
@@ -395,9 +400,24 @@ export default [
         speaker: { name: 'Sister Agnete', species: 'human' },
         text: '"Peace to the Halcyon! We are the Pilgrims of the Lanternlight, and, I confess it, quite lost. We were following a hymn. The hymn, it turns out, was a nebula. May we ask the way?"',
         choices: [
-          { label: 'Share a star chart', tag: 'trade', if: [{ cargo: { star_charts: 1 } }], do: { text: 'Agnete kisses the chart. "A blessing on your rigging." She presses a pouch of travelling provisions into your hands.', fx: [{ cargo: { star_charts: -1 } }, { rep: { concord: 3 } }, { supplies: 3 }, { flag: 'pilgrims_helped' }] } },
-          { label: 'Guide them with a piloting escort', tag: 'flee', check: { skill: 'piloting', diff: 3 }, pass: { text: 'You lead the barge through a ribbon of calm space. The pilgrims sing the whole way. The Halcyon\'s crew hums along.', fx: [{ days: 1 }, { rep: { concord: 3 } }, { morale: 6 }, { flag: 'pilgrims_helped' }] }, fail: { text: 'You get them out, but the barge scrapes a rock on the way. They bless the rock, forgive you, and pay the repair.', fx: [{ days: 1 }, { rep: { concord: 1 } }, { credits: 20 }, { flag: 'pilgrims_helped' }] } },
-          { label: 'Give them directions over the radio', tag: 'diplomacy', do: { text: '"We\'ll try, Captain." You can hear them arguing sweetly about the map for twenty minutes. Eventually they set off the right way.', fx: [{ rep: { concord: 1 } }, { flag: 'pilgrims_helped' }] } },
+          { label: 'Share a star chart', tag: 'trade', if: [{ cargo: { star_charts: 1 } }], do: { text: 'Agnete kisses the chart. "A blessing on your rigging." She presses a pouch of travelling provisions into your hands.', fx: [{ cargo: { star_charts: -1 } }, { rep: { concord: 3 } }, { supplies: 3 }, { flag: 'pilgrims_helped' }], goto: 'b' } },
+          { label: 'Guide them with a piloting escort', tag: 'flee', check: { skill: 'piloting', diff: 3 }, pass: { text: 'You lead the barge through a ribbon of calm space. The pilgrims sing the whole way. The Halcyon\'s crew hums along.', fx: [{ days: 1 }, { rep: { concord: 3 } }, { morale: 6 }, { flag: 'pilgrims_helped' }], goto: 'b' }, fail: { text: 'You get them out, but the barge scrapes a rock on the way. They bless the rock, forgive you, and pay the repair.', fx: [{ days: 1 }, { rep: { concord: 1 } }, { credits: 20 }, { flag: 'pilgrims_helped' }], goto: 'b' } },
+          { label: 'Give them directions over the radio', tag: 'diplomacy', do: { text: '"We\'ll try, Captain." You can hear them arguing sweetly about the map for twenty minutes. Eventually they set off the right way.', fx: [{ rep: { concord: 1 } }, { flag: 'pilgrims_helped' }], goto: 'b' } },
+        ],
+      },
+      b: {
+        speaker: { name: 'Sister Agnete', species: 'human' },
+        text: '"Captain, may we ask one more kindness? We have heard that the Lantern near here is dark, and we mean to sing to it. We cannot explain why. It is a thing we feel. Would you like to hear our song?"',
+        choices: [
+          { label: 'Listen to the hymn', tag: 'diplomacy', do: { text: 'Forty voices and one small accordion. The song is plain and kind, about waiting in a window. You remember someone you love, and you do not say so.', fx: [{ morale: 8 }, { rep: { concord: 2 } }], goto: 'c' } },
+          { label: 'Sing along as best you can', tag: 'persuade', check: { skill: 'diplomacy', diff: 3 }, pass: { text: 'Your voice cracks on the high note, and they sing it back for you, gently. By the end, the whole bridge is humming.', fx: [{ morale: 10 }, { rep: { concord: 3 } }], goto: 'c' }, fail: { text: 'You sing in a different key. They are unbothered. Their song is wide enough for you.', fx: [{ morale: 5 }], goto: 'c' } },
+        ],
+      },
+      c: {
+        speaker: { name: 'Sister Agnete', species: 'human' },
+        text: '"Take this, Captain. It is a small candle, blessed by no one in particular. When a night is long, light it, and we will know, wherever we are, and be glad you are well."',
+        choices: [
+          { label: 'Accept the candle', tag: 'wait', do: { text: 'The candle goes on the helm console, unlit for now. Dobbin takes charge of the matches and regards them with solemn gravity.', fx: [{ item: { kelp_lantern: 1 } }, { flag: 'pilgrim_candle' }, { morale: 3 }] } },
         ],
       },
     },
@@ -479,8 +499,16 @@ export default [
         speaker: { name: 'Tib', species: 'quillari' },
         text: '"Captain! I reorganised the bridge! I also fixed a thing, but I don\'t remember which. Also there\'s a bit of paperwork in your cabin... that I sort of filed. Under Cosies."',
         choices: [
-          { label: 'Inspect the bridge', tag: 'science', check: { skill: 'engineering', diff: 2 }, pass: { text: 'Tib has, in fact, fixed the number-three sensor relay. Possibly by accident. Probably by sheer fledgling brilliance.', fx: [{ xp: { engineering: 2 } }, { morale: 4 }, { flag: 'tib_friend' }] }, fail: { text: 'The bridge looks cleaner, in a deeply alarming way. Everything is alphabetised. It takes {crew:random} an hour to find the helm.', fx: [{ morale: 1 }, { flag: 'tib_friend' }] } },
-          { label: 'Thank Tib warmly', tag: 'diplomacy', do: { text: 'Tib puffs up like a feather duster. "I\'m going to be a captain one day. Or a baker. Possibly both."', fx: [{ morale: 5 }, { flag: 'tib_friend' }] } },
+          { label: 'Inspect the bridge', tag: 'science', check: { skill: 'engineering', diff: 2 }, pass: { text: 'Tib has, in fact, fixed the number-three sensor relay. Possibly by accident. Probably by sheer fledgling brilliance.', fx: [{ xp: { engineering: 2 } }, { morale: 4 }, { flag: 'tib_friend' }], goto: 'b' }, fail: { text: 'The bridge looks cleaner, in a deeply alarming way. Everything is alphabetised. It takes {crew:random} an hour to find the helm.', fx: [{ morale: 1 }, { flag: 'tib_friend' }], goto: 'b' } },
+          { label: 'Thank Tib warmly', tag: 'diplomacy', do: { text: 'Tib puffs up like a feather duster. "I\'m going to be a captain one day. Or a baker. Possibly both."', fx: [{ morale: 5 }, { flag: 'tib_friend' }], goto: 'b' } },
+        ],
+      },
+      b: {
+        speaker: { name: 'Tib', species: 'quillari' },
+        text: '"Captain, I need to tell you something. I think my family is probably worried. I left a note, but I might have drawn it on the cat. Can we call them? Not to go home. Just to say I\'m fine."',
+        choices: [
+          { label: 'Call Tib\'s family together', tag: 'diplomacy', do: { text: 'The family bursts onto the screen, all talking at once. Tib talks back, even louder. By the end everyone is crying and laughing, and the family promises to see you at the next harbour.', fx: [{ rep: { quillari: 5 } }, { morale: 6 }, { flag: 'stowaway_resolved' }, { clearFlag: 'stowaway_aboard' }] } },
+          { label: 'Let Tib write the note again, properly', tag: 'persuade', do: { text: 'Tib writes four drafts. The fifth is perfect. It goes by the next courier, and a reply comes back two days later: "Fine. But BRING HER BACK BY SPRING."', fx: [{ rep: { quillari: 3 } }, { morale: 4 }, { flag: 'stowaway_resolved' }, { clearFlag: 'stowaway_aboard' }] } },
         ],
       },
     },
@@ -550,9 +578,16 @@ export default [
       a: {
         text: 'At the dock, a Quillari trader and a Concord inspector are shouting politely over a crate of brandy. "It weighs forty!" "It weighs thirty-nine and a half!" They turn to you, wild-eyed. "Captain! You are impartial! Weigh in!"',
         choices: [
-          { label: 'Scan the crate precisely', tag: 'science', check: { skill: 'science', diff: 2 }, pass: { text: 'Thirty-nine point seven. Both are wrong. Both are gracious about it. Both pay you a finder\'s fee.', fx: [{ credits: 30 }, { rep: { quillari: 2 } }, { rep: { concord: 2 } }, { xp: { science: 1 } }] }, fail: { text: 'Your scanner doubles it. You weigh the scanner. It has an opinion. The two decide they dislike the scanner more than each other.', fx: [{ rep: { quillari: 1 } }, { rep: { concord: 1 } }, { morale: 2 }] } },
-          { label: 'Propose they split the difference', tag: 'persuade', check: { skill: 'diplomacy', diff: 3 }, pass: { text: 'A compromise at thirty-nine and three quarters. They shake hands. The crate cracks a crystal flute from delight.', fx: [{ rep: { quillari: 3 } }, { rep: { concord: 3 } }, { credits: 20 }] }, fail: { text: 'They agree on exactly one thing: you are annoying. Still, they stop shouting, and that counts as peace.', fx: [{ morale: -1 }] } },
+          { label: 'Scan the crate precisely', tag: 'science', check: { skill: 'science', diff: 2 }, pass: { text: 'Thirty-nine point seven. Both are wrong. Both are gracious about it. Both pay you a finder\'s fee.', fx: [{ credits: 30 }, { rep: { quillari: 2 } }, { rep: { concord: 2 } }, { xp: { science: 1 } }], goto: 'b' }, fail: { text: 'Your scanner doubles it. You weigh the scanner. It has an opinion. The two decide they dislike the scanner more than each other.', fx: [{ rep: { quillari: 1 } }, { rep: { concord: 1 } }, { morale: 2 }], goto: 'b' } },
+          { label: 'Propose they split the difference', tag: 'persuade', check: { skill: 'diplomacy', diff: 3 }, pass: { text: 'A compromise at thirty-nine and three quarters. They shake hands. The crate cracks a crystal flute from delight.', fx: [{ rep: { quillari: 3 } }, { rep: { concord: 3 } }, { credits: 20 }], goto: 'b' }, fail: { text: 'They agree on exactly one thing: you are annoying. Still, they stop shouting, and that counts as peace.', fx: [{ morale: -1 }] } },
           { label: 'Buy the crate and end the argument', tag: 'trade', if: [{ credits: 60 }], do: { text: 'Both look relieved. You get a crate of brandy, and an inspector\'s respect, and a trader\'s warm sniffle.', fx: [{ credits: -60 }, { cargo: { glass_brandy: 2 } }, { rep: { quillari: 2 } }, { rep: { concord: 2 } }] } },
+        ],
+      },
+      b: {
+        text: 'Peace restored, the two parties turn to the real problem: the crate is for a wedding in six days, and the nearest dock is four days away. Both regard you hopefully. "Captain, you have a ship."',
+        choices: [
+          { label: 'Carry the crate to the wedding (1 day, 1 fuel)', tag: 'trade', if: [{ fuel: 2 }], do: { text: 'The brandy arrives at the wedding, flushed and intact. The inspector and the trader dance together, badly, with enormous joy.', fx: [{ days: 1 }, { fuel: -1 }, { credits: 40 }, { rep: { quillari: 3 } }, { rep: { concord: 3 } }, { morale: 5 }] } },
+          { label: 'Wish them luck with the schedule', tag: 'wait', do: { text: 'They set off in opposite directions, one with the crate and one with the clipboard. The brandy, somehow, arrives.', fx: [{ morale: 1 }] } },
         ],
       },
     },

@@ -415,7 +415,7 @@ export const ENDINGS = {
     title: 'Partners in Open Skies',
     text: 'Captain Tamsin Vell started as your rival and ended as the best friend your ledger ever had. You retire together, two old free-traders with a shared teapot and a combined route map that nobody else can read. Halcyon and the Marigold fly their last run in formation, and the Society pins a ribbon on both.',
     blurb: 'Earned by befriending the rival free-trader through all three of her jobs and retiring at a Meridian station.',
-    conditions: [{ flag: 'rival_friend' }],
+    conditions: [{ any: [{ flag: 'rival_friend' }, { flag: 'rival_ally' }] }],
   },
   archive_scholar: {
     id: 'archive_scholar', kind: 'special', trigger: 'retire', priority: 55, scoreBonus: 800,

@@ -6,8 +6,20 @@
 //   gossip_pin     - "Gossip Pin": enamel pin of a Quillari market-whisperer; unlocks sly asides.
 //   (others used by diplomacy.js: concord_stamp, choir_reed, riddle_coin, story_knot, lantern_sprig)
 //
-// FLAGS set: tutorial_tea, tutorial_odds, mirror_seen, auntie_friend, comet_tea, stowaway_aboard (read here), drone_friend (read here)
-// FLAGS read: festival_invited, mirror_seen, auntie_friend
+// FLAGS set: tutorial_tea, tutorial_odds, mirror_seen, auntie_friend, comet_tea
+// FLAGS read here (set in diplomacy.js): stowaway_aboard, drone_friend, festival_invited
+//
+// FIX ROUND 1 additions (travel.js):
+//   RIVAL (Capt. Tamsin Vell, free-trader of the Gadabout): rival_met, rival_friend, rival_grudge, vell_owes (-> rival_vell_rescue
+//     pays off when low on fuel/supplies/hull), vell_best_friend; counter rival_n gates the sequence first -> dock -> breakdown.
+//   DISTRESS family: dist_faint_call / dist_signal_fades set+clear flag `distress_active` (the engine may also set it for its
+//     timed beacon); variants dist_air_thin, dist_lifepod, dist_dry_tank fire via startEvent or when distress_active is set.
+//     Flags carried: distress_ignored, owed_by_drifters, courier_owed, orla_owes.
+//   CALLBACKS: cb_courier_returns, cb_orla_repays, cb_hab_banquet, cb_tollkeeper_remembers (tollgate_friend),
+//     cb_rumour_wreck (rumour_wreck), cb_pip_repays (pip_owes), cb_pell_favour (pell_friend).
+//   Other flags set: rim_whisper, uncle_intro, teletype_ignored, wishlist_flush, dobbin_flower, rumour_storm_lane (diplomacy.js).
+//   TEASERS for upgrades: tease_cartographers_table, tease_translator_parrot, tease_solar_sails (choices gated on those upgrades).
+//   No new item ids were invented in round 1: every item used already exists in ITEM_DEFS.
 //
 // Goods used: ration_bars, glass_brandy, tuning_crystals, vellum_sheets, hand_looms, medical_kits, fuel_cells,
 //             star_charts, curios, machine_parts
@@ -195,8 +207,29 @@ export default [
       a: {
         text: 'The bridge teletype stutters and prints a line on its own: "ISV HALCYON TO ISV HALCYON. WE HAVE BEEN WAITING. PLEASE REMEMBER THE LANTERN IS A QUESTION, NOT AN ANSWER." The ribbon ends mid-word.',
         choices: [
-          { label: 'Trace the signal', tag: 'science', check: { skill: 'science', diff: 4 }, pass: { text: 'The carrier wave points at no place at all, and is addressed in your own call-sign. A first-class puzzle for the log.', fx: [{ xp: { science: 2 } }, { flag: 'mirror_seen' }] }, fail: { text: 'The trace dissolves into static that sounds almost like laughter. Kindly laughter.', fx: [{ xp: { science: 1 } }] } },
-          { label: 'File the tape in the captain\'s log', tag: 'wait', do: { text: 'You tuck the ribbon into the log with a felt-tip note: "Ask someone clever." Morale rises, in a worried way.', fx: [{ morale: 2 }, { flag: 'mirror_seen' }] } },
+          { label: 'Trace the signal', tag: 'science', check: { skill: 'science', diff: 4 }, pass: { text: 'The carrier wave points at no place at all, and is addressed in your own call-sign. A first-class puzzle for the log.', fx: [{ xp: { science: 2 } }, { flag: 'mirror_seen' }], goto: 'b' }, fail: { text: 'The trace dissolves into static that sounds almost like laughter. Kindly laughter.', fx: [{ xp: { science: 1 } }], goto: 'b' } },
+          { label: 'File the tape in the captain\'s log', tag: 'wait', do: { text: 'You tuck the ribbon into the log with a felt-tip note: "Ask someone clever." Morale rises, in a worried way.', fx: [{ morale: 2 }, { flag: 'mirror_seen' }], goto: 'b' } },
+        ],
+      },
+      b: {
+        text: 'Next morning, the teletype stutters again. A second ribbon: a string of coordinates, then the words "COME ALONE. NOT ALONE. BRING TEA." Dobbin examines the tape, then the teapot, then the tape.',
+        choices: [
+          { label: 'Plot the coordinates (1 day, 1 fuel)', tag: 'science', if: [{ fuel: 2 }], do: { text: 'The coordinates lead to a quiet patch of space with no star at all. The helm admits to a slight sense of occasion.', fx: [{ days: 1 }, { fuel: -1 }, { reveal: { radius: 2 } }], goto: 'c' } },
+          { label: 'Ignore it and press on', tag: 'wait', do: { text: 'You file the ribbon in a drawer marked "LATER". The drawer hums faintly all night.', fx: [{ flag: 'teletype_ignored' }, { morale: -1 }] } },
+        ],
+      },
+      c: {
+        text: 'Nothing is there but a small brass buoy, no bigger than a kettle, playing a tinny version of the Halcyon\'s own departure jingle. Its lamp blinks once, politely, as if awaiting an answer.',
+        choices: [
+          { label: 'Scan the buoy', tag: 'science', check: { skill: 'science', diff: 3 }, pass: { text: 'The scan shows a mechanism older than the Gate, wound by hand. A tiny tag reads: "FOR THE ONE WHO CAME."', fx: [{ xp: { science: 2 } }], goto: 'd' }, fail: { text: 'The scan finds nothing but warmth. The buoy seems pleased with this.', fx: [{ xp: { science: 1 } }], goto: 'd' } },
+          { label: 'Hail it', tag: 'diplomacy', do: { text: '"Hello," you say. The buoy replies in your own voice: "Hello. We have been expecting you for some time."', fx: [{ morale: 3 }], goto: 'd' } },
+          { label: 'Leave a cup of tea on the airlock sill', tag: 'wait', do: { text: 'The tea steams outside the window for a full minute. Then the cup is gone, and in its place, a folded chart.', fx: [{ supplies: -1 }, { morale: 5 }], goto: 'd' } },
+        ],
+      },
+      d: {
+        text: 'The buoy unfolds like a paper crane. Inside is a hand-drawn chart of the way ahead, in felt-tip, with small marginal notes: "mind the third star", "this one sings", "here be tea". The buoy dims. It has done what it came for.',
+        choices: [
+          { label: 'Take the chart with thanks', tag: 'science', do: { text: 'The chart is a gift, and a promise. Whoever drew it knew the road ahead, and wished you well on it.', fx: [{ reveal: { radius: 4 } }, { item: { sector_charts: 1 } }, { flag: 'mirror_seen' }, { morale: 8 }] } },
         ],
       },
     },
@@ -270,9 +303,17 @@ export default [
         speaker: { name: 'Tamsin Oru', species: 'drifter' },
         text: '"Halcyon, this is trader Tamsin Oru, drifting quietly. My whole crew has the hiccups. Not funny, we have been at it for two days. Any chance of a doctor? Hic."',
         choices: [
-          { label: 'Beam over a treatment', tag: 'science', check: { skill: 'medicine', diff: 2 }, pass: { text: '{crew:medicine} diagnoses a harmless pollen. Three drops of sedative tea, and the hiccups hush.', fx: [{ rep: { drifters: 4 } }, { xp: { medicine: 2 } }, { morale: 3 }] }, fail: { text: 'The first treatment makes the hiccups louder; the second quiets them. Tamsin is grateful and slightly hoarse.', fx: [{ rep: { drifters: 2 } }, { xp: { medicine: 1 } }] } },
-          { label: 'Donate a medical kit', tag: 'trade', if: [{ cargo: { medical_kits: 1 } }], do: { text: 'Tamsin pays what she can in scrip and thanks; the leaflet in the kit is, she says, hilarious.', fx: [{ cargo: { medical_kits: -1 } }, { rep: { drifters: 4 } }, { credits: 40 }] } },
+          { label: 'Beam over a treatment', tag: 'science', check: { skill: 'medicine', diff: 2 }, pass: { text: '{crew:medicine} diagnoses a harmless pollen. Three drops of sedative tea, and the hiccups hush.', fx: [{ rep: { drifters: 4 } }, { xp: { medicine: 2 } }, { morale: 3 }], goto: 'b' }, fail: { text: 'The first treatment makes the hiccups louder; the second quiets them. Tamsin is grateful and slightly hoarse.', fx: [{ rep: { drifters: 2 } }, { xp: { medicine: 1 } }], goto: 'b' } },
+          { label: 'Donate a medical kit', tag: 'trade', if: [{ cargo: { medical_kits: 1 } }], do: { text: 'Tamsin pays what she can in scrip and thanks; the leaflet in the kit is, she says, hilarious.', fx: [{ cargo: { medical_kits: -1 } }, { rep: { drifters: 4 } }, { credits: 40 }], goto: 'b' } },
           { label: 'Send best wishes and keep going', tag: 'wait', do: { text: '"Hic. Understood. We\'ll… hic… manage."', fx: [{ morale: -2 }] } },
+        ],
+      },
+      b: {
+        speaker: { name: 'Tamsin Oru', species: 'drifter' },
+        text: '"Hic… gone! Oh, bless you! I owe you. We drifters pay our debts in stories and shortcuts. Take your pick: the route my grandmother used before there were maps, or a very odd piece of news."',
+        choices: [
+          { label: 'The grandmother\'s route', tag: 'science', do: { text: 'A scrawled line through the dark, avoiding two squalls and a toll. It is not on any chart.', fx: [{ reveal: { radius: 2 } }, { fuel: 2 }, { rep: { drifters: 1 } }] } },
+          { label: 'The odd news', tag: 'persuade', do: { text: '"There\'s a Concord clerk out near the Veil who\'s learned to sing. Badly. Terribly. And it cheers everyone up." It cheers you up, certainly.', fx: [{ morale: 6 }] } },
         ],
       },
     },
@@ -1210,6 +1251,64 @@ export default [
         text: '"Captain, I have been told that morale is a function of tea, company and the knowledge that someone has noticed. I believe you have achieved all three. I will make a note in the log, in felt-tip."',
         choices: [
           { label: 'Thank Dobbin', tag: 'diplomacy', do: { text: 'Dobbin whirs, a bit moved. It tucks a small paper flower beside the helm.', fx: [{ morale: 3 }, { flag: 'dobbin_flower' }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'cb_pip_repays',
+    title: 'Pip Feathergrass Settles Her Tab',
+    tags: ['trade', 'comedy', 'relief'],
+    ctx: 'arrive',
+    weight: 35,
+    when: [{ flag: 'pip_owes' }, { system: { faction: 'quillari', hasStation: true } }],
+    once: true,
+    art: { scene: 'market', species: 'quillari', palette: 'warm' },
+    start: 'a',
+    nodes: {
+      a: {
+        speaker: { name: 'Captain Pip Feathergrass', species: 'quillari' },
+        text: '"HALCYON! I have been saying your name all over the harbour and half of it has been listening. My cousin runs the fuel dock and my other cousin runs the other fuel dock. Tell me which one you prefer. They are rivals. It is a very good feud."',
+        choices: [
+          { label: 'The first cousin, for fuel', tag: 'trade', do: { text: 'Cousin One sells you eight cells for the price of five, with a loud sniff in the direction of Cousin Two.', fx: [{ fuel: 8 }, { credits: -20 }, { clearFlag: 'pip_owes' }, { rep: { quillari: 2 } }], goto: 'b' } },
+          { label: 'The second cousin, for supplies', tag: 'trade', do: { text: 'Cousin Two packs a hamper of ration bars and pickled something, and loudly insists that the first cousin\'s fuel is secretly watered.', fx: [{ supplies: 6 }, { credits: -15 }, { clearFlag: 'pip_owes' }, { rep: { quillari: 2 } }], goto: 'b' } },
+          { label: 'Buy from both and make peace', tag: 'persuade', check: { skill: 'diplomacy', diff: 4 }, pass: { text: 'Both cousins cheer, embrace, and bicker over the invoice, which is the highest form of peace.', fx: [{ fuel: 5 }, { supplies: 4 }, { credits: -30 }, { clearFlag: 'pip_owes' }, { rep: { quillari: 5 } }], goto: 'b' }, fail: { text: 'Each demands you pay full price to prove your loyalty. You do, with a sigh.', fx: [{ fuel: 3 }, { supplies: 2 }, { credits: -50 }, { clearFlag: 'pip_owes' }, { rep: { quillari: 1 } }], goto: 'b' } },
+        ],
+      },
+      b: {
+        speaker: { name: 'Captain Pip Feathergrass', species: 'quillari' },
+        text: '"Now we are even, you and I. Which is a pity, I rather liked owing you. It gave me a reason to come back. Come to think of it, I shall now owe you something else."',
+        choices: [
+          { label: 'Laugh, and accept the new debt', tag: 'diplomacy', do: { text: 'Pip hands you a luggage tag stamped with fifty harbours. "Show it to anyone. They will wonder."', fx: [{ item: { luggage_tag: 1 } }, { morale: 5 }] } },
+        ],
+      },
+    },
+  },
+
+  {
+    id: 'cb_pell_favour',
+    title: 'Inspector Pell Calls In Nothing at All',
+    tags: ['comedy', 'diplomacy', 'mystery'],
+    ctx: 'travel',
+    weight: 30,
+    when: [{ flag: 'pell_friend' }, { day: [14, 999] }],
+    once: true,
+    art: { scene: 'ship_alien', species: 'human' },
+    start: 'a',
+    nodes: {
+      a: {
+        speaker: { name: 'Inspector Pell', species: 'human' },
+        text: '"Halcyon! Perpetua here. I\'m on the radio about a favour. Not mine. Yours. I\'ve found an unmarked parcel on the lane, addressed to \'The Halcyon, whenever.\' It is not in any manifest. Odd. May I hand it across?"',
+        choices: [
+          { label: 'Accept the parcel', tag: 'diplomacy', do: { text: 'A small box, wrapped in string and a customs seal. Pell pretends not to look. Inside is a felt-tip set and a note: \'From a well-wisher, with respect for the paperwork.\'', fx: [{ item: { felt_tip_set: 1 } }, { clearFlag: 'pell_friend' }, { rep: { concord: 3 } }], goto: 'b' } },
+          { label: 'Ask Pell to open it first, for safety', tag: 'science', check: { skill: 'science', diff: 2 }, pass: { text: 'Pell opens it under a magnifier. A felt-tip set, a note, and a very small cheese. "Cleared!" he cries.', fx: [{ item: { felt_tip_set: 1 } }, { supplies: 1 }, { clearFlag: 'pell_friend' }, { rep: { concord: 4 } }], goto: 'b' }, fail: { text: 'The magnifier slips. The cheese rolls out. A brief chase through the Cutter\'s corridors ensues.', fx: [{ item: { felt_tip_set: 1 } }, { clearFlag: 'pell_friend' }, { rep: { concord: 2 } }, { morale: 3 }], goto: 'b' } },
+        ],
+      },
+      b: {
+        speaker: { name: 'Inspector Pell', species: 'human' },
+        text: '"Between ourselves, Captain, I have never enjoyed a job so much as this one. Out here, nothing is in order, and nobody minds. Do carry on."',
+        choices: [
+          { label: 'Salute and carry on', tag: 'wait', do: { text: 'The Perpetua drops away, flashing one lamp in a friendly code. You decide it means "good luck".', fx: [{ morale: 4 }] } },
         ],
       },
     },
