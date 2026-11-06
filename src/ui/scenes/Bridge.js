@@ -49,6 +49,7 @@ export class Bridge extends Scene {
     if (params.arrive) this._banner();
     this._maybeFirstOrders();
   }
+  exit() { try { this._fo?.close?.(); } catch (e) { /* */ } super.exit(); }
   onOverlayClosed() { this.refresh(); }
   /** One-time "Captain's first orders" card on the very first Bridge of a new voyage. */
   _maybeFirstOrders() {
@@ -68,7 +69,7 @@ export class Bridge extends Scene {
         const y = i * 104; const ic = S.gfx.icon(icon, { size: 34, color: C.mustard }); centerOn(ic, 30, y + 36); m.body.addChild(ic);
         const h = new Label({ text: head, preset: 'bodyB', size: 19, color: C.cream }); h.x = 70; h.y = y + 6; const b = new Label({ text: body, preset: 'small', size: 15, color: C.textDim === 0 ? C.cream : 0xd8cfae, w: m.bodyW - 80, lineHeight: 20 }); b.x = 70; b.y = y + 34; m.body.addChild(h, b);
       });
-      m.addButtons([{ label: 'Aye aye', variant: 'primary', w: 180, hotkey: 'Enter', onClick: () => m.close() }]); m.open();
+      m.addButtons([{ label: 'Aye aye', variant: 'primary', w: 180, hotkey: 'Enter', onClick: () => m.close() }]); m.open(); this._fo = m;
     }, 900);
   }
 

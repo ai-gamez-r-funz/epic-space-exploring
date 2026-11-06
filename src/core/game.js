@@ -847,7 +847,11 @@ export class Game {
     const ph = SP.hazardPhenomenon(dest);
     if (ph && ['ionstorm', 'nebula', 'asteroids'].includes(ph) && Ship.hasSpecial(st, 'steady_hand')) return false;
     // everyday wear and tear
-    if (diff.damage > 0.6 && this.rng.chance(0.6)) applyEffects(this, [{ hull: -1 }], { noScale: true });
+    // everyday wear and tear grows with the danger of the space you fly through
+    if (diff.damage > 0.6 && this.rng.chance(Math.min(0.9, 0.3 + 0.18 * dest.danger))) {
+      const wear = Math.max(1, Math.round((this.rng.int(1, 2) + dest.danger) * diff.damage * (Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1)));
+      applyEffects(this, [{ hull: -wear }], { noScale: true });
+    }
     let chance = (0.07 + 0.15 * dest.danger) * diff.hazard + (ph ? 0.08 : 0);
     if (Ship.hasSpecial(st, 'barrel_roll_gyro')) chance *= 0.75;
     chance *= Math.max(0.6, Math.pow(0.85, Ship.abilityCount(st, 'weather_eye')));

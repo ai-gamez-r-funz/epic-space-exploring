@@ -141,7 +141,7 @@ export class GalaxyMap extends Scene {
     // distress beacon + rival markers (state.distress / state.rival; only on systems the player knows)
     this.markerLayer.removeChildren().forEach((c) => c.destroy({ children: true })); this.beacons = [];
     for (const id of this._flagSystems(st.distress)) { const s = byId.get(id); if (!s || !known(s)) continue; const dd = g.distressSignals?.()[0];
-      const m = new Container(); m.x = s.x; m.y = s.y - 36; const ic = S.gfx.icon('warning', { size: 22, color: C.coral }); centerOn(ic, 0, 0); m.addChild(ic);
+      const m = new Container(); m.x = s.x; m.y = s.y - 62; const ic = S.gfx.icon('warning', { size: 26, color: C.coral }); centerOn(ic, 0, 0); m.addChild(ic);
       const l = new Label({ text: dd ? `SOS · ${dd.daysLeft}d` : 'SOS', preset: 'headSm', size: 10, color: C.coral, shadow: true }); l.x = -l.textWidth / 2; l.y = 14; m.addChild(l);
       m.eventMode = 'static'; Tooltip.attach(m, { title: 'Distress beacon', body: dd ? `${dd.title || 'Someone needs help'} near ${dd.systemName}. ${dd.daysLeft} day(s) left to answer.` : 'Someone needs help here.', tone: 'bad' });
       this.markerLayer.addChild(m); this.beacons.push(ic); }
