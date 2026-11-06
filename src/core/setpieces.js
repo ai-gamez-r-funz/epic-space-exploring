@@ -212,3 +212,47 @@ export function festivalEvent(news, sys) {
     },
   }, { tags: ['wonder', 'comedy'] });
 }
+
+
+// ------------------------------------------------------------------ hot lanes (multi-beat hazard chain with a payout)
+const HOT_BEATS = [
+  ['A hot lane, flagged in red on the Meridian charts: debris, heat-shimmer and gossip all agree it is worth a fortune to whoever gets through. The first stretch lies ahead.',
+   'Run the gauntlet at full burn', 'The Halcyon screams through the first stretch and out the other side, ears ringing and paint blistered.', 'The first stretch grabs at the hull as you fly. You come out of it limping and grinning.',
+   'Creep through on thrusters', 'Slow, patient, nerve-wracking. The first stretch passes at walking pace and the fuel gauge winces.',
+   'Reinforce the plating first', 'Okonkwo bolts a spare panel to the weak spot. It holds, mostly.', 'The patch peels at the worst moment and the plating takes it all.'],
+  ['The lane narrows. Things drift in the glare that are definitely not on the chart. {crew:piloting} says a short word and tightens both hands on the controls.',
+   'Thread the gap by eye', 'Needle, meet thread. The gap swallows you and spits you out unscratched.', 'The gap is narrower than it looked. Something scrapes the keel.',
+   'Cut the engines and coast', 'Silence, drift, held breath. The ship slides through on momentum and the fuel gauge forgives you slowly.',
+   'Steady the crew and trust the helm', 'A calm word, a warm drink, a firm hand: the crew steadies and the helm does the rest.', 'Nerves jangle and the helm overcorrects. The hull pays for it.'],
+  ['The last stretch is the worst: the lane bucks, the lights flicker, and every instrument has an opinion. Beyond it, open space and a good payout.',
+   'Burn for the exit', 'Everything you have, all at once. The Halcyon bursts from the lane like a cork.', 'The exit is closer than it feels, and further than the hull would like.',
+   'Edge out one careful metre at a time', 'You inch along the last stretch, patient as a snail, until the stars come back.',
+   'Have engineering coax the drive', 'Okonkwo talks to the engine and the engine, grudgingly, listens.', 'The drive coughs, stutters and dumps its heat into the plating.'],
+];
+export function hotLaneEvent(dest, mult, bonus, fromName) {
+  const d = Math.max(1, dest.danger);
+  const hull = Math.round((3 + 2 * d) * mult);
+  const nodes = {};
+  const names = ['a', 'b', 'c'];
+  HOT_BEATS.forEach((b, i) => {
+    const next = i < 2 ? names[i + 1] : 'p';
+    nodes[names[i]] = {
+      text: i === 0 ? b[0].replace('The first stretch', `The first stretch of the ${fromName} lane`) : b[0],
+      choices: [
+        { label: b[1], tag: 'flee', check: { skill: 'piloting', diff: 3 + d },
+          pass: { text: b[2], fx: [{ xp: { piloting: 1 } }], goto: next }, fail: { text: b[3], fx: [{ hull: -hull }, { fuel: -1 }], goto: next } },
+        { label: b[4], tag: 'wait', do: { text: b[5], fx: [{ fuel: -(1 + d) }, { days: 1 }], goto: next } },
+        { label: b[6], tag: 'science', check: { skill: i === 1 ? 'medicine' : 'engineering', diff: 2 + d },
+          pass: { text: b[7], fx: [{ hull: -1 }, { morale: 2 }], goto: next }, fail: { text: b[8], fx: [{ hull: -Math.max(2, hull - 1) }, { morale: -2 }], goto: next } },
+      ],
+    };
+  });
+  nodes.p = {
+    text: `Through! The lane spits you out into clean space and the Meridian relay pings a hazard-pay bounty for your trouble. Dobbin counts the dents with quiet pride.`,
+    fx: [{ credits: bonus }, { cargo: { curios: 1 } }, { reveal: 'nearest' }, { morale: 3 }, { counter: { hot_runs: 1 } }, { toast: `Hot lane cleared: +${bonus} scrip`, tone: 'good' }],
+  };
+  return ev('core_hot_lane', 'travel', 'Hot Lane', { scene: 'asteroids' }, nodes, { tags: ['hazard'] });
+}
+
+// ------------------------------------------------------------------ stranded contract (timed delivery)
+export const STRANDED_GOODS = ['fuel_cells', 'medical_kits', 'ration_bars'];

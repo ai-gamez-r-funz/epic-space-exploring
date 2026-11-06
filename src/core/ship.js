@@ -60,6 +60,14 @@ export function derive(state) {
     if (u.special) s.specials.push(u.special);
     s.slots.used++;
   }
+  for (const rid of state.refits || []) {
+    const b = (IDX.refit[rid] && IDX.refit[rid].bonus) || {};
+    s.moraleRegen += b.moraleRegen || 0;
+    s.suppliesMax += b.suppliesMax || 0;
+    s.fuelMax += b.fuelMax || 0;
+    s.hullMax += b.hullMax || 0;
+    s.cargoMax += b.cargoMax || 0;
+  }
   const cm = crewMods(state);
   s.moraleRegen += cm.moraleRegen;
   s.repairPerDay += cm.repairPerDay;

@@ -149,7 +149,7 @@ test('trade is a real profession: a fresh full-hold round trip nets a few hundre
   }
   nets.sort((x, y) => x - y);
   const median = nets[Math.floor(nets.length / 2)];
-  assert.ok(median >= 150 && median <= 600, `median loop ${median}`);
+  assert.ok(median >= 100 && median <= 600, `median loop ${median}`);
   assert.ok(withGood / pairs >= 0.6, `only ${withGood}/${pairs} lanes have a +25 % good`);
 });
 

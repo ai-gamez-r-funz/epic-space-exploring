@@ -98,7 +98,7 @@ export class Shipyard extends Overlay {
     this.credL = new Label({ text: '', preset: 'num', size: 16, color: C.mustard, w: 260, align: 'right' }); this.credL.x = LW - 276; this.credL.y = H - 28; P.addChild(this.credL);
   }
   _drawStats() {
-    const swap = this.sel && !statusFor(this.g, upgradeById(this.sel), this.hasYard).owned ? this.sel : null;
+    const swap = this.mode === 'upgrades' && this.sel && !statusFor(this.g, upgradeById(this.sel), this.hasYard).owned ? this.sel : null;
     const rows = statRows(this.g, swap); const B = this.statBody; B.removeChildren().forEach((c) => c.destroy({ children: true }));
     const colW = (LW - 40) / 2; const rh = Math.floor((this.statH - 34 - 30) / 6);
     rows.forEach((r, i) => {
@@ -121,10 +121,71 @@ export class Shipyard extends Overlay {
   // ---------------------------------------------------------------- right: slot list + detail
   _rightPanel() {
     const R = this.R = new Container(); R.x = this.RX; this.root.addChild(R);
-    this.slotTitle = new Label({ text: '', preset: 'head', size: 17, color: C.brassLight, w: this.RW - 300, h: 26, fit: true, upper: true }); R.addChild(this.slotTitle);
-    this.yardNote = new Container(); this.yardNote.x = this.RW - 280; this.yardNote.y = 0; R.addChild(this.yardNote);
+    this.slotTitle = new Label({ text: '', preset: 'head', size: 17, color: C.brassLight, w: this.RW - 320, h: 26, fit: true, upper: true }); R.addChild(this.slotTitle);
+    this.yardNote = new Container(); this.yardNote.x = LW - 292; this.yardNote.y = 10; this.sch.addChild(this.yardNote);
+    this.mode = 'upgrades'; this.crewSel = this.g.state.crew[0]?.id || null; this.modeBtns = {};
+    [['upgrades', 'Upgrades'], ['refits', 'Refits'], ['training', 'Training']].forEach(([id, label], i) => {
+      const b = new Button({ label, w: 98, h: 28, fontSize: 12, variant: 'ghost', upper: true, onClick: () => this._setMode(id) }); b.x = this.RW - 3 * 100 + i * 100; b.y = -2; R.addChild(b); this.modeBtns[id] = b;
+    });
+    this._paintModes();
     this.listPane = new ScrollPane({ w: this.RW, h: 262, bottomPad: 4 }); this.listPane.y = 34; R.addChild(this.listPane);
     this.detail = new Container(); this.detail.y = 34 + 262 + 10; R.addChild(this.detail); this.DH = this.BH - this.detail.y;
+  }
+  _setMode(m) { if (this.mode === m) return; this.mode = m; this.sel = null; sfx('page', { vol: 0.5 }); this._paintModes(); this._buildList(); this._drawStats(); }
+  _paintModes() { for (const k in this.modeBtns) { this.modeBtns[k].setSelected(k === this.mode); this.modeBtns[k].setVariant(k === this.mode ? 'brass' : 'ghost'); } }
+  _simpleItems() {
+    const g = this.g; const here = g.state.pos;
+    if (this.mode === 'refits') return (g.refits?.(here) || []).map((r) => ({ id: r.id, name: r.name, desc: r.desc, flavor: r.flavor, price: r.cost, days: r.days, available: r.available && g.state.docked, reason: !g.state.docked ? 'Dock at a station first.' : r.reason, owned: r.owned, tag: r.once ? 'ONE-TIME' : 'REPEATABLE' }));
+    return (g.trainingOptions?.(this.crewSel, here) || []).map((t) => ({ id: t.id, name: t.name, desc: t.desc, price: t.price, days: t.days, available: t.available && g.state.docked, reason: !g.state.docked ? 'Dock at a station first.' : t.reason, tag: `${cap(t.skill)} ${t.current}\u2192${Math.min(t.max, t.current + 1)}` }));
+  }
+  _buildSimple() {
+    const ref = this.mode === 'refits'; const c = this.listPane.content; c.removeChildren().forEach((x) => x.destroy({ children: true }));
+    this.slotTitle.setText(ref ? 'Refits \u00b7 comforts for ship and crew' : 'Crew training \u00b7 sharpen an officer'); this.slotTitle.setColor(C.brassLight);
+    this.yardNote.removeChildren().forEach((x) => x.destroy({ children: true }));
+    const yp = pill({ icon: this.g.state.docked ? 'check' : 'lock', text: this.g.state.docked ? 'DOCKED' : 'DOCK TO BUY', color: this.g.state.docked ? C.good : C.mustard, h: 22, size: 10, preset: 'headSm', padX: 10 }); yp.x = 280 - yp.w; this.yardNote.addChild(yp);
+    let y = 0; const W = this.RW - 12; this.cards = {};
+    if (!ref) {
+      let x = 0; for (const cr of this.g.state.crew) { const p = pill({ text: cr.name.split(' ').slice(-1)[0].toUpperCase(), color: cr.id === this.crewSel ? C.brassLight : C.textDim, h: 26, size: 10, preset: 'headSm', padX: 12, bg: cr.id === this.crewSel ? 0x3b4399 : 0x0b0d1e }); p.eventMode = 'static'; p.cursor = 'pointer'; p.x = x; p.y = 0; x += p.w + 6; p.on('pointertap', () => { this.crewSel = cr.id; this.sel = null; sfx('click'); this._buildList(); }); c.addChild(p); }
+      y = 36;
+    }
+    const items = this._simpleItems(); this.simple = Object.fromEntries(items.map((i) => [i.id, i]));
+    if (!this.sel || !this.simple[this.sel]) this.sel = (items.find((i) => i.available) || items[0])?.id || null;
+    for (const it of items) {
+      const h = 58; const k = new Container(); k.y = y; k.h = h; k.W = W; k.eventMode = 'static'; k.cursor = 'pointer'; k.hitArea = new Rectangle(0, 0, W, h); k.u = { build: 'general' }; k.st = it;
+      k.bg = new Graphics(); k.addChild(k.bg);
+      const nm = new Label({ text: it.name, preset: 'bodyB', size: 16, color: it.owned ? C.tealLight : it.available ? C.cream : C.textDim, w: W - 200, h: 22, fit: true }); nm.x = 16; nm.y = 6; k.addChild(nm);
+      const sub = new Label({ text: it.desc || '', preset: 'tiny', size: 12, color: C.textDim, w: W - 200, h: 16, fit: true }); sub.x = 16; sub.y = 32; k.addChild(sub);
+      if (!it.owned) { const pr = new Label({ text: num(it.price), preset: 'num', size: 17, color: it.available ? C.mustard : C.textDim }); pr.x = W - 16 - pr.textWidth; pr.y = 6; k.addChild(pr); const cn = ico('credits', 16, it.available ? C.mustard : C.textDim); cn.x = pr.x - 20; cn.y = 8; k.addChild(cn); }
+      else { const op = pill({ icon: 'check', text: 'FITTED', color: C.tealLight, h: 22, size: 9, preset: 'headSm', padX: 8 }); op.x = W - op.w - 12; op.y = 6; k.addChild(op); }
+      const dp = pill({ icon: 'log', text: `${it.days} DAY${it.days === 1 ? '' : 'S'}`, color: C.tealLight, h: 16, size: 8, preset: 'headSm', padX: 6 }); dp.x = W - dp.w - 14; dp.y = 34; k.addChild(dp);
+      if (it.tag) { const tp = pill({ text: it.tag, color: C.brassLight, h: 16, size: 8, preset: 'headSm', padX: 6 }); tp.x = W - dp.w - tp.w - 22; tp.y = 34; k.addChild(tp); }
+      k.on('pointerover', () => { k.hov = true; this._paintCards(); sfx('hover'); }); k.on('pointerout', () => { k.hov = false; this._paintCards(); });
+      k.on('pointertap', () => { if (!Input.clickAllowed()) return; this.sel = it.id; sfx('click'); this._paintCards(); this._detail(); });
+      c.addChild(k); this.cards[it.id] = k; y += h + 6;
+    }
+    if (!items.length) { const l = new Label({ text: 'Nothing on offer here right now.', preset: 'small', color: C.textDim }); l.y = y; c.addChild(l); }
+    this.listPane.refresh(); this._paintCards(); this._detail();
+  }
+  _detailSimple() {
+    const D = this.detail; const W = this.RW; const it = this.simple?.[this.sel]; if (!it) return;
+    const ref = this.mode === 'refits';
+    const ic = ico(ref ? 'heart' : 'crew', 34, C.tealLight); ic.x = 16; ic.y = 14; D.addChild(ic);
+    const nm = new Label({ text: it.name, preset: 'head', size: 16, color: C.brassLight, w: W - 230, h: 24, fit: true, upper: true }); nm.x = 62; nm.y = 12; D.addChild(nm);
+    const sub = new Label({ text: ref ? `REFIT \u00b7 ${it.days} DAYS IN DRYDOCK` : `TRAINING \u00b7 ${it.days} DAYS \u00b7 ${it.tag}`, preset: 'headSm', size: 9, color: C.tealLight }); sub.x = 62; sub.y = 40; D.addChild(sub);
+    const d = new Label({ text: it.desc || '', preset: 'small', size: 14, lineHeight: 18, color: C.cream, w: W - 36, maxLines: 3 }); d.x = 18; d.y = 66; D.addChild(d);
+    if (it.flavor) { const f = new Label({ text: '\u201c' + it.flavor + '\u201d', preset: 'tiny', size: 12, color: C.textDim, w: W - 36, maxLines: 2 }); f.x = 18; f.y = 66 + Math.min(d.textHeight, 54) + 6; D.addChild(f); }
+    const msg = !it.available && it.reason ? it.reason : it.owned ? 'Already done.' : `Time passes while this is done: crew eat, deadlines tick.`;
+    const ml = new Label({ text: msg, preset: 'small', size: 13, color: !it.available ? C.mustard : C.textDim, w: W - 260 }); ml.x = 18; ml.y = this.DH - 58; D.addChild(ml);
+    const bb = new Button({ label: it.owned ? 'Fitted' : `${ref ? 'Book refit' : 'Enrol'} \u00b7 ${num(it.price)}`, icon: 'credits', w: 220, h: 46, variant: 'primary', disabled: !it.available, disabledReason: it.reason || '', onClick: () => this._buySimple(it) });
+    bb.x = W - 238; bb.y = this.DH - 62; D.addChild(bb); this.buyBtn = bb;
+  }
+  async _buySimple(it) {
+    if (!it.available) { sfx('deny'); return; }
+    const ok = await Modal.confirm(`${this.mode === 'refits' ? 'Book' : 'Enrol in'} ${it.name} for ${num(it.price)} scrip? It takes ${it.days} day${it.days === 1 ? '' : 's'}.`, { title: 'CONFIRM', yes: 'Yes please', no: 'Not yet' });
+    if (!ok || this.modal.destroyed) return;
+    const r = this.mode === 'refits' ? this.g.buyRefit(it.id) : this.g.trainCrew(this.crewSel, it.id);
+    if (!r?.ok) { this.ui.toast(r?.reason || 'That did not work.', 'bad'); sfx('deny'); return; }
+    sfx('fanfare'); try { this.sch.addChild(S.gfx.burst(this.cx, this.cy, C.brassLight, 26)); } catch (e) { /* */ }
   }
   _slotItems(slot) {
     const list = allUpgrades().filter((u) => u.slot === slot);
@@ -132,15 +193,18 @@ export class Shipyard extends Overlay {
     return list.sort((a, b) => (order[a.build] - order[b.build]) || (a.tier - b.tier) || (a.cost - b.cost));
   }
   _pickSlot(slot) {
+    if (this.mode !== 'upgrades') { this.mode = 'upgrades'; this.sel = null; this._paintModes(); }
     if (this.slot === slot && this.sel) return;
     this.slot = slot; this.sel = null; sfx('page', { vol: 0.5, pitch: 1.2 });
     Object.keys(this.sockets).forEach((k) => this._paintSocket(k)); this._buildList(); this._drawStats();
   }
   _buildList() {
+    if (this.mode !== 'upgrades') { this._buildSimple(); return; }
     const slot = this.slot; const meta = SLOT_META[slot]; const inst = this._installedIn(slot);
     this.slotTitle.setText(`${meta.name} · ${inst ? 'fitted: ' + inst.name : 'empty socket'}`); this.slotTitle.setColor(meta.col === C.mustard ? C.brassLight : lighten(meta.col, 0.3));
     this.yardNote.removeChildren().forEach((c) => c.destroy({ children: true }));
-    const yp = pill({ icon: this.hasYard ? 'check' : 'lock', text: this.hasYard ? 'SHIPYARD OPEN' : 'VIEW ONLY · DOCK AT A YARD', color: this.hasYard ? C.good : C.mustard, h: 22, size: 10, preset: 'headSm', padX: 10 }); yp.x = 280 - yp.w; yp.y = 2; this.yardNote.addChild(yp);
+    const yp = pill({ icon: this.hasYard ? 'check' : 'lock', text: this.hasYard ? 'SHIPYARD OPEN' : 'VIEW ONLY · DOCK AT A YARD', color: this.hasYard ? C.good : C.mustard, h: 22, size: 10, preset: 'headSm', padX: 10 }); yp.x = 280 - yp.w; yp.y = 0; this.yardNote.addChild(yp);
+    try { const rot = this.hasYard && this.g.yardRotation?.(); if (rot) { const rp = pill({ icon: 'star', text: `${rot.title.toUpperCase()} \u00b7 ${rot.daysLeft}D`, color: C.mustard, h: 22, size: 9, preset: 'headSm', padX: 9, tip: { title: rot.title, body: rot.text + (rot.discountPct ? `\n${rot.discountPct}% off selected items.` : ''), footer: `${rot.daysLeft} days left` } }); rp.x = 280 - rp.w; rp.y = 28; this.yardNote.addChild(rp); } } catch (e) { /* optional */ }
     const c = this.listPane.content; c.removeChildren().forEach((x) => x.destroy({ children: true }));
     let y = 0; let lastBuild = null; this.cards = {}; const W = this.RW - 12;
     const items = this._slotItems(slot);
@@ -166,6 +230,8 @@ export class Shipyard extends Overlay {
     const ents = bonusEntries(u.bonus).slice(0, 3).map((e) => e.text).join('  ·  ');
     const sub = new Label({ text: ents || (u.special ? 'Special equipment' : ''), preset: 'tiny', size: 12, color: C.textDim, w: W - 190, h: 16, fit: true }); sub.x = 46; sub.y = 30; c.addChild(sub);
     if (!st.owned && !st.reward && (st.available || st.price)) { const pr = new Label({ text: num(st.price ?? u.cost), preset: 'num', size: 17, color: st.available ? C.mustard : C.textDim }); pr.x = W - 16 - pr.textWidth; pr.y = 6; c.addChild(pr); const cn = ico('credits', 16, st.available ? C.mustard : C.textDim); cn.x = pr.x - 20; cn.y = 8; c.addChild(cn); }
+    if (st.commissionDays && !st.owned) { const cp = pill({ icon: 'log', text: `${st.commissionDays} DAYS`, color: C.tealLight, h: 16, size: 8, preset: 'headSm', padX: 6 }); cp.x = W - 190; cp.y = 36; c.addChild(cp); }
+    if (st.sale && !st.owned) { const sp = pill({ text: 'SALE', color: C.good, h: 16, size: 8, preset: 'headSm', padX: 6 }); sp.x = W - 236; sp.y = 36; c.addChild(sp); }
     if (st.owned) { const p = pill({ icon: 'check', text: 'INSTALLED', color: C.tealLight, h: 22, size: 9, preset: 'headSm', padX: 8 }); p.x = W - p.w - 12; p.y = 6; c.addChild(p); }
     else if (st.reward) { const p = pill({ icon: 'star', text: 'MISSION REWARD', color: C.mustard, h: 22, size: 9, preset: 'headSm', padX: 8 }); p.x = W - p.w - 12; p.y = 6; c.addChild(p); }
     else if (!st.available) { const lk = ico('lock', 16, C.mustard); lk.x = W - 30; lk.y = 33; c.addChild(lk); }
@@ -185,13 +251,14 @@ export class Shipyard extends Overlay {
     }
   }
   _stepItem(d) {
-    const items = this._slotItems(this.slot); if (!items.length) return; const i = Math.max(0, items.findIndex((u) => u.id === this.sel));
+    const items = this.mode === 'upgrades' ? this._slotItems(this.slot) : Object.values(this.simple || {}); if (!items.length) return; const i = Math.max(0, items.findIndex((u) => u.id === this.sel));
     this.sel = items[(i + d + items.length) % items.length].id; sfx('hover'); this._paintCards(); this._detail(); this._drawStats(); const c = this.cards[this.sel]; if (c) this.listPane.scrollToChild(c);
   }
 
   _detail() {
     const D = this.detail; D.removeChildren().forEach((c) => c.destroy({ children: true }));
     const W = this.RW; D.addChild(well(W, this.DH));
+    if (this.mode !== 'upgrades') { this._detailSimple(); return; }
     const u = this.sel ? upgradeById(this.sel) : null; if (!u) return;
     const st = statusFor(this.g, u, this.hasYard); const bm = BUILD_META[u.build] || BUILD_META.general; const meta = SLOT_META[u.slot];
     const ic = ico(meta.icon, 34, meta.col); ic.x = 16; ic.y = 14; D.addChild(ic);
@@ -231,11 +298,14 @@ export class Shipyard extends Overlay {
 
   // ---------------------------------------------------------------- actions
   async _buy() {
+    if (this.mode !== 'upgrades') { const it = this.simple?.[this.sel]; if (it) this._buySimple(it); return; }
     const u = this.sel && upgradeById(this.sel); if (!u) return;
     const st = statusFor(this.g, u, this.hasYard);
     if (!this.hasYard || !st.available || st.owned) { sfx('deny'); if (this.buyBtn) shake(this.buyBtn); return; }
     const inst = this._installedIn(u.slot);
-    const txt = inst ? `Install ${u.name} for ${num(st.price)} scrip?\n(${num(u.cost)} less ${num(st.tradeIn)} trade-in for ${inst.name}.)` : `Install ${u.name} for ${num(st.price)} scrip?`;
+    const days = st.commissionDays ? `\nThe yard will take ${st.commissionDays} days; the crew eats meanwhile.` : '';
+    const txt0 = inst ? `Install ${u.name} for ${num(st.price)} scrip?\n(${num(u.cost)} less ${num(st.tradeIn)} trade-in for ${inst.name}.)` : `Install ${u.name} for ${num(st.price)} scrip?`;
+    const txt = txt0 + days;
     const ok = await Modal.confirm(txt, { title: 'CONFIRM INSTALL', yes: 'Install', no: 'Not yet' });
     if (!ok || this.modal.destroyed) return;
     const r = this.g.buyUpgrade(u.id);

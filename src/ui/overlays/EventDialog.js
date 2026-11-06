@@ -207,6 +207,14 @@ export class EventDialog extends Overlay {
       const b = pill({ icon: ok ? 'check' : 'warning', text: label + (sub ? '   ' + sub : ''), color: ok ? C.good : C.coral, h: 30, size: 13, padX: 14 }); b.y = y; col.addChild(b); popIn(b, { delay: 60 });
       y += 42;
     }
+    let chips = null;
+    if (isResult || auto) {
+      chips = this.lastDiff && this.lastDiff.length ? this.lastDiff : summaryChips(v.summary || []);
+      if (chips.length) { // lead with what you got: kind-coloured reward badges, then the story
+        const row = chipRow(chips, W, { delay: 80, step: 110 }); row.y = y; col.addChild(row); y += row.h + 18;
+        const rl = hr(W); rl.y = y - 9; rl.alpha = 0.5; col.addChild(rl);
+      }
+    }
     if (text) {
       tw = new Typewriter({ w: W, text, preset: 'body', size: 19, lineHeight: 27, cps: first ? 62 : 70, color: isResult ? C.cream : C.cream, onDone: () => after && after() });
       tw.y = y; col.addChild(tw);
@@ -218,20 +226,11 @@ export class EventDialog extends Overlay {
     const hideHint = () => { if (!hint.destroyed) Anim.to(hint, { alpha: 0 }, 200, { ease: 'linear' }); };
 
     if (isResult || auto) {
-      let chips = this.lastDiff && this.lastDiff.length ? this.lastDiff : null;
-      if (!chips) chips = summaryChips(v.summary || []);
       const cont = new Button({ label: this._contLabel(v), icon: 'arrow', w: 230, h: 48, variant: 'primary', onClick: () => this._continue(), sfx: 'confirm' });
       cont.x = W - 230; cont.y = BH - 56; cont.visible = false; col.addChild(cont); this.contBtn = cont; this.mode = 'continue';
       after = () => {
         hideHint();
-        if (chips.length) {
-          const lab = new Label({ text: 'EFFECTS', preset: 'headSm', size: 10, color: C.textDim }); lab.y = y - 4; col.addChild(lab);
-          const row = chipRow(chips, W, { delay: 120 }); row.y = y + 18; col.addChild(row);
-          const net = chips.some((c) => c.tone === 'bad') && !chips.some((c) => c.tone === 'good') ? 'bad' : 'good';
-          void net;
-        } else {
-          const nl = new Label({ text: 'Nothing changes hands. The moment passes quietly.', preset: 'small', size: 14, color: C.textDim }); nl.y = y; col.addChild(nl);
-        }
+        if (!chips.length) { const nl = new Label({ text: 'Nothing changes hands. The moment passes quietly.', preset: 'small', size: 14, color: C.textDim }); nl.y = y; col.addChild(nl); }
         cont.visible = true; fadeIn(cont, 260, 10);
       };
       if (!tw) after(); else if (tw.done) after();

@@ -58,12 +58,27 @@ export function summaryChips(list = []) {
 
 const TONE_COL = { good: C.good, bad: C.bad, gold: C.mustard, info: C.cream };
 
+const RKIND = { credits: 'scrip', fuel: 'fuel', supplies: 'supplies', hull: 'hull', morale: 'morale', rep: 'rep', cargo: 'cargo', item: 'item', codex: 'codex', crew: 'crew', days: 'days', upgrade: 'item', mission: 'item' };
+
+/** Badge for a chip's reward kind (GFX rewardBadge: round glowing coin in the kind's colour), or null. */
+function badge(ch, size) {
+  const k = RKIND[ch.kind]; if (!k) return null;
+  try {
+    const b = S.gfx.rewardBadge(k, { size, negative: ch.tone === 'bad' }); if (!b) return null;
+    const box = new Container(); box.w = box.h = size; const bb = b.getLocalBounds(); b.x = size / 2 - (bb.x + bb.width / 2); b.y = size / 2 - (bb.y + bb.height / 2); box.addChild(b);
+    if (b.update) Anim.watch(box, (dt) => b.update(dt));
+    return box;
+  } catch (e) { return null; }
+}
+function styleCol(ch) { try { const st = S.gfx.rewardStyle(RKIND[ch.kind], ch.tone === 'bad'); if (st && st.color != null) return st.color; } catch (e) { /* */ } return null; }
+
 export function makeChip(ch, h = 34) {
-  const col = TONE_COL[ch.tone] ?? C.cream;
+  let col = TONE_COL[ch.tone] ?? C.cream; const kc = styleCol(ch); if (kc != null && ch.tone !== 'bad') col = kc;
   let iconNode = null;
   if (ch.faction) iconNode = emblem(ch.faction, h - 6);
   else if (ch.good) iconNode = goodIco(ch.good, h - 6);
-  else if (ch.icon) iconNode = ico(ch.icon, h - 10, ch.color ?? col);
+  else iconNode = badge(ch, h - 6);
+  if (!iconNode && ch.icon) iconNode = ico(ch.icon, h - 10, ch.color ?? col);
   return pill({ iconNode, text: ch.text, color: col, h, size: 15, bg: 0x0b0d1e, bgAlpha: 0.9, padX: 12 });
 }
 

@@ -4,7 +4,7 @@
 
 const EMPTY = () => ({
   FACTIONS: {}, GOODS: [], ECONOMY_BIAS: {}, PRICE_RULES: {},
-  UPGRADES: [], SLOT_COUNT: 8,
+  UPGRADES: [], SLOT_COUNT: 8, REFITS: [], SHIPYARD_ROTATIONS: [], ROTATION_DAYS: 12, TRAINING: [], RIVAL: null,
   CREW_START: [], CREW_POOL: [], TRAITS: {},
   MISSIONS: [], TEMPLATES: [],
   REGIONS: {}, STORY_SYSTEMS: [], CHAPTERS: [], ENDINGS: {}, ENDING_ORDER: [], INTRO_TEXT: [], TIPS: [], RANKS: [],
@@ -33,6 +33,11 @@ function absorb(m) {
   set('ECONOMY_BIAS', pick('ECONOMY_BIAS'));
   set('PRICE_RULES', pick('PRICE_RULES'));
   set('UPGRADES', pick('UPGRADES'), asArray);
+  set('REFITS', pick('REFITS'), asArray);
+  set('SHIPYARD_ROTATIONS', pick('SHIPYARD_ROTATIONS'), asArray);
+  if (typeof m.ROTATION_DAYS === 'number') C.ROTATION_DAYS = m.ROTATION_DAYS;
+  set('TRAINING', pick('TRAINING'), asArray);
+  if (m.RIVAL && typeof m.RIVAL === 'object') C.RIVAL = m.RIVAL;
   if (typeof m.SLOT_COUNT === 'number') C.SLOT_COUNT = m.SLOT_COUNT;
   set('CREW_START', pick('CREW_START'), asArray);
   set('CREW_POOL', pick('CREW_POOL'), asArray);
@@ -57,9 +62,11 @@ function absorb(m) {
 }
 
 /** Lookup tables, rebuilt whenever content changes. */
-export const IDX = { good: {}, upgrade: {}, crewTpl: {}, mission: {}, codex: {}, event: {}, storySystem: {}, chapter: {} };
+export const IDX = { refit: {}, training: {}, good: {}, upgrade: {}, crewTpl: {}, mission: {}, codex: {}, event: {}, storySystem: {}, chapter: {} };
 
 export function rebuild() {
+  IDX.refit = Object.fromEntries(C.REFITS.map((r) => [r.id, r]));
+  IDX.training = Object.fromEntries(C.TRAINING.map((r) => [r.id, r]));
   IDX.good = Object.fromEntries(C.GOODS.map((g) => [g.id, g]));
   IDX.upgrade = Object.fromEntries(C.UPGRADES.map((u) => [u.id, u]));
   IDX.crewTpl = Object.fromEntries([...C.CREW_START, ...C.CREW_POOL].map((c) => [c.id, c]));

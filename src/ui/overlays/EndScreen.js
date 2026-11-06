@@ -181,16 +181,17 @@ export class EndScreen extends Overlay {
   }
   _startScore() {
     if (this._scoring) return; this._scoring = true; let t = 0;
+    let cum = 0; this.totalL.alpha = 1; this.totalL.setText('0');
     this.rowNodes.forEach((n, i) => {
-      t += 260;
-      setTimeout(() => { if (this.modal.destroyed || n.destroyed) return; Anim.to(n, { alpha: 1 }, 200, { ease: 'linear' }); fadeIn(n, 200, 6); countTo(n.valL, 0, n.target, 380, (v) => (n.target < 0 ? '−' : '') + num(Math.abs(v))); sfx('hover', { pitch: 1.2 + i * 0.07, vol: 0.5 }); }, t);
+      t += 260; const from = cum; cum += n.target; const to = i === this.rowNodes.length - 1 ? this.total : cum; // running total always equals the rows revealed so far
+      setTimeout(() => { if (this.modal.destroyed || n.destroyed || this.revealed) return; countTo(this.totalL, from, to, 380, (v) => num(v)); Anim.to(n, { alpha: 1 }, 200, { ease: 'linear' }); fadeIn(n, 200, 6); countTo(n.valL, 0, n.target, 380, (v) => (n.target < 0 ? '−' : '') + num(Math.abs(v))); sfx('hover', { pitch: 1.2 + i * 0.07, vol: 0.5 }); }, t);
     });
     t += 450;
-    setTimeout(() => { if (this.modal.destroyed) return; this.totalL.alpha = 1; countTo(this.totalL, 0, this.total, 1100, (v) => num(v)); sfx('coin'); }, t);
-    t += 1300;
-    setTimeout(() => { if (this.modal.destroyed) return; popIn(this.rankBox, { from: 1.6, ms: 420 }); sfx(this.loss ? 'confirm' : 'fanfare'); try { this.sc.addChild(S.gfx.burst(60, this.rankY + 28, C.mustard, 20)); } catch (er) { /* */ } }, t);
+    setTimeout(() => { if (this.modal.destroyed || this.revealed) return; this.totalL.setText(num(this.total)); sfx('coin'); }, t);
+    t += 500;
+    setTimeout(() => { if (this.modal.destroyed || this.revealed) return; popIn(this.rankBox, { from: 1.6, ms: 420 }); sfx(this.loss ? 'confirm' : 'fanfare'); try { this.sc.addChild(S.gfx.burst(60, this.rankY + 28, C.mustard, 20)); } catch (er) { /* */ } }, t);
     t += 700;
-    setTimeout(() => { if (this.modal.destroyed) return; fadeIn(this.legBox, 400, 10); sfx('powerup'); }, t);
+    setTimeout(() => { if (this.modal.destroyed || this.revealed) return; fadeIn(this.legBox, 400, 10); sfx('powerup'); }, t);
     t += 800;
     setTimeout(() => this._showButtons(), t);
   }

@@ -40,6 +40,7 @@ export function migrate(obj) {
   s.log = s.log || [];
   s.codex = s.codex || [];
   if (s.rival === undefined) s.rival = null;
+  if (!Array.isArray(s.refits)) s.refits = [];
   if (s.distress === undefined) s.distress = null;
   s.missions = s.missions || { active: [], done: [], failed: [] };
   return s;
