@@ -32,6 +32,7 @@ export class Viewscreen extends Container {
     this.orbits = new Graphics(); this.scene.addChild(this.orbits);
     this.hud = new Container(); this.screen.addChild(this.hud);
     this.selG = new Graphics(); this.scene.addChild(this.selG);
+    this.fxG = new Graphics(); this.scene.addChild(this.fxG); this.fx = []; this.pops = new Container(); this.hud.addChild(this.pops);
     const scan = S.gfx.scanlines?.(this.sw, this.sh, 0.05); if (scan) { scan.x = 8; scan.y = 8; scan.eventMode = 'none'; this.addChild(scan); scan.mask = null; }
     // bezel screws + trim
     const g = new Graphics(); for (const [x, y] of [[8, 8], [this.w - 8, 8], [8, this.h - 8], [this.w - 8, this.h - 8]]) { g.circle(x, y, 3).fill(C.brassDark); g.circle(x - 0.7, y - 0.7, 1.5).fill({ color: C.brassLight, alpha: 0.7 }); } g.eventMode = 'none'; this.addChild(g);
@@ -69,6 +70,7 @@ export class Viewscreen extends Container {
       this._addItem({ kind: 'phen', id: ph, obj: ph, x, y, r: 36, make: () => S.gfx.phenomenon(ph, { size: 72 }), name: PHEN_NAMES[ph] || ph });
     });
     if (sys.station) this._addItem({ kind: 'station', id: 'station', obj: sys.station, x: this.sw - 90, y: this.sh - 84, r: 34, make: () => this._stationNode(sys.station), name: sys.station.name });
+    this._nudge();
     // ship
     if (this.ship) this.ship.destroy({ children: true });
     this.ship = S.gfx.ship({ kind: 'halcyon', scale: 0.62, thrust: 0.2 }); this.ship.x = 120; this.ship.y = this.sh - 60; this.scene.addChild(this.ship); this.shipTarget = { x: 120, y: this.sh - 60 };
@@ -79,6 +81,39 @@ export class Viewscreen extends Container {
     this.refresh(game);
     if (arrive) { this.scene.alpha = 0; this.ship.x = -80; Anim.to(this.scene, { alpha: 1 }, 700); this.bg.alpha = 0.2; Anim.to(this.bg, { alpha: 1 }, 900); }
   }
+  /** Keep objects and their labels from colliding (phenomena/station slide to a free spot; labels flip above their body). */
+  _nudge() {
+    const free = (x, y, r, skip) => this.items.every((o) => o === skip || !o.placed || Math.hypot(o.x - x, o.y - y) > o.r + r + 34);
+    const moveTo = (it, x, y) => { it.x = x; it.y = y; it.node.x = x; it.node.y = y; it.node.baseY = y; };
+    for (const it of this.items) { if (it.kind === 'planet') it.placed = true; }
+    for (const it of this.items) {
+      if (it.kind === 'planet') continue;
+      let done = false;
+      for (const dy of [0, 70, -70, 130, -130, 190]) for (const dx of [0, 90, -90, 180]) {
+        const y = it.y + dy, x = it.x + dx; if (done || y < 70 || y > this.sh - 60 || x < 120 || x > this.sw - 60) continue;
+        if (free(x, y, it.r, it)) { moveTo(it, x, y); done = true; }
+      }
+      it.placed = true;
+    }
+    // label collisions
+    const rects = []; const rect = (it, above) => { const lw = it.lab.textWidth, y = above ? it.y - it.r - 22 : it.y + it.r + 6; return { it, x: it.x - lw / 2, y, w: lw, h: 16 }; };
+    const hit = (a, b) => a.x < b.x + b.w + 4 && b.x < a.x + a.w + 4 && a.y < b.y + b.h + 2 && b.y < a.y + a.h + 2;
+    const hitBody = (r, it) => this.items.some((o) => o !== it && r.x < o.x + o.r && r.x + r.w > o.x - o.r && r.y < o.y + o.r && r.y + r.h > o.y - o.r);
+    for (const it of [...this.items].sort((a, b) => a.y - b.y)) {
+      let r = rect(it, false);
+      if (rects.some((q) => hit(r, q)) || hitBody(r, it)) { const r2 = rect(it, true); if (!rects.some((q) => hit(r2, q)) && !hitBody(r2, it)) { r = r2; it.lab.y = -it.r - 22; } }
+      rects.push(r);
+    }
+  }
+  /** Planet-scan sweep: expanding ring + beam from the ship to the planet. */
+  scanSweep(planetId) { const it = this.items.find((x) => x.kind === 'planet' && x.id === planetId); if (it) this.fx.push({ kind: 'sweep', it, t: 0, dur: 1.3 }); }
+  /** Floating "discovery" caption. */
+  discoveryPop(title, sub = '') {
+    const c = new Container(); const t = new Label({ text: title.toUpperCase(), preset: 'head', size: 15, color: C.tealLight, shadow: true }); t.x = -t.textWidth / 2; c.addChild(t);
+    if (sub) { const s = new Label({ text: sub, preset: 'num', size: 16, color: C.mustard, shadow: true }); s.x = -s.textWidth / 2; s.y = 24; c.addChild(s); }
+    c.x = this.sw / 2; c.y = this.sh / 2 + 40; c.alpha = 0; this.pops.addChild(c);
+    Anim.to(c, { alpha: 1, y: c.y - 30 }, 500, { delay: 900 }); Anim.wait(3000).then(() => !c.destroyed && Anim.to(c, { alpha: 0, y: c.y - 60 }, 700, { onDone: () => !c.destroyed && c.destroy({ children: true }) }));
+  }
   _stationNode(st) {
     const real = S.rawGfx?.station; if (real) { try { const n = real({ kind: st.kind, size: 70 }); if (n) return n; } catch (e) { /* fall back */ } }
     const c = new Container(); const g = new Graphics(); g.circle(0, 0, 30).fill({ color: 0x0b0d1e, alpha: 0.7 }); g.circle(0, 0, 30).stroke({ width: 3, color: C.brass }); g.circle(0, 0, 23).stroke({ width: 1.5, color: C.teal, alpha: 0.6 }); c.addChild(g);
@@ -88,7 +123,7 @@ export class Viewscreen extends Container {
   _addItem(it) {
     const node = new Container(); node.x = it.x; node.y = it.y; node.baseY = it.y;
     const art = it.make(); node.addChild(art); it.art = art; it.node = node;
-    const lab = new Label({ text: it.name, preset: 'tiny', size: 13, color: C.cream, shadow: true }); lab.x = -lab.textWidth / 2; lab.y = it.r + 6; node.addChild(lab); it.label = lab;
+    const lab = new Label({ text: it.name, preset: 'tiny', size: 13, color: C.cream, shadow: true, w: 170, fit: true, h: 16 }); lab.x = -lab.textWidth / 2; lab.y = it.r + 6; it.lab = lab; node.addChild(lab); it.label = lab;
     const badge = new Container(); badge.x = it.r * 0.75; badge.y = -it.r * 0.75; node.addChild(badge); it.badge = badge;
     node.eventMode = 'static'; node.cursor = 'pointer'; node.hitArea = new Rectangle(-it.r - 6, -it.r - 6, (it.r + 6) * 2, (it.r + 6) * 2 + 24);
     node.on('pointertap', () => { if (Input.clickAllowed()) this.select(it, true); });
@@ -127,6 +162,17 @@ export class Viewscreen extends Container {
     this.t += dt; this.bg?.update(dt, this.t * 4, 0); this.star?.update?.(dt);
     for (const it of this.items) { it.art.update?.(dt); it.node.y = it.node.baseY + Math.sin(this.t * 0.7 + it.x * 0.01) * 2.5; }
     if (this.ship) { const tg = this.shipTarget; this.ship.x += (tg.x - this.ship.x) * Math.min(1, dt * 2.2); this.ship.y += (tg.y - this.ship.y) * Math.min(1, dt * 2.2) + Math.sin(this.t * 1.3) * 0.12; this.ship.update?.(dt); this.ship.rotation = Math.sin(this.t * 0.9) * 0.03; }
+    const fg = this.fxG; fg.clear();
+    for (let i = this.fx.length - 1; i >= 0; i--) {
+      const f = this.fx[i]; f.t += dt; const p = Math.min(1, f.t / f.dur); const it = f.it;
+      const sx = this.ship?.x ?? 100, sy = this.ship?.y ?? 300;
+      // beam sweeps across the planet disc
+      const ang = Math.atan2(it.node.y - sy, it.node.x - sx); const spread = 0.2 * (1 - p * 0.6);
+      fg.poly([sx, sy, sx + Math.cos(ang - spread) * 900, sy + Math.sin(ang - spread) * 900, sx + Math.cos(ang + spread) * 900, sy + Math.sin(ang + spread) * 900]).fill({ color: C.tealLight, alpha: 0.08 * Math.sin(p * Math.PI) });
+      for (let k = 0; k < 3; k++) { const q = (p * 1.4 - k * 0.18); if (q > 0 && q < 1) fg.circle(it.node.x, it.node.y, it.r + 6 + q * 60).stroke({ width: 2.5 - q * 1.5, color: C.tealLight, alpha: 0.85 * (1 - q) }); }
+      const sw = -Math.PI / 2 + p * Math.PI * 4; fg.moveTo(it.node.x, it.node.y).lineTo(it.node.x + Math.cos(sw) * (it.r + 14), it.node.y + Math.sin(sw) * (it.r + 14)).stroke({ width: 2, color: C.cream, alpha: 0.8 * (1 - p) });
+      if (p >= 1) this.fx.splice(i, 1);
+    }
     // selection ring
     const g = this.selG; g.clear();
     const mark = (it, col, a) => { const r = it.r + 10; for (let k = 0; k < 4; k++) { const s = this.t * 0.8 + k * Math.PI / 2; arcSeg(g, it.node.x, it.node.y, r, s, s + 0.9).stroke({ width: 2.5, color: col, alpha: a }); } };

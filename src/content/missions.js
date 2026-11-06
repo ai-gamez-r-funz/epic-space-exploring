@@ -7,6 +7,7 @@
 // MISSION SHAPE
 //   { id, title, giver:{name,species,faction}, kind:'delivery'|'survey'|'investigate'|'ferry'|'relief'|
 //                                                  'diplomacy'|'fetch'|'story',
+//     distress?: true,                     // ENGINE hook: may also be spawned as a sector distress call (short deadline, relief)
 //     arc?:'main'|'concord'|'quillari'|'vesperine'|'archivists'|'drifters'|'mediation'|null,
 //     blurb, accept,                       // offer text / text on accept
 //     offerWhen:[conds],                   // CONTRACT sec 5 conditions; evaluated against game state
@@ -72,6 +73,9 @@
 export const MISSIONS = [
   // ===========================================================================
   // MAIN ARC: "Who Lit the Lanterns"
+  // Robustness rules: the lantern_N flag is the only REQUIRED objective of a Lantern mission (goto/scan steps are
+  // optional breadcrumbs), so the mission completes however the player gets the flag. Offers are gated by the
+  // engine's chapter_N flags (see story.js CHAPTERS) and appear on ANY station mission board (no offerAt).
   // ===========================================================================
   {
     id: 'm_first_light', title: 'First Light Along the Shore', kind: 'survey', arc: 'main',
@@ -80,7 +84,7 @@ export const MISSIONS = [
     accept: 'Calloway presses a thermos into your hand. "Three charts. Don\'t get lost on purpose."',
     offerWhen: [], offerAt: 'gate_anchorage',
     objectives: [
-      { id: 'o1', type: 'chart', target: { region: 'gate', count: 3 }, text: 'Chart three systems in the Gate Shallows' },
+      { id: 'o1', type: 'chart', target: { region: 'gate', count: 3 }, text: 'Chart three systems near the Gate (jump, then Scan each planet)' },
     ],
     reward: { credits: 250, rep: { concord: 6 }, item: { tea_tin: 2 } },
     onComplete: [{ flag: 'first_light_done' }],
@@ -90,12 +94,11 @@ export const MISSIONS = [
     id: 'm_ch1_wickhaven', title: 'The Lamp at Wickhaven', kind: 'story', arc: 'main',
     giver: { name: 'Director Imogen Calloway', species: 'human', faction: 'concord' },
     blurb: 'A relay buoy has been reporting a patient little light at Wickhaven. It answers hails in a pattern nobody can read, which makes it the most interesting thing in the galaxy this week.',
-    accept: '"Go and say hello," says Calloway. "Don\'t be clever. Be polite."',
-    offerWhen: [{ flag: 'chapter_1' }], offerAt: 'gate_anchorage', ordered: true,
+    accept: '"Go and say hello," says Calloway. "Don\'t be clever. Be polite. Use Investigate on the beacon."',
+    offerWhen: [{ flag: 'chapter_1' }, { notFlag: 'lantern_1' }], offerAt: 'gate_anchorage',
     objectives: [
-      { id: 'o1', type: 'goto', target: 'lantern_wick', text: 'Travel to Wickhaven' },
-      { id: 'o2', type: 'scan', target: 'lantern_wick', what: 'phenomenon', phenomenon: 'beacon', text: 'Investigate the beacon' },
-      { id: 'o3', type: 'flag', flag: 'lantern_1', text: 'Answer the Lantern\'s greeting' },
+      { id: 'o1', type: 'goto', target: 'lantern_wick', optional: true, text: 'Travel to Wickhaven, two hops from the Gate' },
+      { id: 'o2', type: 'flag', flag: 'lantern_1', text: 'Investigate the beacon and answer the Lantern\'s greeting' },
     ],
     reward: { credits: 400, rep: { concord: 8 }, item: { lantern_shard: 1 }, codex: 'the_lanterns' },
     onComplete: [{ flag: 'chapter_1_done' }],
@@ -106,10 +109,10 @@ export const MISSIONS = [
     giver: { name: 'Calloway (by relay)', species: 'human', faction: 'concord' },
     blurb: 'The first Lantern pointed somewhere. The star-map it projected shows a shining sliver in the Brightwater Shoals. Go see who is home.',
     accept: '"Wherever the lamp points," says Calloway, "that\'s where we go next."',
-    offerWhen: [{ flag: 'lantern_1' }, { survey: 15 }], ordered: true,
+    offerWhen: [{ flag: 'chapter_2' }, { notFlag: 'lantern_2' }],
     objectives: [
-      { id: 'o1', type: 'goto', target: 'lantern_brightwater', text: 'Travel to Brightwater Light' },
-      { id: 'o2', type: 'flag', flag: 'lantern_2', text: 'Learn what the second Lantern is saying' },
+      { id: 'o1', type: 'goto', target: 'lantern_brightwater', optional: true, text: 'Travel to Brightwater Light, beyond Pennywhistle Exchange' },
+      { id: 'o2', type: 'flag', flag: 'lantern_2', text: 'Investigate the second Lantern' },
     ],
     reward: { credits: 500, rep: { quillari: 6, concord: 4 }, item: { lantern_shard: 1 } },
     onComplete: [{ flag: 'chapter_2_done' }],
@@ -117,12 +120,12 @@ export const MISSIONS = [
   {
     id: 'm_archive_card', title: 'A Question for the Archive', kind: 'story', arc: 'main',
     giver: { name: 'Reader-Warden Ink-Seven', species: 'archivist', faction: 'archivists' },
-    blurb: 'The second Lantern uses a notation the Archive recognises. The Archivists will not say more until you have presented yourself, in person, with a question that has been properly formed.',
+    blurb: 'The first Lantern uses a notation the Archive recognises. The Archivists will not say more until you have presented yourself, in person, with a question that has been properly formed. Optional, but it opens a quiet door.',
     accept: 'Ink-Seven stamps a card. "You may borrow one answer. Please return it in the condition you found it."',
-    offerWhen: [{ flag: 'lantern_2' }], offerAt: { faction: 'archivists', station: true }, ordered: true,
+    offerWhen: [{ flag: 'lantern_1' }], offerAt: { faction: 'archivists', station: true },
     objectives: [
-      { id: 'o1', type: 'goto', target: 'hollow_archive', docked: true, text: 'Dock at the Central Catalogue' },
-      { id: 'o2', type: 'have', item: 'tea_tin', qty: 1, deliverTo: 'hollow_archive', consume: true, text: 'Present a tin of tea with your question (librarians appreciate a gift)' },
+      { id: 'o1', type: 'goto', target: 'hollow_archive', docked: true, text: 'Dock at the Central Catalogue (the Hollow Archive)' },
+      { id: 'o2', type: 'have', item: 'tea_tin', qty: 1, deliverTo: 'hollow_archive', consume: true, optional: true, text: 'Present a tin of tea with your question (librarians appreciate a gift)' },
     ],
     reward: { credits: 300, rep: { archivists: 10 }, item: { archive_reader_card: 1 }, codex: 'hollow_archive' },
     onComplete: [{ flag: 'archive_key' }],
@@ -133,10 +136,10 @@ export const MISSIONS = [
     giver: { name: 'Chorister Aelwyn-of-the-Third-Verse', species: 'vesperine', faction: 'vesperine' },
     blurb: 'A Lantern burns deep in the Veil, and the Vesperine have sung around it for generations without ever naming it. They would like you to find out whether it wants to be named.',
     accept: 'The chorister shimmers a soft chord. "Quietly, please. It is sleeping, or listening."',
-    offerWhen: [{ flag: 'archive_key' }, { survey: 35 }], offerAt: { faction: 'vesperine', station: true }, ordered: true,
+    offerWhen: [{ flag: 'chapter_3' }, { notFlag: 'lantern_3' }],
     objectives: [
-      { id: 'o1', type: 'goto', target: 'lantern_veilglass', text: 'Cross the Veil to Veilglass' },
-      { id: 'o2', type: 'flag', flag: 'lantern_3', text: 'Hum back to the third Lantern' },
+      { id: 'o1', type: 'goto', target: 'lantern_veilglass', optional: true, text: 'Cross the Vesper Veil to Veilglass' },
+      { id: 'o2', type: 'flag', flag: 'lantern_3', text: 'Investigate the third Lantern (hum back)' },
     ],
     reward: { credits: 600, rep: { vesperine: 10 }, item: { lantern_shard: 1 } },
     onComplete: [{ flag: 'chapter_3_lantern' }],
@@ -144,25 +147,27 @@ export const MISSIONS = [
   {
     id: 'm_ch3_ledger', title: 'The Fellowship Ledger', kind: 'story', arc: 'main',
     giver: { name: 'Reader-Warden Ink-Seven', species: 'archivist', faction: 'archivists' },
-    blurb: 'The Archive holds one sealed ledger that no one has asked to open. The third Lantern has just asked on your behalf, and the librarians are very flustered.',
+    blurb: 'The Archive holds one sealed ledger that no one has asked to open. At Marginalia, the vault is quiet, shelved and very polite. Go and ask correctly.',
     accept: '"We have never been asked this correctly before," says Ink-Seven. "We should like to see how it goes."',
-    offerWhen: [{ flag: 'lantern_3' }, { flag: 'archive_key' }], offerAt: 'hollow_archive', ordered: true,
+    offerWhen: [{ flag: 'chapter_3' }],
     objectives: [
-      { id: 'o1', type: 'goto', target: 'archive_heart', text: 'Travel to Marginalia' },
-      { id: 'o2', type: 'flag', flag: 'fellowship_known', text: 'Open the Fellowship Ledger with permission' },
+      { id: 'o1', type: 'goto', target: 'archive_heart', text: 'Travel to Marginalia, the Archive\'s innermost margin' },
+      { id: 'o2', type: 'scan', target: 'archive_heart', what: 'planets', text: 'Scan every world at Marginalia, including the Heart Vault' },
+      { id: 'o3', type: 'flag', flag: 'fellowship_known', optional: true, text: 'Read the Fellowship Ledger (any Marginalia event may open it)' },
     ],
     reward: { credits: 700, rep: { archivists: 12 }, item: { fellowship_token: 1 }, codex: 'open_sky_fellowship' },
-    onComplete: [{ flag: 'chapter_3_done' }],
+    onComplete: [{ flag: 'fellowship_known' }, { flag: 'chapter_3_done' }],
+    completeText: 'The Ledger opens at last. The first page says, in a very old hand, "Please make yourself at home."',
   },
   {
     id: 'm_ch4_tessitura', title: 'Letter in Slow Time', kind: 'story', arc: 'main',
     giver: { name: 'Calloway (by relay)', species: 'human', faction: 'concord' },
-    blurb: 'The Ledger names a fourth lamp, ticking beside a neutron star. Pulsars are noisy and bumpy, so please bring a good pilot and a second thermos.',
+    blurb: 'The third Lantern names a fourth lamp, ticking beside a neutron star. Pulsars are noisy and bumpy, so please bring a good pilot and a second thermos.',
     accept: '"You\'re the closest thing we have to a Fellowship now," says Calloway. "No pressure."',
-    offerWhen: [{ flag: 'fellowship_known' }, { survey: 50 }], ordered: true,
+    offerWhen: [{ flag: 'chapter_4' }, { notFlag: 'lantern_4' }],
     objectives: [
-      { id: 'o1', type: 'goto', target: 'tessitura', text: 'Fly to Tessitura' },
-      { id: 'o2', type: 'flag', flag: 'lantern_4', text: 'Listen to the whole letter' },
+      { id: 'o1', type: 'goto', target: 'tessitura', optional: true, text: 'Fly to Tessitura, in the Pulsar Choir' },
+      { id: 'o2', type: 'flag', flag: 'lantern_4', text: 'Investigate the fourth Lantern and listen to the whole letter' },
     ],
     reward: { credits: 800, rep: { vesperine: 6, drifters: 6 }, item: { lantern_shard: 1 } },
     onComplete: [{ flag: 'chapter_4_done' }],
@@ -170,27 +175,14 @@ export const MISSIONS = [
   {
     id: 'm_ch5_last_taper', title: 'The Last Taper', kind: 'story', arc: 'main',
     giver: { name: 'Elder Marrow-of-the-Long-Table', species: 'drifter', faction: 'drifters' },
-    blurb: 'Every drifter story ends at a candle by a hungry star. Marrow says that candle is real, and that it has been waiting for a captain with good manners.',
+    blurb: 'Every drifter story ends at a candle by a hungry star. Marrow says that candle is real, and that it has been waiting for a captain with good manners. Bring your Lantern shards.',
     accept: 'Marrow ties a story knot around your wrist. "Tell it kindly."',
-    offerWhen: [{ flag: 'lantern_4' }, { survey: 65 }], offerAt: { faction: 'drifters', station: true }, ordered: true,
+    offerWhen: [{ flag: 'chapter_5' }, { notFlag: 'lantern_5' }],
     objectives: [
-      { id: 'o1', type: 'goto', target: 'lantern_taper', text: 'Sail to Last Taper' },
-      { id: 'o2', type: 'scan', target: 'lantern_taper', what: 'phenomenon', phenomenon: 'beacon', text: 'Approach the fifth Lantern' },
+      { id: 'o1', type: 'goto', target: 'lantern_taper', optional: true, text: 'Sail to Last Taper on the far Quiet Rim' },
+      { id: 'o2', type: 'flag', flag: 'lantern_5', text: 'Investigate the fifth Lantern and answer its question' },
     ],
-    reward: { credits: 1000, rep: { drifters: 10 }, item: { lantern_shard: 1 } },
-    onComplete: [{ flag: 'chapter_5_lamp' }],
-  },
-  {
-    id: 'm_ch5_finale', title: 'The Welcome Mat', kind: 'story', arc: 'main',
-    giver: { name: 'The Last Taper', species: 'unknown', faction: 'none' },
-    blurb: 'All five Lanterns are awake and attentive. They are waiting, with great patience, for you to decide what a welcome mat is for.',
-    accept: 'Light pools around the console. The question is not a test. It is an invitation.',
-    offerWhen: [{ flag: 'lantern_4' }], offerAt: 'lantern_taper', ordered: true, secret: true,
-    objectives: [
-      { id: 'o1', type: 'event', event: 'lantern_5_invitation', text: 'Answer the last Lantern\'s invitation' },
-      { id: 'o2', type: 'flag', flag: 'lantern_5', text: 'Decide what to do with the Lanterns' },
-    ],
-    reward: { credits: 2000, rep: { concord: 5, quillari: 5, vesperine: 5, archivists: 5, drifters: 5 }, upgrade: 'lantern_attunement', codex: 'welcome_mat' },
+    reward: { credits: 1500, rep: { concord: 4, quillari: 4, vesperine: 4, archivists: 4, drifters: 8 }, upgrade: 'lantern_attunement', codex: 'welcome_mat' },
     onComplete: [{ flag: 'chapter_5_done' }],
   },
 
@@ -343,7 +335,8 @@ export const MISSIONS = [
       { id: 'o1', type: 'chart', target: { region: 'archive', count: 2 }, text: 'Chart two systems in the Archive' },
       { id: 'o2', type: 'goto', target: 'hollow_archive', docked: true, text: 'Return the index to Central Catalogue' },
     ],
-    reward: { credits: 650, rep: { archivists: 12 }, upgrade: 'archive_index_lens' },
+    reward: { credits: 650, rep: { archivists: 12 }, upgrade: 'archive_index_lens', item: { scholars_pin: 1 } },
+    onComplete: [{ flag: 'archive_scholar' }],
   },
   // ---- DRIFTER FLEETS ------------------------------------------------------
   {
@@ -379,7 +372,8 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', item: 'drifter_story_knot', qty: 1, deliverTo: 'long_table', text: 'Take your seat at the Long Table and share the story knot' },
     ],
-    reward: { credits: 600, rep: { drifters: 12 }, upgrade: 'drifter_quilt_lounge' },
+    reward: { credits: 600, rep: { drifters: 12 }, upgrade: 'drifter_quilt_lounge', item: { drifter_kin_cord: 1 } },
+    onComplete: [{ flag: 'drifter_adopted' }],
   },
 
   // ===========================================================================
@@ -438,9 +432,9 @@ export const MISSIONS = [
     giver: { name: 'Ambassador Linnea Okoro', species: 'human', faction: 'concord' },
     blurb: 'Both parties have agreed to sit at the same table. Neither will speak until the tea is judged correct. You are the judge. No pressure.',
     accept: 'Okoro folds her hands. "The tea comes first. Everything else comes after."',
-    offerWhen: [{ missionDone: 'm_mediation_2_toll_ladder' }], offerAt: { faction: 'concord', station: true }, ordered: true,
+    offerWhen: [{ missionDone: 'm_mediation_2_toll_ladder' }, { item: 'tea_tin' }], offerAt: { faction: 'concord', station: true }, ordered: true,
     objectives: [
-      { id: 'o1', type: 'have', item: 'tea_tin', qty: 2, deliverTo: 'pennywhistle', consume: true, text: 'Host the Summit of Tea at Pennywhistle with two tins of Meridian tea' },
+      { id: 'o1', type: 'have', item: 'tea_tin', qty: 1, deliverTo: 'pennywhistle', consume: true, text: 'Host the Summit of Tea at Pennywhistle with a tin of Meridian tea' },
     ],
     reward: { credits: 520, rep: { concord: 8, quillari: 8 }, item: { mediators_gavel: 1 }, codex: 'tea_summit' },
   },
@@ -501,7 +495,7 @@ export const MISSIONS = [
     giver: { name: 'An Unmarked Signal', species: 'unknown', faction: 'none' },
     blurb: 'You hum a few bars of the rift\'s song to a passing Vesperine, who gasps and gives you a set of coordinates. The song, it turns out, has a second verse.',
     accept: 'Somewhere across the fold, something is humming along.',
-    offerWhen: [{ codex: 'codex_singing_rifts' }, { flag: 'lantern_3' }], ordered: true,
+    offerWhen: [{ any: [{ codex: 'codex_singing_rifts' }, { flag: 'lantern_3' }] }], offerAt: { faction: 'vesperine', station: true }, ordered: true,
     objectives: [
       { id: 'o1', type: 'goto', target: 'whispering_rift', text: 'Travel to the Whispering Rift' },
       { id: 'o2', type: 'scan', target: 'whispering_rift', what: 'phenomenon', phenomenon: 'rift', text: 'Hum back and listen' },
@@ -513,7 +507,7 @@ export const MISSIONS = [
     giver: { name: 'Elder Marrow-of-the-Long-Table', species: 'drifter', faction: 'drifters' },
     blurb: 'Marrow sees the Fellowship Token on your desk and goes very still. Drifter stories speak of another disc like it, left in a hall at the rim. It has been waiting for its pair.',
     accept: '"Take it to the Taper," says Marrow. "Tell it the tea is still hot."',
-    offerWhen: [{ item: 'fellowship_token' }, { rep: { drifters: 10 } }], offerAt: 'long_table',
+    offerWhen: [{ any: [{ item: 'fellowship_token' }, { flag: 'fellowship_known' }] }, { rep: { drifters: 5 } }], offerAt: { faction: 'drifters', station: true },
     objectives: [
       { id: 'o1', type: 'goto', target: 'lantern_taper', text: 'Carry the Fellowship Token to Last Taper' },
     ],
@@ -529,6 +523,289 @@ export const MISSIONS = [
       { id: 'o1', type: 'have', good: 'curios', qty: 4, deliverTo: 'lyra_landing', consume: true, text: 'Deliver 4 curios to the Lyra Landing museum' },
     ],
     reward: { credits: 360, rep: { concord: 6 }, codex: 'lyra_museum' },
+  },
+
+  // ===========================================================================
+  // RIVAL TRADER: Captain Tamsin Vell of the free-trader Marigold (3 jobs; ends in the 'rival_friend' ending path)
+  // ===========================================================================
+  {
+    id: 'm_rival_1_wager', title: 'A Friendly Wager', kind: 'delivery', arc: 'rival',
+    giver: { name: 'Captain Tamsin Vell', species: 'human', faction: 'none' },
+    blurb: 'A free-trader in a very shiny ship leans on your hull and bets you a round of tea that she can deliver four ration bars faster than you. She cannot. Probably.',
+    accept: 'Vell grins and tips an imaginary hat. "Loser pays for the tea. Winner gets to be insufferable."',
+    offerWhen: [{ survey: 5 }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'ration_bars', qty: 4, deliverTo: { nearest: 'trade', notHere: true, minHops: 2, maxHops: 5 }, consume: true, text: 'Race Vell: deliver 4 ration bars to the nearest trade station 2-5 hops away' },
+    ],
+    reward: { credits: 280, rep: { quillari: 3, concord: 3 } },
+    deadlineDays: 20,
+    failFx: [{ morale: -2 }],
+    onComplete: [{ flag: 'rival_met' }],
+    completeText: 'Vell arrives six minutes after you, wheezing with laughter. "Best round of tea I never paid for."',
+  },
+  {
+    id: 'm_rival_2_tied_race', title: 'A Tie Is a Tie', kind: 'fetch', arc: 'rival',
+    giver: { name: 'Captain Tamsin Vell', species: 'human', faction: 'none' },
+    blurb: 'Vell has won a contract for machine parts and lost the cargo to a very determined customs form. She needs you, her favourite rival, to carry five crates there before she does. She will pretend not to mind.',
+    accept: '"Don\'t tell anyone I asked," says Vell. "Tell everyone I asked, and that you said yes."',
+    offerWhen: [{ missionDone: 'm_rival_1_wager' }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'machine_parts', qty: 5, deliverTo: { nearest: 'station', notHere: true, minHops: 2, maxHops: 6 }, consume: true, text: 'Deliver 5 machine parts to a station 2-6 hops away' },
+    ],
+    reward: { credits: 420, rep: { quillari: 4, concord: 2 }, item: { vell_calling_card: 1 } },
+    deadlineDays: 28,
+    failFx: [{ rep: { quillari: -2 } }],
+  },
+  {
+    id: 'm_rival_3_partners', title: 'Partners, Not Rivals', kind: 'diplomacy', arc: 'rival',
+    giver: { name: 'Captain Tamsin Vell', species: 'human', faction: 'none' },
+    blurb: 'Vell proposes a joint route: your charts and her cargo manifests, one tea service. She needs a Quillari clan to agree. You, she says, are the only one who can make them take her seriously.',
+    accept: 'Vell holds out a hand. "Partners? Properly this time?"',
+    offerWhen: [{ missionDone: 'm_rival_2_tied_race' }, { item: 'vell_calling_card' }, { rep: { quillari: 8 } }], offerAt: { station: true }, ordered: true,
+    objectives: [
+      { id: 'o1', type: 'goto', target: { faction: 'quillari', station: 'trade' }, docked: true, text: 'Present the partnership to a Quillari clan market' },
+      { id: 'o2', type: 'goto', target: 'gate_anchorage', docked: true, text: 'Sign the joint route at Gate Anchorage' },
+    ],
+    reward: { credits: 650, rep: { quillari: 8, concord: 6 } },
+    deadlineDays: 45,
+    onComplete: [{ flag: 'rival_friend' }],
+    completeText: 'Vell signs with a flourish that nearly tears the page. "Right. I shall be unbearable about this for years."',
+  },
+
+  // ===========================================================================
+  // DISTRESS RELIEF (timed, repeatable). `distress:true` = the ENGINE may also spawn these as sector distress calls.
+  // ===========================================================================
+  {
+    id: 'm_distress_medical', title: 'Distress: Medical Kits Needed', kind: 'relief', arc: 'distress', distress: true, repeatable: true,
+    giver: { name: 'Relay Operator Fenwick', species: 'human', faction: 'concord' },
+    blurb: 'A small settlement has put out a call: a fever is going round, nothing serious, but they have run out of kits and patience. Three medical kits would make a very large difference.',
+    accept: '"Hurry, if you can," says Fenwick. "Not fast; just soon."',
+    offerWhen: [{ survey: 8 }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'medical_kits', qty: 3, deliverTo: { nearest: 'station', notHere: true, minHops: 1, maxHops: 4 }, consume: true, text: 'Deliver 3 medical kits to the settlement (nearest station 1-4 hops away)' },
+    ],
+    reward: { credits: 320, rep: { concord: 6 }, item: { distress_medal: 1 } },
+    deadlineDays: 12,
+    failFx: [{ rep: { concord: -2 } }, { morale: -4 }],
+  },
+  {
+    id: 'm_distress_fuel', title: 'Distress: Fuel for a Stranded Hauler', kind: 'relief', arc: 'distress', distress: true, repeatable: true,
+    giver: { name: 'Hauler Captain Dunmore', species: 'quillari', faction: 'quillari' },
+    blurb: 'A cargo hauler has run out of fuel cells one jump short of anywhere. Dunmore is calm, cheerful and extremely cold. Four fuel cells will get everyone moving again.',
+    accept: '"Don\'t rush," says Dunmore, teeth chattering. "But also: rush."',
+    offerWhen: [{ survey: 8 }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'fuel_cells', qty: 4, deliverTo: { nearest: 'outpost', notHere: true, minHops: 1, maxHops: 5 }, consume: true, text: 'Deliver 4 fuel cells to the stranded hauler (nearest outpost)' },
+    ],
+    reward: { credits: 300, rep: { quillari: 6 } },
+    deadlineDays: 10,
+    failFx: [{ rep: { quillari: -2 } }],
+  },
+  {
+    id: 'm_distress_hungry_habitat', title: 'Distress: A Hungry Habitat', kind: 'relief', arc: 'distress', distress: true, repeatable: true,
+    giver: { name: 'Harbour-Mother Teasel', species: 'drifter', faction: 'drifters' },
+    blurb: 'A drifter habitat has run short of food after a bad harvest in the hydroponics. They will not ask for charity. They will ask you to bring six ration bars in exchange for a story.',
+    accept: '"We don\'t beg," says Teasel. "We trade. We trade a good deal in stories."',
+    offerWhen: [{ rep: { drifters: 0 } }, { survey: 12 }], offerAt: { faction: 'drifters', station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'ration_bars', qty: 6, deliverTo: { faction: 'drifters', station: true }, consume: true, text: 'Deliver 6 ration bars to the habitat (a drifter station)' },
+    ],
+    reward: { credits: 340, rep: { drifters: 8 }, item: { story_knot: 1 } },
+    deadlineDays: 16,
+    failFx: [{ rep: { drifters: -2 } }, { morale: -3 }],
+  },
+
+  // ===========================================================================
+  // SURVEY CONTRACTS (big payouts, longer deadlines)
+  // ===========================================================================
+  {
+    id: 'm_contract_veil_atlas', title: 'Contract: An Atlas of the Veil', kind: 'survey', arc: 'contract',
+    giver: { name: 'Atlas-Master Prudence Okafor', species: 'human', faction: 'concord' },
+    blurb: 'The Society will pay generously for four fully charted systems in the Vesper Veil, to fill the long-blank page in the atlas. Chart gently; the Vesperine are listening.',
+    accept: 'Okafor slides a contract across the table. "Sign here, here, and in the margin."',
+    offerWhen: [{ survey: 12 }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'chart', target: { region: 'veil', count: 4 }, text: 'Chart four systems in the Vesper Veil' },
+    ],
+    reward: { credits: 1100, rep: { concord: 6, vesperine: 6 } },
+    deadlineDays: 70,
+    failFx: [{ rep: { concord: -2 } }],
+  },
+  {
+    id: 'm_contract_choir_pulsars', title: 'Contract: The Pulsar Choir Survey', kind: 'survey', arc: 'contract',
+    giver: { name: 'Atlas-Master Prudence Okafor', species: 'human', faction: 'concord' },
+    blurb: 'Three systems and a pulsar reading from the Choir, bumpy and beautiful. The pay is large, and so are the bumps. Plan your fuel.',
+    accept: '"Bring me the Choir in your notebook," says Okafor, "and I shall bring you the cheque."',
+    offerWhen: [{ survey: 25 }], offerAt: { station: true }, ordered: true,
+    objectives: [
+      { id: 'o1', type: 'chart', target: { region: 'choir', count: 3 }, text: 'Chart three systems in the Pulsar Choir' },
+      { id: 'o2', type: 'scan', target: { phenomenon: 'pulsar' }, what: 'phenomenon', phenomenon: 'pulsar', text: 'Take a pulsar reading' },
+    ],
+    reward: { credits: 1300, rep: { concord: 6, vesperine: 4 }, codex: 'codex_pulsar_radio' },
+    deadlineDays: 75,
+    failFx: [{ rep: { concord: -2 } }],
+  },
+  {
+    id: 'm_contract_rim_atlas', title: 'Contract: The Quiet Rim Pages', kind: 'survey', arc: 'contract',
+    giver: { name: 'Elder Marrow-of-the-Long-Table', species: 'drifter', faction: 'drifters' },
+    blurb: 'The drifters have walked the Rim for ages and never drawn it down. They will pay well for three charted systems out there, signed and sealed in a good hand.',
+    accept: 'Marrow taps the table. "Draw it true. We shall know if you embroider."',
+    offerWhen: [{ survey: 30 }, { rep: { drifters: 5 } }], offerAt: { faction: 'drifters', station: true },
+    objectives: [
+      { id: 'o1', type: 'chart', target: { region: 'rim', count: 3 }, text: 'Chart three systems on the Quiet Rim' },
+    ],
+    reward: { credits: 1400, rep: { drifters: 8 } },
+    deadlineDays: 80,
+    failFx: [{ rep: { drifters: -2 } }],
+  },
+
+  // ===========================================================================
+  // CARGO BOUNTIES (rare goods, big pay, no hurry)
+  // ===========================================================================
+  {
+    id: 'm_bounty_aurora_silk', title: 'Bounty: Aurora Silk for the Embassy', kind: 'fetch', arc: 'bounty',
+    giver: { name: 'Ambassador Linnea Okoro', species: 'human', faction: 'concord' },
+    blurb: 'A gala at the nearest embassy needs three bolts of aurora silk, and nothing else will do. Silk is rare, expensive and often found where aurora-beings are shy.',
+    accept: '"I need it by the gala," says Okoro, "and by dawn I shall need it even more."',
+    offerWhen: [{ survey: 10 }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'aurora_silk', qty: 3, deliverTo: { nearest: 'embassy' }, consume: true, text: 'Deliver 3 aurora silk to the nearest embassy' },
+    ],
+    reward: { credits: 900, rep: { concord: 5, vesperine: 3 } },
+    deadlineDays: 60,
+  },
+  {
+    id: 'm_bounty_lantern_glass', title: 'Bounty: Lantern Glass for the Archive', kind: 'fetch', arc: 'bounty',
+    giver: { name: 'Shelver Quire-Three', species: 'archivist', faction: 'archivists' },
+    blurb: 'The Archive collects Lantern glass, small warm slivers that hum near their kin. Two pieces would be a magnificent acquisition. It would also be, as Quire-Three puts it, "most interesting".',
+    accept: '"We will pay any price within reason," says Quire-Three, "and then another price beyond it."',
+    offerWhen: [{ survey: 15 }], offerAt: { faction: 'archivists', station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'lantern_glass', qty: 2, deliverTo: { faction: 'archivists', station: true }, consume: true, text: 'Deliver 2 lantern glass to an Archive station' },
+    ],
+    reward: { credits: 800, rep: { archivists: 8 } },
+    deadlineDays: 80,
+  },
+  {
+    id: 'm_bounty_seed_vault', title: 'Bounty: Seed-Vault Crates for the Long Table', kind: 'fetch', arc: 'bounty',
+    giver: { name: 'Weaver Tamsin Quickfold', species: 'drifter', faction: 'drifters' },
+    blurb: 'The habitat gardens need seed-vault crates before the planting season, and nobody out here knows how to grow things from nothing. Four crates will keep forty habitats in tomatoes.',
+    accept: '"Planting season waits for no one," says Tamsin. "Except me. I always arrive late."',
+    offerWhen: [{ survey: 12 }], offerAt: { faction: 'drifters', station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'seed_vault_crates', qty: 4, deliverTo: { faction: 'drifters', station: true }, consume: true, text: 'Deliver 4 seed-vault crates to a drifter habitat' },
+    ],
+    reward: { credits: 650, rep: { drifters: 7 } },
+    deadlineDays: 60,
+  },
+  {
+    id: 'm_bounty_antiserum', title: 'Bounty: Antiserum for the Outpost', kind: 'relief', arc: 'bounty',
+    giver: { name: 'Nurse Bettany Oakes', species: 'human', faction: 'concord' },
+    blurb: 'A remote outpost reports a mildly unpleasant bug and wants a small supply of antiserum vials, just in case. The vials are tricky to find, and the outpost is not close.',
+    accept: '"Three vials," says Oakes. "Handle them like soup."',
+    offerWhen: [{ survey: 15 }, { rep: { concord: 3 } }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'antiserum_vials', qty: 3, deliverTo: { nearest: 'outpost', notHere: true, minHops: 2, maxHops: 6 }, consume: true, text: 'Deliver 3 antiserum vials to a remote outpost (2-6 hops away)' },
+    ],
+    reward: { credits: 720, rep: { concord: 6 } },
+    deadlineDays: 40,
+    failFx: [{ rep: { concord: -2 } }],
+  },
+
+  // ===========================================================================
+  // FACTION DIPLOMACY CHAINS
+  // ===========================================================================
+  {
+    id: 'm_dip_footnote_1', title: 'The Disputed Footnote (I)', kind: 'diplomacy', arc: 'footnote',
+    giver: { name: 'Shelver Quire-Three', species: 'archivist', faction: 'archivists' },
+    blurb: 'A Quillari clan claims a footnote in an Archive volume as a trade contract. The Archive claims it as a footnote. Both are polite and both are dug in. Carry the Archive\'s greetings to Pennywhistle.',
+    accept: '"We shall be reasonable," says Quire-Three, "once they have admitted they are wrong."',
+    offerWhen: [{ rep: { archivists: 3 } }, { rep: { quillari: 0 } }], offerAt: { faction: 'archivists', station: true }, ordered: true,
+    objectives: [
+      { id: 'o1', type: 'goto', target: 'pennywhistle', docked: true, text: 'Hear the Quillari clan at Pennywhistle Exchange' },
+    ],
+    reward: { credits: 240, rep: { archivists: 4, quillari: 4 } },
+    deadlineDays: 35,
+  },
+  {
+    id: 'm_dip_footnote_2', title: 'The Disputed Footnote (II)', kind: 'diplomacy', arc: 'footnote',
+    giver: { name: 'Matriarch Sunnifer Quill', species: 'quillari', faction: 'quillari' },
+    blurb: 'The clan will give up the footnote for two sheets of fresh Archive vellum, which they say is the principle of the thing. The Archive will accept this. You bring the vellum; everyone gets to be right.',
+    accept: '"Vellum is a gift," says the matriarch. "A footnote is a lien. Let us trade honestly."',
+    offerWhen: [{ missionDone: 'm_dip_footnote_1' }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'vellum_sheets', qty: 2, deliverTo: 'hollow_archive', consume: true, text: 'Deliver 2 vellum sheets to the Central Catalogue (the Hollow Archive)' },
+    ],
+    reward: { credits: 380, rep: { archivists: 6, quillari: 6 } },
+    deadlineDays: 50,
+  },
+  {
+    id: 'm_dip_quiet_treaty_1', title: 'The Quiet Treaty (I)', kind: 'diplomacy', arc: 'quiet_treaty',
+    giver: { name: 'Chorister Aelwyn-of-the-Third-Verse', species: 'vesperine', faction: 'vesperine' },
+    blurb: 'A drifter habitat parks too close to a Vesperine choir and its machinery clatters at all hours. Neither wants to be rude. Carry soft cloth to muffle the habitat\'s gears, and a kind word to the choir.',
+    accept: '"A gift of quiet," says Aelwyn, "is the best gift."',
+    offerWhen: [{ rep: { vesperine: 3 } }], offerAt: { faction: 'vesperine', station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'hand_looms', qty: 2, deliverTo: 'long_table', consume: true, text: 'Deliver 2 hand-looms (for muffling cloth) to the Long Table' },
+    ],
+    reward: { credits: 300, rep: { vesperine: 4, drifters: 4 } },
+    deadlineDays: 45,
+  },
+  {
+    id: 'm_dip_quiet_treaty_2', title: 'The Quiet Treaty (II)', kind: 'diplomacy', arc: 'quiet_treaty',
+    giver: { name: 'Elder Marrow-of-the-Long-Table', species: 'drifter', faction: 'drifters' },
+    blurb: 'The habitat has gone quiet. Now the choir wants to thank them with two tuning crystals, if someone will carry them. Peace by post, delivered by hand.',
+    accept: '"Carry it gently," says Marrow. "It is the first quiet gift anyone has sent us."',
+    offerWhen: [{ missionDone: 'm_dip_quiet_treaty_1' }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'tuning_crystals', qty: 2, deliverTo: 'long_table', consume: true, text: 'Deliver 2 tuning crystals to the Long Table' },
+    ],
+    reward: { credits: 400, rep: { vesperine: 5, drifters: 5 }, item: { vesperine_tuning_fork: 1 } },
+    deadlineDays: 50,
+  },
+
+  // ===========================================================================
+  // THE LAMPLIGHT FESTIVAL (cozy chain, 3 jobs)
+  // ===========================================================================
+  {
+    id: 'm_festival_1_bunting', title: 'Festival: Bunting for the Bazaar', kind: 'delivery', arc: 'festival',
+    giver: { name: 'Festival Marshal Dott', species: 'quillari', faction: 'quillari' },
+    blurb: 'The Lamplight Festival is nearly here and the Bazaar has no bunting. Three hand-looms will make some, and the weavers have promised to stay up all night.',
+    accept: '"Bunting," says Dott, "is the difference between a market and a party."',
+    offerWhen: [{ rep: { quillari: 3 } }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'hand_looms', qty: 3, deliverTo: 'pennywhistle', consume: true, text: 'Deliver 3 hand-looms to the Pennywhistle Bazaar' },
+    ],
+    reward: { credits: 280, rep: { quillari: 5 }, item: { festival_bunting: 1 } },
+    deadlineDays: 40,
+  },
+  {
+    id: 'm_festival_2_lanterns', title: 'Festival: Brandy for the Lanterns', kind: 'delivery', arc: 'festival',
+    giver: { name: 'Festival Marshal Dott', species: 'quillari', faction: 'quillari' },
+    blurb: 'Lanterns burn best on brandy-soaked wicks, according to tradition and a surprisingly authoritative aunt. Three casks of glass brandy to Brightwater Light, please.',
+    accept: '"It is for the lamps," says Dott. "Mostly."',
+    offerWhen: [{ missionDone: 'm_festival_1_bunting' }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'glass_brandy', qty: 3, deliverTo: 'lantern_brightwater', consume: true, text: 'Deliver 3 casks of glass brandy to Brightwater Light' },
+    ],
+    reward: { credits: 400, rep: { quillari: 6 } },
+    deadlineDays: 45,
+  },
+  {
+    id: 'm_festival_3_parade', title: 'Festival: The Lamplight Parade', kind: 'story', arc: 'festival',
+    giver: { name: 'Festival Marshal Dott', species: 'quillari', faction: 'quillari' },
+    blurb: 'The parade route is three harbours long, and Halcyon is leading it. Wave at everyone, hang a ribbon from the mast, and arrive home before the pastries run out.',
+    accept: 'Dott ties a ribbon to the mast, then a second one, then a third.',
+    offerWhen: [{ missionDone: 'm_festival_2_lanterns' }], offerAt: { station: true }, ordered: true,
+    objectives: [
+      { id: 'o1', type: 'goto', target: 'pennywhistle', docked: true, text: 'Start the parade at Pennywhistle Exchange' },
+      { id: 'o2', type: 'goto', target: 'lantern_brightwater', docked: true, text: 'Parade to Brightwater Light' },
+      { id: 'o3', type: 'goto', target: 'gate_anchorage', docked: true, text: 'Finish the parade at Gate Anchorage' },
+    ],
+    reward: { credits: 500, rep: { quillari: 6, concord: 4 }, item: { festival_ribbon: 1 } },
+    deadlineDays: 70,
+    onComplete: [{ morale: 15 }, { flag: 'festival_chain_done' }],
+    completeText: 'Confetti, pastries, and a flotilla of paper lanterns. Even Gus-7 cries a little, which is very out of character for a galley bot.',
   },
 ];
 

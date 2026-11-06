@@ -48,7 +48,7 @@ export class GalaxyMap extends Scene {
     this._buildSide(); this._buildControls();
     this.build();
     // camera: centre on ship
-    const here = g.here(); this.world.scale.set(this.zoom); this.centerOn(here.x, here.y, false);
+    const here = g.here(); this._fitKnown();
     this.select(null);
     this.onChanged(() => { if (!this.jumping) { this.build(); this.refreshSide(); this.hud.refresh(); } });
     Input.bind(v, 'Enter', () => this.planJump());
@@ -62,6 +62,14 @@ export class GalaxyMap extends Scene {
   onEscape() { if (this.jumping) return; this.ui.goto('Bridge', {}, { kind: 'wipe', dir: 'right', ms: 350 }); }
 
   // ------------------------------------------------------------------ camera
+  /** Zoom/pan so every known system is visible (C27), clamped to a comfortable zoom. */
+  _fitKnown() {
+    const k = this.game.state.galaxy.systems.filter((s) => s.status !== 'unknown'); const here = this.game.here();
+    const xs = k.map((s) => s.x), ys = k.map((s) => s.y); const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const aw = W - 130 - 360, ah = H - 150; const z = Math.max(0.55, Math.min(1.25, Math.min(aw / Math.max(260, x1 - x0 + 200), ah / Math.max(200, y1 - y0 + 200))));
+    this.world.scale.set(z); const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    this.world.x = 130 + aw / 2 - cx * z; this.world.y = 80 + ah / 2 - cy * z; this._clamp(); this._applyLOD();
+  }
   _clamp() {
     const gal = this.game.state.galaxy, s = this.world.scale.x; const m = 160;
     const minX = W - (gal.w + m) * s, maxX = m * s, minY = H - (gal.h + m) * s, maxY = (m + 40) * s;
@@ -78,9 +86,21 @@ export class GalaxyMap extends Scene {
     this.world.scale.set(s); this.world.x = tx; this.world.y = ty; this._clamp(); this._applyLOD();
   }
   _applyLOD() {
-    const s = this.world.scale.x;
-    for (const n of this.nodes.values()) { n.label.visible = n.known && (s > 0.75 || n.sys.id === this.sel || n.hover || n.sys.id === this.game.state.pos); n.label.scale.set(Math.max(0.7, Math.min(1.3, 1 / s))); n.label.x = -n.label.width / 2; }
-    this.regionLabels.alpha = Math.max(0, Math.min(1, 1.35 - s * 0.9));
+    const sc = this.world.scale.x; const cur = this.game.state.pos; const list = [];
+    for (const n of this.nodes.values()) {
+      const want = n.known && (sc > 0.62 || n.sys.id === this.sel || n.hover || n.sys.id === cur);
+      n.label.scale.set(Math.max(0.7, Math.min(1.3, 1 / sc))); n.label.x = -n.label.width / 2 / 1; n.label.x = -(n.label.textWidth * n.label.scale.x) / 2;
+      n.label.visible = false; if (want) list.push(n);
+    }
+    // collision culling: higher priority labels win (current > selected > hovered > charted > visited)
+    const pri = (n) => (n.sys.id === cur ? 5 : n.sys.id === this.sel ? 4 : n.hover ? 3 : n.sys.status === 'charted' ? 2 : 1);
+    list.sort((a, b) => pri(b) - pri(a)); const taken = [];
+    for (const n of list) {
+      const w = n.label.textWidth * n.label.scale.x * sc, h = 16 * n.label.scale.y * sc; const x = n.sys.x * sc - w / 2, y = n.sys.y * sc + 18 * sc;
+      if (taken.some((t) => x < t.x + t.w + 4 && t.x < x + w + 4 && y < t.y + t.h + 2 && t.y < y + h + 2) && pri(n) < 3) continue;
+      taken.push({ x, y, w, h }); n.label.visible = true;
+    }
+    this.regionLabels.alpha = Math.max(0, Math.min(1, 1.35 - sc * 0.9));
   }
 
   // ------------------------------------------------------------------ build map
@@ -223,6 +243,13 @@ export class GalaxyMap extends Scene {
     }
     const mt = missionTargets(g).get(s.id); if (mt) add('Mission: ' + mt.join(', '), { color: C.mustard });
   }
+  /** Tolerant extraction of system ids from state.distress / state.rival (array | map | single object | id string). */
+  _flagSystems(v) {
+    if (!v) return []; const out = [];
+    const add = (o) => { if (!o) return; if (typeof o === 'string') out.push(o); else if (typeof o === 'object') { const id = o.systemId || o.system || o.pos || o.at || o.id; if (typeof id === 'string') out.push(id); } };
+    if (Array.isArray(v)) v.forEach(add); else if (typeof v === 'object' && !(v.systemId || v.system || v.pos || v.at)) { for (const [k, x] of Object.entries(v)) { if (x && typeof x === 'object') add(x.systemId || x.system || x.pos ? x : k); else if (x) out.push(k); } } else add(v);
+    return out;
+  }
   planJump() {
     if (this.jumping || !this.sel) return; const g = this.game; const st = g.state;
     let to = this.sel; if (to === st.pos) return;
@@ -234,13 +261,25 @@ export class GalaxyMap extends Scene {
   // ------------------------------------------------------------------ jump animation
   async playJump(to) {
     const g = this.game; const A = g.here(), B = g.system(to);
-    this.jumping = true; this.ui.holdEvents = true; Tooltip.hide(); sfx('jump');
+    this.jumping = true; this.ui.holdEvents = true; Tooltip.hide(); sfx('powerup');
+    const prefs = window.__halcyonPrefs || { shake: true, anim: true };
     Anim.to(this.side, { alpha: 0, x: this.side.x + 40 }, 300); this.planBtn.eventMode = 'none';
     // ship glides along the lane
     const ship = S.gfx.ship({ kind: 'halcyon', scale: 0.32, thrust: 1 }); this.shipLayer.addChild(ship); ship.x = A.x; ship.y = A.y; ship.rotation = Math.atan2(B.y - A.y, B.x - A.x);
     const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2; const zoom = Math.min(1.4, Math.max(0.8, 520 / (Math.hypot(A.x - B.x, A.y - B.y) + 80)));
     this.centerOn(mx, my, true, zoom);
-    await Anim.wait(500);
+    // anticipation: engines spool up, a ring contracts onto the ship, the chart trembles
+    if (prefs.anim !== false) {
+      const ant = { p: 0 }; const ox = this.world.x, oy = this.world.y;
+      await Anim.to(ant, { p: 1 }, 800, { ease: 'inQuad', onUpdate: () => {
+        const k = ant.p; this.fx.clear();
+        for (let i = 0; i < 3; i++) { const q = (k * 1.6 - i * 0.25); if (q > 0 && q < 1) this.fx.circle(A.x, A.y, 8 + (1 - q) * 70).stroke({ width: 2.5, color: C.tealLight, alpha: 0.2 + q * 0.7 }); }
+        ship.scale.set(0.32 * (1 + 0.18 * Math.sin(k * 30) * k)); ship.update?.(0.016);
+        if (prefs.shake !== false) { this.world.x = ox + (Math.random() - 0.5) * 3.5 * k; this.world.y = oy + (Math.random() - 0.5) * 3.5 * k; }
+      } }).promise;
+      this.world.x = ox; this.world.y = oy; ship.scale.set(0.32); this.fx.clear();
+    } else await Anim.wait(250);
+    sfx('jump');
     const prog = { p: 0 }; const glide = Anim.to(prog, { p: 1 }, 1300, { ease: 'inOutCubic', onUpdate: () => { ship.x = A.x + (B.x - A.x) * prog.p; ship.y = A.y + (B.y - A.y) * prog.p; ship.update?.(0.016); this.fx.clear().moveTo(A.x, A.y).lineTo(ship.x, ship.y).stroke({ width: 3, color: C.tealLight, alpha: 0.7 }); } });
     await glide.promise;
     // warp streaks
@@ -251,7 +290,7 @@ export class GalaxyMap extends Scene {
     const wp = { p: 0 }; const run = Anim.to(wp, { p: 1 }, 1100, { ease: 'inQuad', onUpdate: () => {
       dark.alpha = Math.min(1, wp.p * 3); sg.clear(); const k = wp.p;
       for (const s of streaks) { const r0 = s.d + k * k * 900 * s.sp, r1 = r0 + 6 + k * 420 * s.sp; sg.moveTo(W / 2 + Math.cos(s.a) * r0, H / 2 + Math.sin(s.a) * r0 * 0.75).lineTo(W / 2 + Math.cos(s.a) * r1, H / 2 + Math.sin(s.a) * r1 * 0.75).stroke({ width: 1.2 + k * 2, color: s.col, alpha: 0.4 + k * 0.6 }); }
-      flash.alpha = Math.max(0, (k - 0.82) / 0.18); } });
+      flash.alpha = Math.max(0, (k - 0.82) / 0.18); if (prefs.shake !== false) { warp.x = (Math.random() - 0.5) * 6 * k; warp.y = (Math.random() - 0.5) * 6 * k; } } });
     // perform the actual jump mid-warp
     setTimeout(() => { this._result = g.jump(to); }, 300);
     await run.promise;
@@ -271,6 +310,8 @@ export class GalaxyMap extends Scene {
       g.circle(cur.x, cur.y, 20 + pulse * 6).stroke({ width: 2, color: C.tealLight, alpha: 0.9 - pulse * 0.5 });
       g.poly([cur.x, cur.y - 26 - pulse * 3, cur.x - 6, cur.y - 36 - pulse * 3, cur.x + 6, cur.y - 36 - pulse * 3]).fill(C.tealLight);
       for (const [id, n] of this.nodes) if (n.neigh && id !== this.sel) { const ok = this.game.state.ship.fuel >= n.neigh.fuelCost; g.circle(n.sys.x, n.sys.y, 18).stroke({ width: 1.5, color: ok ? C.teal : C.coral, alpha: 0.35 }); }
+      for (const id of this._flagSystems(this.game.state.distress)) { const s = this.game.system(id); if (s && this.nodes.has(id)) { const q = (this.t * 1.2) % 1; g.circle(s.x, s.y, 14 + q * 26).stroke({ width: 2.5, color: C.coral, alpha: 0.9 * (1 - q) }); g.circle(s.x, s.y, 14).stroke({ width: 2, color: C.coral, alpha: 0.8 }); } }
+      for (const id of this._flagSystems(this.game.state.rival)) { const s = this.game.system(id); if (s && this.nodes.has(id)) { g.poly([s.x + 16, s.y - 20, s.x + 28, s.y - 14, s.x + 16, s.y - 8]).fill(C.mustard); g.poly([s.x + 16, s.y - 20, s.x + 28, s.y - 14, s.x + 16, s.y - 8]).stroke({ width: 1.2, color: 0x0b0d1e }); } }
       if (this.sel) { const s = this.game.system(this.sel); if (s) for (let k = 0; k < 6; k++) { const a = this.t + k * Math.PI / 3; arcSeg(g, s.x, s.y, 24, a, a + 0.55).stroke({ width: 2.5, color: C.mustard }); } }
     }
   }

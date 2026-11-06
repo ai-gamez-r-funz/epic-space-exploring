@@ -7,7 +7,7 @@ import { SKILLS, cap } from './common.js';
 export const SLOT_META = {
   engine: { icon: 'engineering', name: 'Engine', col: 0xf0a04a },
   sensors: { icon: 'scan', name: 'Sensors', col: 0x6fc7e8 },
-  hull: { icon: 'hull', name: 'Hull', col: 0x7fb4e8 },
+  hull: { icon: 'hull', name: 'Hull', col: 0x8fb98b },
   cargo: { icon: 'cargo', name: 'Cargo', col: 0x8fb98b },
   comms: { icon: 'hail', name: 'Comms', col: 0xb58be0 },
   lab: { icon: 'science', name: 'Lab', col: 0x3fc1b0 },

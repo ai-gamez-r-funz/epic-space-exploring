@@ -91,7 +91,7 @@ export class ScrollList extends ScrollPane {
       const bg = new Graphics(); row.bg = bg; row.addChild(bg);
       const body = this.lo.render ? this.lo.render(it, i, w, itemH) : this._defaultRow(it, w, itemH);
       row.addChild(body);
-      row.hitArea = new Rectangle(0, 0, w, itemH);
+      row.hitArea = new Rectangle(0, -Math.floor(gap / 2), w, itemH + gap);
       row.hover = false; this._paintRow(row, w, itemH);
       row.on('pointerover', () => { row.hover = true; this._paintRow(row, w, itemH); });
       row.on('pointerout', () => { row.hover = false; this._paintRow(row, w, itemH); });

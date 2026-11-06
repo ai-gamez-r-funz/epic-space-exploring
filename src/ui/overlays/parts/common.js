@@ -13,7 +13,7 @@ export const prettify = (id) => cap(String(id || '').replace(/_/g, ' '));
 
 export const SKILL_COL = { science: 0x6fc7e8, engineering: C.mustard, medicine: 0xf08a9a, diplomacy: C.teal, piloting: 0xb58be0 };
 export const SKILLS = ['science', 'engineering', 'medicine', 'diplomacy', 'piloting'];
-export const RES_COL = { fuel: 0xf0a04a, supplies: 0x8fb98b, hull: 0x7fb4e8, morale: 0xf08a9a, credits: C.mustard };
+export const RES_COL = { fuel: 0x3fc1b0, supplies: 0xe8b53a, hull: 0x8fb98b, morale: 0xe58fb0, credits: C.mustard }; // keep in sync with kit/theme.js RES_COL
 export const RES_NAME = { fuel: 'Fuel', supplies: 'Supplies', hull: 'Hull', morale: 'Morale', credits: 'Scrip' };
 export const SPECIES_FACTION = { human: 'concord', quillari: 'quillari', vesperine: 'vesperine', archivist: 'archivists', drifter: 'drifters' };
 

@@ -29,6 +29,14 @@
 //   priceSell      +fraction on prices when SELLING goods   (0.05 = +5%)
 //   buyDiscount    fraction knocked off prices when BUYING goods and docked services (0.05 = -5%)
 //   (slots? is NOT used.)
+//   NEGATIVE values are allowed and are used for TRADE-OFF upgrades (e.g. cargoMax +14 but jumpRange -0.12,
+//   efficiency 1.08 = thirstier, hullMax -25 = thin skin). The engine sums them like any other bonus.
+//
+// ENGINE STATUS OF SPECIAL IDS (see ENGINE_SPECIALS_TODO and UNLOCK_ONLY_SPECIALS exports below):
+//   * The 15 original ids are implemented.
+//   * UNLOCK_ONLY ids need NO engine code: hasUpgrade(state,id) already matches a special id, so events/missions
+//     gate options with {upgrade:'survey_hull'} etc. (see TEASERS for the phrase events can quote).
+//   * ENGINE_SPECIALS_TODO ids need small engine hooks; each has an exact one-line spec in SPECIALS.
 //
 // SPECIAL IDS (slot 'special' unless noted; engine implements by id; see SPECIALS table below for text):
 //   tea_service        resting & docked days restore +50% morale; crew mood +1 after each rest
@@ -61,7 +69,19 @@ export const SPECIAL_IDS = [
   'tea_service', 'slide_rule_array', 'translator_parrot', 'solar_sails', 'cargo_net', 'observation_dome',
   'emergency_beacon', 'cartographers_table', 'diplomatic_pouch', 'barrel_roll_gyro', 'bulk_contracts',
   'rest_cure', 'trade_licence_quillari', 'steady_hand', 'lantern_attunement',
+  // --- added in fix round 1 ---
+  'distress_transponder', 'market_ear', 'rival_handshake', 'long_range_hails', 'prize_cartography',
+  'field_hospital', 'brittle_array', 'thrifty_galley', 'false_floor', 'ice_scoop',
+  'survey_hull', 'ambassadors_hull', 'salvage_boom', 'quiet_running',
 ];
+
+/** New specials whose behaviour the ENGINE must implement (exact specs in SPECIALS). */
+export const ENGINE_SPECIALS_TODO = [
+  'distress_transponder', 'market_ear', 'rival_handshake', 'long_range_hails', 'prize_cartography',
+  'field_hospital', 'brittle_array', 'thrifty_galley', 'false_floor', 'ice_scoop',
+];
+/** Specials that exist only so events/missions can test {upgrade:id}; no engine behaviour. */
+export const UNLOCK_ONLY_SPECIALS = ['survey_hull', 'ambassadors_hull', 'salvage_boom', 'quiet_running'];
 
 export const SPECIALS = {
   tea_service: 'Resting and docked days restore 50% more morale; crew mood +1 after each rest.',
@@ -79,6 +99,62 @@ export const SPECIALS = {
   trade_licence_quillari: 'Quillari markets stock 2 extra goods and pay 10% more for your cargo.',
   steady_hand: 'Ionstorms, nebulae and asteroid fields no longer damage the hull in transit.',
   lantern_attunement: 'Mystery events are twice as likely; Lantern beacons reveal one extra neighbouring system.',
+
+  // ---- ENGINE MUST IMPLEMENT (exact one-line behaviours) ----
+  distress_transponder: 'Events tagged "relief": every positive credits and positive rep fx is multiplied by 1.25 (ceil), and the event weight of relief-tagged events is x1.5 in the eligible pool.',
+  market_ear: 'g.market(sys) additionally returns tips[]: up to 3 {goodId, systemId, systemName, sell} for goods in this market where the best sell price among other VISITED systems (state.markets cache) beats this market\'s buy price by >= 25%.',
+  rival_handshake: 'On install (once, guarded by flag rival_handshake_given): counters.rival_friend += 2 so the rival "Propose a joint run" option is open at once; while state.rival exists, selling the good state.rival.goodId earns +8% sell price.',
+  long_range_hails: 'g.hail() at a system where no hail event is eligible (the "polite nothing" case) applies fx [{reveal:"nearest"},{toast:"Long-range chatter: a new light on the chart"}] once per system (counter hails_<sysId>).',
+  prize_cartography: 'On the FIRST scan of each planet: credits += min(60, 8 + 12 * planet.features.length) with toast "Prize cartography +N scrip" (stacks with cartographers_table).',
+  field_hospital: 'checkOdds for skill "medicine" gets +0.10 odds, and every rest(days) day adds +2 morale and +1 hull.',
+  brittle_array: 'Travel hazard hull damage (the per-jump hazard roll) is multiplied by 1.5 (before difficulty scaling).',
+  thrifty_galley: 'Daily supplies consumption (travel and rest) is multiplied by 0.75.',
+  false_floor: 'On dock at a system whose faction is "concord": 15% chance (state rng) of a customs spot-check: credits -40 (min 0), rep concord -2, toast "Customs found the hidden pantry panels. Forms were filed." No other effect; never combat.',
+  ice_scoop: 'On arrival at a system with phenomenon "comet": fuel += 3 (clamped) with toast "Comet ice scooped: +3 fuel".',
+
+  // ---- UNLOCK ONLY (events gate options with {upgrade:id}; no engine code) ----
+  survey_hull: 'Unlocks "survey-hull" options in science, planet and phenomenon events (instrument booms, side-scan passes).',
+  ambassadors_hull: 'Unlocks "ambassador" options in hail and station events (a hull fit for formal receptions).',
+  salvage_boom: 'Unlocks "salvage" options in derelict, asteroid and wreck events (grapple arm, cargo cradle).',
+  quiet_running: 'Unlocks "quiet approach" options in Vesperine, nebula and rift events (muffled engines).',
+};
+
+/**
+ * One phrase per gating id that EVENTS may quote in a locked-choice reason or in prose, e.g.
+ *   label: 'Run a side-scan pass', if:[{upgrade:'survey_hull'}]  -> reason "needs " + TEASERS.survey_hull
+ * Keys are special ids OR upgrade ids (both satisfy {upgrade:id}).
+ */
+export const TEASERS = {
+  survey_hull: 'a survey-fit hull with instrument booms',
+  ambassadors_hull: 'an ambassador\'s hull fit for formal receptions',
+  salvage_boom: 'a salvage boom and cargo cradle',
+  quiet_running: 'quiet-running engine mufflers',
+  hospital_hull: 'a hospital-ship hull with a proper ward',
+  distress_transponder: 'a distress transponder tuned to the relief bands',
+  market_ear: 'a market-ear listening post',
+  rival_handshake: 'Tamsin\'s handshake pin',
+  long_range_hails: 'a long-range hail horn',
+  prize_cartography: 'a prize-cartography press',
+  field_hospital: 'a field hospital ward',
+  ice_scoop: 'a comet-ice scoop',
+  false_floor: 'a set of hidden pantry panels',
+  thrifty_galley: 'a thrifty galley',
+  brittle_array: 'a glass-fine sensor array',
+  tea_service: 'a brass tea service',
+  slide_rule_array: 'a slide-rule array',
+  translator_parrot: 'a translator parrot',
+  solar_sails: 'solar sails',
+  cargo_net: 'a cargo net',
+  observation_dome: 'an observation dome',
+  emergency_beacon: 'an emergency beacon',
+  cartographers_table: 'a cartographer\'s table',
+  diplomatic_pouch: 'a diplomatic pouch',
+  barrel_roll_gyro: 'a barrel-roll gyro',
+  bulk_contracts: 'dock-side bulk contracts',
+  rest_cure: 'a hammock deck',
+  trade_licence_quillari: 'a Quillari trade licence',
+  steady_hand: 'a brass astrolabe',
+  lantern_attunement: 'a Lantern attunement prism',
 };
 
 function U(id, name, slot, tier, cost, o) {
@@ -101,19 +177,19 @@ export const UPGRADES = [
     build: 'explorer',
     desc: 'Careful valve-balancing for thriftier jumps.',
     flavor: 'Chief Engineer Okonkwo calls it "listening to the engine until it tells you what it wants".',
-    bonus: { efficiency: 0.92 },
+    bonus: { efficiency: 0.88 },
   }),
   U('long_haul_drive', 'Long-Haul Drive', 'engine', 2, 650, {
     build: 'explorer', requires: ['ion_trimmer'],
     desc: 'Bigger tanks, longer reach, patient pistons.',
     flavor: 'Rated for the kind of journey that needs sandwiches.',
-    bonus: { efficiency: 0.85, jumpRange: 0.10, fuelMax: 2 },
+    bonus: { efficiency: 0.80, jumpRange: 0.10, fuelMax: 4 },
   }),
   U('deep_reach_engine', 'Deep-Reach Engine', 'engine', 3, 1700, {
     build: 'explorer', requires: ['long_haul_drive'],
     desc: 'A proper survey-class warp core with a cathedral of brass.',
     flavor: 'It hums in a key that makes the plants lean toward the bridge.',
-    bonus: { efficiency: 0.78, jumpRange: 0.25, fuelMax: 4 },
+    bonus: { efficiency: 0.72, jumpRange: 0.25, fuelMax: 8 },
   }),
   U('tuned_manifold', 'Tuned Manifold', 'engine', 1, 260, {
     build: 'daredevil',
@@ -183,13 +259,13 @@ export const UPGRADES = [
     build: 'daredevil',
     desc: 'Extra plates, a lot of rivets, and the comforting clang of hard work.',
     flavor: 'Each rivet was hammered in by someone who said a small prayer.',
-    bonus: { hullMax: 20 },
+    bonus: { hullMax: 25 },
   }),
   U('dust_shield_lattice', 'Dust-Shield Lattice', 'hull', 2, 520, {
     build: 'daredevil', requires: ['riveted_plating'],
     desc: 'A fine layered mesh that turns micrometeorites into gentle sparkles.',
     flavor: 'Looks like lace, behaves like a bank vault.',
-    bonus: { hullMax: 40 },
+    bonus: { hullMax: 50 },
   }),
   U('bulwark_frame', 'Bulwark Frame', 'hull', 3, 1500, {
     build: 'daredevil', requires: ['dust_shield_lattice'],
@@ -201,13 +277,13 @@ export const UPGRADES = [
     build: 'caretaker',
     desc: 'Gummy resin in the joints that quietly mends hairline cracks.',
     flavor: 'The ship, as it were, knits itself a scarf.',
-    bonus: { repairPerDay: 0.5, hullMax: 5 },
+    bonus: { repairPerDay: 0.8, hullMax: 5 },
   }),
   U('tinker_bay_plating', 'Tinker-Bay Plating', 'hull', 2, 650, {
     build: 'caretaker', requires: ['self_sealing_seams'],
     desc: 'Plating with maintenance crawlways built right in. The crew can fix anything from within.',
     flavor: 'The maintenance bot calls them "the scenic route".',
-    bonus: { repairPerDay: 1, hullMax: 15, skills: { engineering: 1 } },
+    bonus: { repairPerDay: 1.4, hullMax: 15, skills: { engineering: 1 } },
   }),
   U('living_hull_lattice', 'Living-Hull Lattice', 'hull', 3, 1700, {
     build: 'caretaker', requires: ['tinker_bay_plating'],
@@ -269,7 +345,7 @@ export const UPGRADES = [
     build: 'caretaker',
     desc: 'An insulated store with extra shelf-room for rations and tonics.',
     flavor: 'Always cold, always stocked, always mildly smug.',
-    bonus: { suppliesMax: 6, cargoMax: 2 },
+    bonus: { suppliesMax: 8, cargoMax: 2 },
   }),
 
   // ===================================================================== COMMS
@@ -389,13 +465,13 @@ export const UPGRADES = [
     build: 'caretaker',
     desc: 'Window-boxes of herbs and tomatoes beside the galley.',
     flavor: 'Smells of basil and gentle regret over last week\'s casserole.',
-    bonus: { suppliesMax: 5, moraleRegen: 0.2 },
+    bonus: { suppliesMax: 6, moraleRegen: 0.3 },
   }),
   U('hydroponic_galley', 'Hydroponic Galley', 'lounge', 2, 560, {
     build: 'caretaker', requires: ['galley_garden'],
     desc: 'Racks of greens, a miniature orchard, and a small but opinionated chef.',
     flavor: 'The chef\'s signature dish is "salad, but with feeling".',
-    bonus: { suppliesMax: 10, moraleRegen: 0.4 },
+    bonus: { suppliesMax: 12, moraleRegen: 0.6 },
   }),
   U('orchard_deck', 'Orchard Deck', 'lounge', 3, 1300, {
     build: 'caretaker', requires: ['hydroponic_galley'],
@@ -451,7 +527,7 @@ export const UPGRADES = [
     build: 'explorer', special: 'solar_sails',
     desc: 'Gossamer sails that drink bright starlight and trickle it into the fuel tanks.',
     flavor: 'The crew call them "the washing line". The engineer calls them "genius".',
-    bonus: { fuelMax: 1 },
+    bonus: { fuelMax: 2 },
   }),
   U('cartographers_table', "Cartographer's Table", 'special', 2, 600, {
     build: 'explorer', special: 'cartographers_table',
@@ -499,6 +575,116 @@ export const UPGRADES = [
     build: 'explorer', reward: true, special: 'lantern_attunement',
     desc: 'A prism of Lantern-glass that hums when mysteries are near. A gift of the Reach itself.',
     flavor: 'It has warmed to you. We are as surprised as you.',
+    bonus: { skills: { science: 1 } },
+  }),
+  // ===================================================================== FIX ROUND 1: BUILD-DEFINING / TRADE-OFF UPGRADES
+  // (each has a real downside; several unlock event options via special ids)
+  U('reservoir_tanks', 'Reservoir Tanks', 'engine', 1, 300, {
+    build: 'explorer',
+    desc: 'Enormous tanks bolted to the keel. Far more fuel, but heavier on the throttle and slower to turn.',
+    flavor: 'The engineer calls them "the barrels". The pilot calls them other things.',
+    bonus: { fuelMax: 10, efficiency: 1.04, jumpRange: -0.05 },
+  }),
+  U('fuel_reclaimer', 'Fuel Reclaimer', 'engine', 2, 600, {
+    build: 'explorer', requires: ['ion_trimmer'],
+    desc: 'Catches and re-burns exhaust. Wonderfully thrifty, but the tank it needs is half the size.',
+    flavor: 'Nothing is wasted. Nothing is stored, either.',
+    bonus: { efficiency: 0.76, fuelMax: -6 },
+  }),
+  U('quiet_running_kit', 'Quiet-Running Kit', 'engine', 2, 700, {
+    build: 'diplomat', requires: ['ion_trimmer'], special: 'quiet_running',
+    desc: 'Muffled manifolds and felt-lined mounts. Vesperine hosts adore it; the engine loses a little punch.',
+    flavor: 'The Choirs sent a thank-you card. In E-flat.',
+    bonus: { efficiency: 0.94, jumpRange: -0.06, skills: { diplomacy: 1 } },
+  }),
+  U('glass_array', 'Glass-Fine Array', 'sensors', 3, 1350, {
+    build: 'explorer', requires: ['spectral_comb'], special: 'brittle_array',
+    desc: 'Exquisitely delicate sensor glass. Sees farther than anything else afloat; rough weather rattles the whole ship harder.',
+    flavor: 'Handle with gloves, sympathy and a very steady pilot.',
+    bonus: { scanRange: 0.6, skills: { science: 2 } },
+  }),
+  U('survey_hull', 'Survey Hull', 'hull', 2, 620, {
+    build: 'explorer', special: 'survey_hull',
+    desc: 'A slim hull studded with instrument booms. Opens survey options at wonders and wrecks; thinner skin, though.',
+    flavor: 'Mostly booms. Charming, gleaming booms.',
+    bonus: { hullMax: -10, scanRange: 0.12, skills: { science: 1 } },
+  }),
+  U('ambassadors_hull', "Ambassador's Hull", 'hull', 3, 1500, {
+    build: 'diplomat', special: 'ambassadors_hull',
+    desc: 'Gilt trim, a receiving hall and a red carpet that unrolls. Opens formal options at hails and stations; costs a little cargo space.',
+    flavor: 'The airlock has a doorbell. Everyone is thrilled.',
+    bonus: { hullMax: 10, cargoMax: -4, skills: { diplomacy: 1 } },
+  }),
+  U('hospital_hull', 'Hospital-Ship Hull', 'hull', 2, 700, {
+    build: 'caretaker', special: 'field_hospital',
+    desc: 'A proper ward deck. Medicine counts for more and rests restore crew and hull; hull plating is the lighter kind.',
+    flavor: 'Sixteen cots, one kettle and the good lamp, repeated.',
+    bonus: { hullMax: -5, suppliesMax: 8, skills: { medicine: 1 } },
+  }),
+  U('salvage_boom_hull', 'Salvage-Boom Hull', 'hull', 2, 600, {
+    build: 'trader', special: 'salvage_boom',
+    desc: 'A grapple arm and cargo cradle. Opens salvage options at wrecks and asteroid fields; the extra rigging costs fuel.',
+    flavor: 'It can lift a wardrobe. It has, twice.',
+    bonus: { hullMax: 15, cargoMax: 3, efficiency: 1.06 },
+  }),
+  U('courier_frame', 'Courier Frame', 'hull', 2, 560, {
+    build: 'daredevil', requires: ['riveted_plating'],
+    desc: 'Stripped-down spars. Fast, frugal and nimble; one hard knock and it shows.',
+    flavor: 'Less ship, more attitude.',
+    bonus: { hullMax: -25, jumpRange: 0.2, efficiency: 0.92, skills: { piloting: 1 } },
+  }),
+  U('hauler_spine', 'Hauler Spine', 'cargo', 2, 640, {
+    build: 'trader',
+    desc: 'A long keel-spine of cargo cradles. Enormous hold; shorter hops and a thirstier throttle.',
+    flavor: 'She handles like a bookshelf. A very full bookshelf.',
+    bonus: { cargoMax: 14, jumpRange: -0.12, efficiency: 1.08 },
+  }),
+  U('hidden_pantry', 'Hidden Pantry Panels', 'cargo', 2, 520, {
+    build: 'trader', special: 'false_floor',
+    desc: 'Extra cargo behind decorative panels. Perfectly legal in most places; Concord customs do sometimes ask about the wallpaper.',
+    flavor: 'Technically a pantry. Technically.',
+    bonus: { cargoMax: 6 },
+  }),
+  U('ration_press', 'Ration Press & Larder', 'lounge', 2, 520, {
+    build: 'caretaker', requires: ['galley_garden'], special: 'thrifty_galley',
+    desc: 'A canning press and a cleverly shelved larder. Supplies last longer; the lounge itself is rather cramped.',
+    flavor: 'Nothing is eaten that cannot be pickled first.',
+    bonus: { suppliesMax: 6, moraleRegen: -0.1 },
+  }),
+  U('ice_scoop', 'Comet-Ice Scoop', 'special', 1, 380, {
+    build: 'explorer', special: 'ice_scoop',
+    desc: 'A folding scoop that harvests ice from comet tails and cracks it into fuel.',
+    flavor: 'Free fuel, if you are willing to chase it.',
+    bonus: {},
+  }),
+  U('distress_transponder', 'Distress Transponder', 'special', 2, 560, {
+    build: 'caretaker', special: 'distress_transponder',
+    desc: 'Tuned to the relief bands. More cries for help find you, and relief work pays more handsomely.',
+    flavor: 'Somebody out there always needs a kettle and a steady hand.',
+    bonus: { skills: { medicine: 1 } },
+  }),
+  U('market_ear', 'Market Ear', 'special', 2, 520, {
+    build: 'trader', special: 'market_ear',
+    desc: 'A listening post for dockside gossip. The market screen lists the best places to sell what is in stock.',
+    flavor: 'A little brass ear on a gooseneck. It never stops listening.',
+    bonus: {},
+  }),
+  U('rival_handshake', "Tamsin's Handshake Pin", 'special', 2, 480, {
+    build: 'trader', special: 'rival_handshake', repGate: { faction: 'drifters', min: 10 },
+    desc: 'A Drifter pin that tells the free-trader Captain Tamsin Vell you are friendly competition. She warms to you at once, and her route goods fetch a little more.',
+    flavor: 'Two traders, one pin, no hard feelings.',
+    bonus: {},
+  }),
+  U('long_range_hails', 'Long-Range Hail Horn', 'special', 2, 640, {
+    build: 'diplomat', special: 'long_range_hails',
+    desc: 'A big brass horn on the comms mast. Even a quiet hail may bring a stranger\'s reply and a new light on the chart.',
+    flavor: 'Hello! Hello? ...Oh, hello!',
+    bonus: { skills: { diplomacy: 1 } },
+  }),
+  U('prize_cartography', 'Prize Cartography Press', 'special', 3, 1250, {
+    build: 'explorer', special: 'prize_cartography',
+    desc: 'A printing press that engraves prize-quality charts. Every first scan of a world pays a Meridian bounty.',
+    flavor: 'The ink is still wet. So are the bounties.',
     bonus: { skills: { science: 1 } },
   }),
 ];

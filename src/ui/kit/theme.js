@@ -86,6 +86,8 @@ export function grad(stops, dir = 'v') {
 /** Shared mutable runtime info, updated by app.js on resize. */
 export const Display = { scale: 1, dpr: 1, res: 1, touch: false };
 
+/** Canonical resource colours — HUD, event dialog, trade, ship screens must all use these. */
+export const RES_COL = { fuel: 0x3fc1b0, supplies: 0xe8b53a, hull: 0x8fb98b, morale: 0xe58fb0, credits: 0xe8b53a };
 export const MOOD_COLORS = (m) => (m >= 70 ? C.good : m >= 40 ? C.mustard : m >= 20 ? 0xe88a4a : C.bad);
 export const STAR_COLORS = {
   yellow: 0xffe08a, orange: 0xffa45c, red: 0xff6a4d, white: 0xf4f6ff, blue: 0x8ec4ff, binary: 0xffd0a0, neutron: 0xbfe9ff, blackhole: 0x8a5fa8,

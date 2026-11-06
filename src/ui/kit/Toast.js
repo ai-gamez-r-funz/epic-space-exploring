@@ -10,15 +10,18 @@ const TONES = { good: { c: C.good, icon: 'check' }, bad: { c: C.coral, icon: 'wa
  * Toasts — stacked notifications, top-centre below the HUD.
  *   Toasts.push('Fuel low', { tone:'good'|'bad'|'info'|'warn', icon?, ms:3600 })     (static singleton; app.js calls Toasts.init(layer))
  */
-let layer = null; const items = [];
+let layer = null; const items = []; const queue = [];
+/** Set by app.js: returns true while toasts should wait (modal open, scene transition, jump). */
+let holdFn = () => false;
 function relayout() {
   let y = 62;
   for (const t of items) { Anim.to(t, { y }, 220); y += t._h + 8; }
 }
 export const Toasts = {
-  init(parent) { layer = parent; },
+  init(parent, hold) { layer = parent; if (hold) holdFn = hold; Anim.watch(parent, () => { if (queue.length && !holdFn()) { const q = queue.shift(); Toasts.push(q.text, q.o); } }); },
   push(text, { tone = 'info', icon, ms = 3800 } = {}) {
     if (!layer) return;
+    if (holdFn()) { if (!queue.find((q) => q.text === text) && queue.length < 4) queue.push({ text, o: { tone, icon, ms } }); return; }
     if (items.find((t) => t._text === text)) { const e = items.find((t) => t._text === text); e._life = ms / 1000; return; }
     const tn = TONES[tone] || TONES.info; const w = 320;
     const c = new Container(); c._text = text; c._life = ms / 1000;
@@ -35,7 +38,7 @@ export const Toasts = {
     layer.addChild(c); items.push(c);
     Anim.to(c, { alpha: 1 }, 260);
     Anim.watch(c, (dt) => { c._life -= dt; if (c._life <= 0 && !c._dying) Toasts._kill(c); });
-    while (items.length > 5) Toasts._kill(items[0]);
+    while (items.length > 3) Toasts._kill(items[0]);
     relayout();
   },
   _kill(c) {

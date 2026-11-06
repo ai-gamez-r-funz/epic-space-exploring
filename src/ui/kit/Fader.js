@@ -41,6 +41,7 @@ export class Fader extends Container {
     await Anim.to(this, { p: 1 }, ms, { ease: 'inOutQuad', onUpdate: () => this._draw() }).promise; this.p = 1; this._draw();
   }
   async in({ ms = 360 } = {}) {
+    this.eventMode = 'none'; // never swallow clicks while revealing
     await Anim.to(this, { p: 0 }, ms, { ease: 'inOutQuad', onUpdate: () => this._draw() }).promise; this.p = 0; this._draw(); this.eventMode = 'none';
   }
   async through(fn, opts = {}) { await this.out(opts); try { await fn(); } finally { await this.in(opts); } }

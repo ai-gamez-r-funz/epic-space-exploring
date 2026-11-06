@@ -9,7 +9,7 @@ export const DIFF = {
 };
 export const diffOf = (state) => DIFF[state.difficulty] || DIFF.standard;
 
-export const BASE = { fuelMax: 40, suppliesMax: 40, hullMax: 100, cargoMax: 16, scanRange: 1, jumpRange: 1, efficiency: 1 };
+export const BASE = { fuelMax: 32, suppliesMax: 40, hullMax: 100, cargoMax: 16, scanRange: 1, jumpRange: 1, efficiency: 1 };
 /** Base sensor radius (map units) beyond lane-neighbours, scaled by scanRange. */
 export const SENSOR_RADIUS = 300;
 
@@ -129,6 +129,7 @@ export function checkOdds(state, skill, diff, opts = {}) {
     if (b.trait === 'steady_hands' && (skill === 'medicine' || skill === 'engineering')) bonus += 0.05;
     if (b.trait === 'bluntly_literal' && skill === 'diplomacy' && (opts.faction === 'archivists' || opts.species === 'archivist')) total += 1;
   }
+  if (state.ship && state.ship.morale < 30) bonus -= 0.05; // a glum crew fumbles
   return Math.round(clamp(0.5 + 0.11 * (total - diff) + bonus, 0.1, 0.95) * 100) / 100;
 }
 
@@ -178,7 +179,7 @@ export function removeUpgrade(state, id) {
 }
 
 // ---- service pricing (refuel / repair / restock) ----------------------------------------------------------
-export const SERVICE_BASE = { fuel: 4, supplies: 3, repair: 3 };
+export const SERVICE_BASE = { fuel: 5, supplies: 4, repair: 4 };
 
 export function repDiscount(rep) {
   if (rep >= 60) return 0.10;
@@ -188,14 +189,16 @@ export function repDiscount(rep) {
 }
 
 /** Per-unit service prices at a system (null if no station with services). */
-export function servicePrices(state, system, hash01) {
+export function servicePrices(state, system, hash01, hops = 0) {
   if (!system || !system.station) return null;
   const st = system.station;
   const d = derive(state);
   const regional = 0.9 + 0.25 * hash01(`svc|${state.seed}|${system.id}`); // 0.9..1.15
   const remote = st.kind === 'outpost' ? 1.15 : st.kind === 'habitat' ? 1.05 : 1;
   const rep = (state.rep && st.faction && state.rep[st.faction]) || 0;
-  let mult = regional * remote * diffOf(state).price * (1 - repDiscount(rep)) * (1 - Math.min(0.25, d.buyDiscount));
+  // scarcity away from the Gate: +7 % per hop beyond the first, capped at x1.9
+  const far = Math.min(1.9, 1 + 0.07 * Math.max(0, hops - 1));
+  let mult = regional * remote * far * diffOf(state).price * (1 - repDiscount(rep)) * (1 - Math.min(0.25, d.buyDiscount));
   if (hasSpecial(state, 'bulk_contracts')) mult *= 0.85;
   const f = (b) => Math.max(1, Math.round(b * mult * 10) / 10);
   return { fuel: f(SERVICE_BASE.fuel), supplies: f(SERVICE_BASE.supplies), repair: f(SERVICE_BASE.repair) };

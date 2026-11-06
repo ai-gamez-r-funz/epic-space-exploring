@@ -1,5 +1,5 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { C, textStyle, lighten, darken, TEXT } from './theme.js';
+import { C, textStyle, lighten, darken, TEXT, Display } from './theme.js';
 import { drawButtonFace, drawPill } from './draw.js';
 import { Label } from './Label.js';
 import { Tooltip } from './Tooltip.js';
@@ -38,7 +38,8 @@ export class Button extends Container {
     this.content = new Container(); this.addChild(this.content);
     this.badge = null;
     this.eventMode = 'static'; this.cursor = 'pointer';
-    this.hitArea = new Rectangle(0, 0, this.w, this.h);
+    const pad = Display.touch ? Math.min(7, Math.max(0, (44 / Math.max(0.3, Display.scale) - this.h) / 2)) : 0; // phones: slightly fatter touch target
+    this.hitArea = new Rectangle(-pad, -pad, this.w + pad * 2, this.h + pad * 2);
     this._build();
     this.on('pointerover', () => { if (!this.enabled) return; this._set('hover'); if (this._hoverSfxOk()) sfx('hover'); });
     this.on('pointerout', () => this._set('idle'));

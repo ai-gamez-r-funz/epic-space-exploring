@@ -13,12 +13,20 @@ import * as Survey from './survey.js';
 import * as Save from './save.js';
 import { BUILTIN } from './builtin.js';
 import { template } from './text.js';
+import * as SP from './setpieces.js';
 
 const { DIFF, diffOf, clamp } = Ship;
 export const STATE_VERSION = 1;
 const MAX_CREW = 8;
 const MAX_MISSIONS = 6;
 
+const SURVEY_GATE_SCALE = 0.75; // main-arc survey gates are relaxed to 75 % of the authored values (story pacing)
+function route0(g) {
+  const st = g.state;
+  const d = bfs(st.galaxy, st.pos);
+  const c = st.galaxy.systems.filter((x) => x.status === 'detected').sort((a, b) => (d[a.id] ?? 99) - (d[b.id] ?? 99))[0];
+  return c ? { kind: 'explore', text: `Explore ${c.name}`, systemId: c.id } : null;
+}
 const GOODS_FALLBACK_NAMES = ['Halcyon', 'Meridian Star', 'Kindly Light'];
 
 function defaultResources(diff) {
@@ -32,6 +40,7 @@ export class Game {
     this.opts = { autosave: true, ...opts };
     this.listeners = new Map();
     this.rng = RNG.bound(state);
+    this._hops = bfs(state.galaxy, state.galaxy.gate);
     this._pendingEnding = null;
     this._chain = null;
     this._shopAfter = false;
@@ -64,7 +73,7 @@ export class Game {
       galaxy, pos: galaxy.gate, orbit: null, docked: false,
       missions: { active: [], done: [], failed: [] },
       codex: [], log: [], markets: {}, boards: {}, evt: { seen: {}, recent: [] },
-      pending: null,
+      pending: null, rival: null, distress: null,
       stats: { jumps: 0, planetsScanned: 0, systemsCharted: 0, creditsEarned: 0, eventsSeen: 0, missionsDone: 0 },
       ending: null,
     };
@@ -72,6 +81,7 @@ export class Game {
     const g = new Game(state, { autosave: opts.autosave !== false });
     g._enterSystem(galaxy.gate, { first: true });
     g.log('nav', `${state.ship.name} passes through the Gate into the Lantern Reach.`);
+    g._initRival();
     g._chapters();
     g._codexSweep();
     return g;
@@ -123,7 +133,7 @@ export class Game {
   _dist(a, b) { return laneLength(this.state.galaxy, a, b); }
   fuelCostFor(dist) {
     const d = Ship.derive(this.state);
-    return Math.max(1, Math.round((dist / 90) * d.efficiency * diffOf(this.state).fuel));
+    return Math.max(1, Math.round((dist / 70) * d.efficiency * diffOf(this.state).fuel));
   }
   daysFor(dist) { return Math.max(1, Math.round(dist / (190 * Ship.derive(this.state).jumpRange))); }
   neighbors(id = this.state.pos) {
@@ -161,7 +171,7 @@ export class Game {
   crewList() { return this.state.crew; }
   codexEntries() { return C.CODEX.map((e) => ({ ...e, known: this.state.codex.includes(e.id) })); }
   itemList() { return Object.entries(this.state.items).map(([id, n]) => ({ id, n, name: itemName(id), ...(C.ITEM_DEFS[id] || {}) })); }
-  servicePrices(sysId = this.state.pos) { return Ship.servicePrices(this.state, this.system(sysId), hashFloat); }
+  servicePrices(sysId = this.state.pos) { return Ship.servicePrices(this.state, this.system(sysId), hashFloat, this._hops[sysId] || 0); }
 
   market(sysId = this.state.pos) {
     const s = this.system(sysId);
@@ -257,8 +267,9 @@ export class Game {
     n = Math.max(0, Math.floor(n));
     for (let i = 0; i < n; i++) {
       st.day += 1;
+      this._dayHooks();
       // supplies upkeep (fractional accumulator keeps it deterministic)
-      let rate = (0.35 + 0.15 * st.crew.length) * diff.upkeep * (opts.extraUpkeep || 1);
+      let rate = (0.4 + 0.2 * st.crew.length) * diff.upkeep * (opts.extraUpkeep || 1);
       if (opts.rest && Ship.hasSpecial(st, 'rest_cure')) rate *= 0.75;
       st.counters.supAcc = (st.counters.supAcc || 0) + rate;
       const whole = Math.floor(st.counters.supAcc);
@@ -268,7 +279,8 @@ export class Game {
         st.ship.supplies = Math.max(0, have - whole);
       }
       // morale
-      let dm = d.moraleRegen;
+      let dm = d.moraleRegen - 0.45; // life aboard wears on a crew; lounges, rests and shore leave mend it
+      if (st.docked) dm += 0.6;
       if (opts.rest) { dm += 3; if (Ship.hasSpecial(st, 'tea_service')) dm += 1.5; }
       if (st.docked && Ship.hasSpecial(st, 'tea_service')) dm += 0.5;
       if (st.ship.supplies <= 0) dm -= 2.5;
@@ -294,6 +306,132 @@ export class Game {
     if (n > 0 && opts.rest && Ship.hasSpecial(st, 'tea_service')) for (const c of st.crew) c.mood = clamp(c.mood + 1, 0, 100);
     Ship.recompute(st);
     if (!opts.deferCheck) Missions.check(this);
+  }
+
+
+  // =================================================================== set pieces: rival, distress, market news
+  _tradeStations() { return this.state.galaxy.systems.filter((x) => x.station && x.station.services.includes('trade')); }
+  _initRival() {
+    const st = this.state;
+    const cands = this._tradeStations().filter((x) => (this._hops[x.id] || 0) >= 2 && (this._hops[x.id] || 0) <= 5);
+    if (!cands.length || !C.GOODS.length) return;
+    const at = cands[Math.floor(hashFloat(st.seed, 'rival0') * cands.length)];
+    const good = C.GOODS.filter((x) => x.base >= 30 && x.category !== 'fuel')[Math.floor(hashFloat(st.seed, 'rivalg') * Math.max(1, C.GOODS.filter((x) => x.base >= 30 && x.category !== 'fuel').length))] || C.GOODS[0];
+    st.rival = { name: SP.RIVAL_NAME, systemId: at.id, prevId: null, goodId: good.id, nextMoveDay: 6 + Math.floor(hashFloat(st.seed, 'rivalm') * 5), lastMetDay: -99 };
+  }
+  /** Tamsin hops between nearby trade stations every 6-11 days, buying out one good where she lands and dumping it at her last stop. */
+  _rivalMove() {
+    const st = this.state;
+    const r = st.rival;
+    if (!r || st.day < r.nextMoveDay) return;
+    const here = this.system(r.systemId);
+    const adj = adjacency(st.galaxy);
+    const d = bfs(st.galaxy, r.systemId, adj);
+    const options = this._tradeStations().filter((x) => x.id !== r.systemId && d[x.id] !== undefined && d[x.id] <= 3);
+    const h = hashFloat(st.seed, 'rivalstep', st.day);
+    const next = options.length ? options[Math.floor(h * options.length)] : here;
+    const goods = C.GOODS.filter((x) => x.base >= 30 && x.category !== 'fuel');
+    r.prevId = r.systemId;
+    r.systemId = next.id;
+    r.goodId = goods.length ? goods[Math.floor(hashFloat(st.seed, 'rivalgood', st.day) * goods.length)].id : r.goodId;
+    r.nextMoveDay = st.day + 6 + Math.floor(hashFloat(st.seed, 'rivaldelay', st.day) * 6);
+    if (!st.flags.rival_ally) {
+      // she buys the good out at her new stop (price up, stock down) and has dumped her last cargo at the old one (price down)
+      const now = Econ.ensureMarket(st, next);
+      if (now) { now.impact[r.goodId] = Math.min(0.6, (now.impact[r.goodId] || 0) + 0.28); now.stock[r.goodId] = Math.max(0, Math.round((now.stock[r.goodId] || 0) * 0.4)); }
+      const old = here && Econ.ensureMarket(st, here);
+      if (old) old.impact[r.goodId] = Math.max(-0.6, (old.impact[r.goodId] || 0) - 0.22);
+    }
+  }
+  rivalInfo() {
+    const r = this.state.rival;
+    if (!r) return null;
+    const sys = this.system(r.systemId);
+    const visible = !!sys && sys.status !== 'unknown';
+    return { name: r.name, systemId: visible ? r.systemId : null, systemName: visible ? sys.name : null, goodId: r.goodId, goodName: goodName(r.goodId), ally: !!this.state.flags.rival_ally, here: r.systemId === this.state.pos, met: (this.state.counters.rival_met || 0) > 0, note: visible ? `${r.name} is trading ${goodName(r.goodId)} near ${sys.name}.` : `${r.name} is somewhere in the Reach.` };
+  }
+  /** Spawn a timed distress signal (engine roll or fx {distress:days}). */
+  spawnDistress(days) {
+    const st = this.state;
+    if (st.distress) return false;
+    const d = bfs(st.galaxy, st.pos);
+    const cands = st.galaxy.systems.filter((x) => x.status !== 'unknown' && x.id !== st.pos && d[x.id] >= 2 && d[x.id] <= 5);
+    if (!cands.length) return false;
+    const rng = new RNG(hashString(`${st.seed}|distress|${st.day}`));
+    const sys = rng.pick(cands);
+    const kind = SP.pickDistressKind(rng);
+    const fac = sys.faction !== 'none' ? sys.faction : sys.station ? sys.station.faction : 'none';
+    const species = (C.FACTIONS[fac] && C.FACTIONS[fac].species) || 'human';
+    const nm = (C.NAMES && typeof C.NAMES.crewName === 'function') ? C.NAMES.crewName(species, () => rng.next()) : 'Captain Unknown';
+    const window = Math.round((days || (9 + d[sys.id] * 3)) * diffOf(st).deadline);
+    st.distress = { id: `d${st.day}`, systemId: sys.id, kind, captain: nm || 'A Tired Captain', species, faction: fac, startedDay: st.day, deadlineDay: st.day + window, reward: 10 * d[sys.id] };
+    this.emit('sfx', { name: 'alert' });
+    this.toast(`Distress signal near ${sys.name}! (${window} days)`, 'info');
+    this.log('event', `Distress signal detected near ${sys.name}; it will fade in ${window} days.`);
+    return true;
+  }
+  distressSignals() {
+    const dd = this.state.distress;
+    if (!dd) return [];
+    const sys = this.system(dd.systemId);
+    return [{ id: dd.id, systemId: dd.systemId, systemName: sys.name, kind: dd.kind, title: (SP.DISTRESS_KINDS[dd.kind] || {}).title, deadlineDay: dd.deadlineDay, daysLeft: Math.max(0, dd.deadlineDay - this.state.day) }];
+  }
+  _dayHooks() {
+    const st = this.state;
+    if (st.phase === 'ended') return;
+    if (st.distress && st.day > st.distress.deadlineDay) {
+      const sys = this.system(st.distress.systemId);
+      st.distress = null; st.counters.distress_missed = (st.counters.distress_missed || 0) + 1; st.counters.lastDistressDay = st.day;
+      st.ship.morale = clamp(st.ship.morale - 2, 0, 100);
+      this.toast(`The distress signal near ${sys.name} has faded.`, 'bad');
+      this.log('event', `The distress signal near ${sys.name} faded before we could help.`);
+    } else if (!st.distress && st.day >= 10 && st.day - (st.counters.lastDistressDay || 0) >= 10 && hashFloat(st.seed, 'distress', st.day) < 0.05) {
+      this.spawnDistress();
+    }
+    this._rivalMove();
+  }
+  /** Market news (festivals, gluts, shortages) for a trade system: [{kind,title,text,goods,mult,startDay,endDay,daysLeft,active,upcoming}] */
+  marketNews(sysId = this.state.pos) { return Econ.newsFor(this.state, this.system(sysId)); }
+  /** News across systems the player has seen, for a bulletin screen. */
+  newsFeed() {
+    const out = [];
+    for (const s of this.state.galaxy.systems) {
+      if (s.status === 'unknown') continue;
+      for (const n of Econ.newsFor(this.state, s)) if (n.active) out.push({ ...n, systemId: s.id, systemName: s.name });
+    }
+    return out;
+  }
+  /** What should the player do next? {kind, text, systemId?, title?} or null. */
+  nextObjective() {
+    const st = this.state;
+    if (st.phase === 'ended') return null;
+    const known = (id) => { const s = id && this.system(id); return s && s.status !== 'unknown' ? id : null; };
+    for (const m of st.missions.active) {
+      if (m.arc !== 'main') continue;
+      const o = m.objectives.find((x) => !x.done && !x.optional);
+      if (o) return { kind: 'mission', title: m.title, text: o.text, systemId: known(o.deliverResolved || o.resolved) };
+    }
+    let cur = null;
+    for (const ch of C.CHAPTERS) if (st.flags[ch.flag]) cur = ch;
+    if (cur && cur.lantern && !st.flags[`lantern_${cur.n}`]) {
+      const s = st.galaxy.systems.find((x) => x.story === cur.lantern);
+      if (s) return { kind: 'lantern', title: cur.title, text: `Investigate the Lantern at ${s.name}`, systemId: known(s.id) };
+    }
+    const next = C.CHAPTERS.find((ch) => !st.flags[ch.flag]);
+    if (next) {
+      const need = (next.gate || []).find((c) => c && c.survey !== undefined);
+      const pct = this.surveyProgress().pct;
+      if (need && pct < Math.round(need.survey * SURVEY_GATE_SCALE)) return { kind: 'survey', title: next.title, text: `Chart more of the Reach (${pct}% of ${Math.round(need.survey * SURVEY_GATE_SCALE)}%) to hear the next Lantern`, systemId: null };
+      const flagNeed = (next.gate || []).find((c) => c && c.flag && !st.flags[c.flag]);
+      if (flagNeed && flagNeed.flag === 'archive_key') {
+        const s = st.galaxy.systems.find((x) => x.story === 'hollow_archive');
+        return { kind: 'story', title: next.title, text: 'Ask the Hollow Archive your question', systemId: s ? known(s.id) : null };
+      }
+    }
+    const dd = this.distressSignals()[0];
+    if (dd) return { kind: 'distress', title: dd.title, text: `Answer the distress call near ${dd.systemName} (${dd.daysLeft} days left)`, systemId: known(dd.systemId) };
+    const r = route0(this);
+    return r || { kind: 'survey', text: 'Chart the remaining systems of the Reach', systemId: null };
   }
 
   // =================================================================== helpers
@@ -400,10 +538,16 @@ export class Game {
     const st = this.state;
     for (const ch of C.CHAPTERS || []) {
       if (!st.flags[ch.flag]) {
-        if (evalCondsRaw(this, ch.gate || [], {}, { noRandom: true }).ok) {
+        const gate = (ch.gate || []).map((c) => (c && c.survey !== undefined ? { ...c, survey: Math.round(c.survey * SURVEY_GATE_SCALE) } : c));
+        if (evalCondsRaw(this, gate, {}, { noRandom: true }).ok) {
           applyEffects(this, ch.onStart || [{ flag: ch.flag }], {});
           st.flags[ch.flag] = st.flags[ch.flag] || true;
-          if (ch.n > 1) { this.toast(`Chapter ${ch.n}: ${ch.title}`, 'info'); this.log('event', `Chapter ${ch.n}: ${ch.title}`); }
+          if (ch.n > 1) {
+            this.toast(`Chapter ${ch.n}: ${ch.title}`, 'info'); this.log('event', `Chapter ${ch.n}: ${ch.title}`);
+            // the next Lantern shows up on the chart so the arc is always legible
+            const ls = ch.lantern && st.galaxy.systems.find((x) => x.story === ch.lantern);
+            if (ls && ls.status === 'unknown') { ls.status = 'detected'; this.log('discovery', `A new Lantern signal bears toward ${ls.name}.`); this.toast(`A Lantern signal: ${ls.name}`, 'good'); }
+          }
         }
       } else if (!st.flags[`${ch.flag}_done`] && evalCondsRaw(this, ch.completeWhen || [{ flag: 'never_set' }], {}, { noRandom: true }).ok) {
         applyEffects(this, ch.onComplete || [{ flag: `${ch.flag}_done` }], {});
@@ -450,6 +594,9 @@ export class Game {
   _afterEvent(cur) {
     const st = this.state;
     if (st.phase === 'ended') return;
+    if (cur.setPiece === 'distress' && st.distress) {
+      st.distress = null; st.counters.lastDistressDay = st.day; st.counters.distress_answered = (st.counters.distress_answered || 0) + 1;
+    }
     if (this._chain && !this._pendingEnding) {
       const id = this._chain; this._chain = null;
       if (Events.startEvent(this, id, cur.ctx, { afterArrive: cur.afterArrive })) return;
@@ -543,11 +690,10 @@ export class Game {
       st.ship.fuel = clamp(st.ship.fuel + refund, 0, st.ship.fuelMax);
     }
     // hazards (never combat: weather and rough space)
-    this._travelHazard(dest);
+    let started = this._travelHazard(dest);
     Missions.check(this);
     // travel event
-    let started = false;
-    if (st.phase === 'play') {
+    if (st.phase === 'play' && !started) {
       const p = clamp((0.34 + 0.06 * dest.danger) * (st.difficulty === 'cozy' ? 0.85 : 1), 0.1, 0.7);
       if (this.rng.chance(p)) {
         const ev = Events.pickEvent(this, 'travel', { systemId: toId });
@@ -558,22 +704,23 @@ export class Game {
     else this._changed();
     return { ok: true, event: started, fuelCost: can.fuelCost, days: can.days };
   }
+  /** Rolls lane hazards. Returns true if a decision event was started (a pending "Rough Lane"). */
   _travelHazard(dest) {
     const st = this.state;
     const diff = diffOf(st);
-    let chance = 0.1 * dest.danger * diff.hazard;
-    let ignorable = dest.phenomena.some((p) => ['ionstorm', 'nebula', 'asteroids'].includes(p));
-    if (ignorable) chance += 0.1;
-    if (ignorable && dest.danger === 0 && !dest.phenomena.includes('ionstorm')) chance *= 0.5;
-    if (Ship.hasSpecial(st, 'steady_hand') && dest.phenomena.every((p) => ['ionstorm', 'nebula', 'asteroids'].includes(p) || true) && ignorable) chance = 0.1 * dest.danger * diff.hazard * 0.5;
-    if (chance > 0 && this.rng.chance(chance)) {
-      let dmg = this.rng.int(2, 5) * (1 + dest.danger * 0.4) * diff.damage;
-      if (Ship.hasSpecial(st, 'barrel_roll_gyro')) dmg *= 0.75;
-      dmg = Math.max(1, Math.round(dmg));
-      const r = applyEffects(this, [{ hull: -dmg }], { noScale: true });
+    const ph = SP.hazardPhenomenon(dest);
+    if (ph && ['ionstorm', 'nebula', 'asteroids'].includes(ph) && Ship.hasSpecial(st, 'steady_hand')) return false;
+    // everyday wear and tear
+    if (diff.damage > 0.6 && this.rng.chance(0.4)) applyEffects(this, [{ hull: -1 }], { noScale: true });
+    let chance = (0.05 + 0.13 * dest.danger) * diff.hazard + (ph ? 0.08 : 0);
+    if (Ship.hasSpecial(st, 'barrel_roll_gyro')) chance *= 0.75;
+    if (!this.rng.chance(chance)) return false;
+    if (dest.danger === 0) {
+      const r = applyEffects(this, [{ hull: -2 }], { noScale: true });
       this.toast(`Rough space: ${r.summary.join(', ')}`, 'bad');
-      this.log('ship', `Rough space on the lane: ${r.summary.join(', ')}.`);
+      return false;
     }
+    return Events.startEvent(this, SP.hazardEvent(dest), { systemId: dest.id }, { afterArrive: true });
   }
   _arrive(firstVisit) {
     const st = this.state;
@@ -588,7 +735,12 @@ export class Game {
     for (const ph of s.phenomena) this._codexTrigger('phenomenon', ph);
     if (s.faction !== 'none') this._codexTrigger('faction', s.faction);
     this._tryChart(s);
-    if (st.phase === 'play') {
+    if (st.phase === 'play' && st.distress && st.distress.systemId === s.id) {
+      const ctx = { systemId: s.id };
+      const ev = Events.pickEvent(this, 'distress', ctx) || SP.distressEvent(this, st.distress);
+      Events.startEvent(this, ev, ctx, { setPiece: 'distress' });
+    }
+    if (st.phase === 'play' && !st.pending) {
       const first = s.visits <= 1;
       const pool = Events.eligible(this, 'arrive', { systemId: s.id });
       const p = pool.length ? (first ? 0.6 : 0.2) : 0;
@@ -645,8 +797,22 @@ export class Game {
       const e = Events.pickEvent(this, 'planet', { systemId: sys.id, planetId });
       if (e) ev = Events.startEvent(this, e, { systemId: sys.id, planetId });
     }
+    // every scan can yield a real discovery (samples, credits, a codex line); some come with a choice
+    let found = null;
+    if (!ev) {
+      found = SP.scanFind(this.rng, p, sys);
+      if (found) {
+        if (this.rng.chance(0.3)) ev = Events.startEvent(this, SP.findEvent(p, found), { systemId: sys.id, planetId });
+        else {
+          const r = applyEffects(this, found.fx, { systemId: sys.id, planetId });
+          this.toast(`Find on ${p.name}: ${r.summary.join(', ') || 'data logged'}`, 'good');
+          this.log('discovery', found.text);
+          this.emit('discovery', { kind: 'find', text: found.text, id: p.id });
+        }
+      }
+    }
     this._settle();
-    return { ok: true, bounty, event: ev };
+    return { ok: true, bounty, event: ev, find: found ? found.text : null };
   }
   scanSystem() {
     const g0 = this._guard(); if (g0) return g0;
@@ -677,7 +843,7 @@ export class Game {
     this.log('discovery', `Landing party on ${p.name}.`);
     const ctx = { systemId: sys.id, planetId };
     for (const f of p.features) { this._codexTrigger('scan', `feature:${f}`); }
-    const ev = Events.pickEvent(this, 'landing', ctx) || BUILTIN.landing;
+    const ev = Events.pickEvent(this, 'landing', ctx) || SP.landingEvent(p, sys);
     Events.startEvent(this, ev, ctx);
     this._settle();
     return { ok: true, event: true };
@@ -716,8 +882,9 @@ export class Game {
     this._codexTrigger('faction', faction);
     this.emit('sfx', { name: 'hail' });
     const ctx = { systemId: sys.id, factionId: faction };
-    const ev = Events.pickEvent(this, 'hail', ctx);
-    Events.startEvent(this, ev || BUILTIN.hail, ctx);
+    // authored hails are mostly one-shot; the engine's faction hail keeps the channel useful (gossip, goodwill) forever
+    const authored = this.rng.chance(0.55) ? Events.pickEvent(this, 'hail', ctx) : null;
+    Events.startEvent(this, authored || SP.hailEvent(this, faction, this.rng), ctx);
     this._settle();
     return { ok: true, event: true };
   }
@@ -735,7 +902,21 @@ export class Game {
     this.log('nav', `Docked at ${sys.station.name}.`);
     if (sys.station.faction && sys.station.faction !== 'none') this._codexTrigger('faction', sys.station.faction);
     let started = false;
-    if (this.rng.chance(0.3) && (st.counters.lastStationEv === undefined || st.day - st.counters.lastStationEv >= 3)) {
+    // the rival trader, festival shore leave
+    const rv = st.rival;
+    if (rv && rv.systemId === sys.id && st.day - (rv.lastMetDay ?? -99) >= 6 && this.rng.chance(0.6)) {
+      rv.lastMetDay = st.day;
+      st.counters.rival_met = (st.counters.rival_met || 0) + 1; st.flags.rival_met = true;
+      const ctx = { systemId: sys.id };
+      const ev = Events.pickEvent(this, 'rival', ctx) || SP.rivalEvent(this, rv);
+      started = Events.startEvent(this, ev, ctx);
+    }
+    if (!started) {
+      const fest = Econ.newsFor(st, sys).find((n) => n.active && n.kind === 'festival');
+      const key = fest && `fest_${sys.id}_${Math.floor((fest.startDay - 1) / Econ.SEASON)}`;
+      if (fest && !st.counters[key]) { st.counters[key] = 1; started = Events.startEvent(this, SP.festivalEvent(fest, sys), { systemId: sys.id }); }
+    }
+    if (!started && this.rng.chance(0.3) && (st.counters.lastStationEv === undefined || st.day - st.counters.lastStationEv >= 3)) {
       const ctx = { systemId: sys.id, factionId: sys.station.faction };
       const ev = Events.pickEvent(this, 'station', ctx);
       if (ev) { st.counters.lastStationEv = st.day; started = Events.startEvent(this, ev, ctx); }
@@ -952,11 +1133,11 @@ export class Game {
       if (h === undefined) continue;
       if (!best || h < best.h || (h === best.h && s.id === here.id)) best = { s, h };
     }
-    const pay = Math.min(st.credits, Math.round(45 * mult));
+    const pay = Math.min(st.credits, Math.round(80 * mult));
     const days = 3;
     this.advanceDays(days, { deferCheck: true });
     st.credits -= pay;
-    st.rep.concord = clamp(st.rep.concord - Math.max(1, Math.round(2 * mult)), -100, 100);
+    st.rep.concord = clamp(st.rep.concord - Math.max(1, Math.round(3 * mult)), -100, 100);
     st.ship.fuel = Math.max(st.ship.fuel, Math.min(st.ship.fuelMax, 12));
     st.ship.supplies = Math.max(st.ship.supplies, Math.min(st.ship.suppliesMax, 10));
     st.ship.hull = Math.max(st.ship.hull, Math.min(st.ship.hullMax, 20));

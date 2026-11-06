@@ -8,7 +8,7 @@ import { drawPanel } from '../../kit/draw.js';
 import { Tutorial } from './prefs.js';
 
 const STEPS = [
-  { id: 'chart', scene: 'Bridge', text: 'Open the Chart to see the Lantern Reach and plan your first jump.', key: 'C', target: (s) => s.cmds?.chart, done: (g, sc) => sc !== 'Bridge' },
+  { id: 'chart', scene: 'Bridge', text: 'Open the Chart to see the Lantern Reach and plan your first jump.', key: 'C', target: (s) => s.cmds?.chart, done: (g, sc) => sc === 'GalaxyMap' },
   { id: 'jump', scene: 'GalaxyMap', text: 'Click a nearby system, then plan your jump. Teal lanes are in range; watch the fuel cost.', key: 'Enter', target: (s) => (s.planBtn?.visible ? s.planBtn : s.side || null), done: (g, sc, base) => g.state.stats.jumps > base.jumps },
   { id: 'scan', scene: 'Bridge', text: 'Pick a planet on the viewscreen, then Scan it to learn what lives there. Scanning every planet charts a system.', key: 'S', target: (s) => s.cmds?.scan, done: (g, sc, base) => g.state.stats.planetsScanned > base.scanned },
   { id: 'hail', scene: 'Bridge', text: 'Somebody lives here. Hail them: courtesy costs nothing and often pays.', key: 'H', target: (s) => (s.cmds?.hail?.enabled ? s.cmds.hail : null), done: () => false },
@@ -41,7 +41,7 @@ export class TutorialHints {
   }
   update(dt) {
     this.t += dt; const ui = this.ui; const g = ui.game;
-    const active = Tutorial.enabled && g && !g.state.pending && !ui.busy && ui.overlays.length === 0 && ui.scene && !ui._glitch && this.step;
+    const active = Tutorial.enabled && g && !g.state.pending && !ui.busy && ui.overlays.length === 0 && ui.scene && !ui._glitch && this.step && (ui.sceneName === 'Bridge' || ui.sceneName === 'GalaxyMap');
     if (!active) { if (this.bubble || this.key) this._clear(); return; }
     const st = this.step, scene = ui.scene;
     if (st.done(g, ui.sceneName, this._base())) { this._advance(); return; }
@@ -72,13 +72,18 @@ export class TutorialHints {
     const cx = p.x + tw / 2, cy = p.y + th / 2; this._fade = Math.min(1, this._fade + 0.06); b.alpha = this._fade;
     const pulse = 0.5 + 0.5 * Math.sin(this.t * 4); const r = this.ring; r.clear();
     r.roundRect(p.x - 5 - pulse * 3, p.y - 5 - pulse * 3, tw + 10 + pulse * 6, th + 10 + pulse * 6, 14).stroke({ width: 3, color: C.mustard, alpha: 0.9 - pulse * 0.4 });
-    const above = p.y > b.bh + 40; const side = !above && p.y < 100 ? 'below' : 'above'; let bx, by;
-    if (target.x > 1000 && p.x > 800 && th < 80 && p.y < 520 && p.y > 150) { bx = p.x - b.bw - 24; by = cy - b.bh / 2; r.moveTo(bx + b.bw, cy); } else if (side === 'below') { bx = cx - b.bw / 2; by = p.y + th + 22; } else { bx = cx - b.bw / 2; by = p.y - b.bh - 22 + Math.sin(this.t * 3) * 3; }
+    let bx, by;
+    if (cx > 700 && p.y < 560) { bx = p.x - b.bw - 28; by = cy - b.bh / 2; }             // right-hand panels: bubble to the LEFT so it never hides the info
+    else if (p.y > 500) { bx = Math.max(180, cx - b.bw / 2); by = 528 - b.bh + Math.sin(this.t * 3) * 3; } // command bar: float over the viewscreen, clear of crew list + strip
+    else if (p.y < 100) { bx = cx - b.bw / 2; by = p.y + th + 22; }
+    else { bx = cx - b.bw / 2; by = p.y - b.bh - 22; }
     bx = Math.max(10, Math.min(W - b.bw - 10, bx)); by = Math.max(10, Math.min(H - b.bh - 10, by)); b.x = Math.round(bx); b.y = Math.round(by);
-    // pointer notch
-    const nx = Math.max(bx + 24, Math.min(bx + b.bw - 24, cx));
-    if (by < p.y) r.poly([nx - 10, by + b.bh - 1, nx + 10, by + b.bh - 1, nx, by + b.bh + 11]).fill({ color: C.brass }); else if (by > p.y + th) r.poly([nx - 10, by + 1, nx + 10, by + 1, nx, by - 11]).fill({ color: C.brass });
-    else r.poly([bx + b.bw - 1, cy - 10, bx + b.bw - 1, cy + 10, bx + b.bw + 11, cy]).fill({ color: C.brass });
+    // pointer notch (points at the target; stem drawn when the bubble floats away from it)
+    const nx = Math.max(bx + 24, Math.min(bx + b.bw - 24, cx)); const bxr = bx + b.bw;
+    if (by + b.bh < p.y - 2) { r.moveTo(nx, by + b.bh).lineTo(nx, p.y - 6).stroke({ width: 2, color: C.brass, alpha: 0.8 }); r.poly([nx - 9, by + b.bh - 1, nx + 9, by + b.bh - 1, nx, by + b.bh + 10]).fill({ color: C.brass }); }
+    else if (by > p.y + th) r.poly([nx - 10, by + 1, nx + 10, by + 1, nx, by - 11]).fill({ color: C.brass });
+    else if (bxr < p.x) r.poly([bxr - 1, cy - 10, bxr - 1, cy + 10, bxr + 11, cy]).fill({ color: C.brass });
+    else r.poly([bx + 1, cy - 10, bx + 1, cy + 10, bx - 11, cy]).fill({ color: C.brass });
   }
 }
 void Rectangle;

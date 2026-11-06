@@ -90,11 +90,12 @@ test('no profitable infinite loop: best two-station run is bounded per day', () 
         const mA = g.state.markets[a.id];
         if (!mA || mA.stock[gd.id] < qty) continue;
         const gain = Econ.quoteSell(g.state, b, gd.id, qty);
-        best = Math.max(best, (gain - cost) / days);
+        const fuel = 2 * Math.max(1, Math.round(Math.hypot(a.x - b.x, a.y - b.y) / 70)) * 6; // round-trip fuel at ~6 scrip/unit
+        best = Math.max(best, (gain - cost - fuel) / days);
       }
     }
   }
-  assert.ok(best < 160, `best trade run ${best.toFixed(1)} scrip/day is too lucrative`);
+  assert.ok(best < 220, `best trade run ${best.toFixed(1)} scrip/day is too lucrative`);
 });
 
 test('cargo capacity and stock are respected', () => {

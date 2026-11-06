@@ -14,9 +14,9 @@ import { SLOT_META, SLOT_ORDER, BUILD_META, allUpgrades, upgradeById, bonusEntri
 
 const LW = 570; // left column width
 const SOCKETS = { // offsets from schematic centre
-  comms: [-150, -108], hull: [0, -122], lounge: [150, -108],
-  engine: [-222, 0], sensors: [222, 0],
-  cargo: [-135, 98], special: [0, 116], lab: [135, 98],
+  comms: [-168, -116], hull: [0, -132], lounge: [168, -116],
+  engine: [-238, 0], sensors: [238, 0],
+  cargo: [-152, 106], special: [0, 130], lab: [152, 106],
 };
 
 /**
@@ -53,7 +53,7 @@ export class Shipyard extends Overlay {
     const cx = LW / 2, cy = H / 2 - 12; this.cx = cx; this.cy = cy;
     const cap_ = new Label({ text: 'ISV ' + (this.g.state.ship.name || 'HALCYON').replace(/^ISV\s+/i, '').toUpperCase() + ' · SCHEMATIC', preset: 'headSm', size: 10, color: 0x6fc7e8 }); cap_.x = 16; cap_.y = 12; P.addChild(cap_);
     const lines = new Graphics(); P.addChild(lines); this.lines = lines;
-    try { const ship = S.gfx.ship({ kind: 'halcyon', scale: 2.15, thrust: 0.35 }); ship.x = cx + 4; ship.y = cy + 14; live(ship); ship.alpha = 0.95; P.addChild(ship); this.ship = ship; } catch (e) { /* */ }
+    try { const ship = S.gfx.ship({ kind: 'halcyon', scale: 1.65, thrust: 0.35 }); ship.x = cx + 2; ship.y = cy + 6; live(ship); ship.alpha = 0.95; P.addChild(ship); this.ship = ship; } catch (e) { /* */ }
     const mk = new Graphics().roundRect(2, 2, LW - 4, H - 4, 10).fill(0xffffff); P.addChild(mk); P.mask = mk;
     this.sockets = {};
     SLOT_ORDER.forEach((slot, i) => {

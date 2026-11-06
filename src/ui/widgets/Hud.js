@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { C, W, F } from '../kit/theme.js';
+import { C, W, F, RES_COL } from '../kit/theme.js';
 import { Panel, Lights } from '../kit/Panel.js';
 import { Bar } from '../kit/Bar.js';
 import { Label } from '../kit/Label.js';
@@ -25,10 +25,10 @@ export class Hud extends Container {
     this.capt = new Label({ text: '', preset: 'tiny', size: 12, color: C.tealLight, w: 190, fit: true, h: 14 }); this.capt.x = 18; this.capt.y = 27; this.addChild(this.capt);
     const mk = (key, icon, color, x, tip) => { const b = new Bar({ w: 108, h: 16, icon, color, label: key, tooltip: tip, showMax: false }); b.x = x; b.y = 17; this.addChild(b); return b; };
     this.bars = {
-      fuel: mk('fuel', 'fuel', C.teal, 236, () => this.barTip('Fuel', 'fuel', 'Spent on every jump. Refuel at stations; running dry means a tow.')),
-      supplies: mk('supplies', 'supplies', C.mustard, 388, () => this.barTip('Supplies', 'supplies', 'Food, tea and spare parts. Used a little each day.')),
-      hull: mk('hull', 'hull', C.sage, 540, () => this.barTip('Hull', 'hull', 'Hull integrity. Rough weather wears it down; repair when docked.')),
-      morale: mk('morale', 'morale', 0xe58fb0, 692, () => this.barTip('Morale', 'morale', 'Crew spirits. Good company, tea and discoveries lift them.')),
+      fuel: mk('fuel', 'fuel', RES_COL.fuel, 236, () => this.barTip('Fuel', 'fuel', 'Spent on every jump. Refuel at stations; running dry means a tow.')),
+      supplies: mk('supplies', 'supplies', RES_COL.supplies, 388, () => this.barTip('Supplies', 'supplies', 'Food, tea and spare parts. Used a little each day.')),
+      hull: mk('hull', 'hull', RES_COL.hull, 540, () => this.barTip('Hull', 'hull', 'Hull integrity. Rough weather wears it down; repair when docked.')),
+      morale: mk('morale', 'morale', RES_COL.morale, 692, () => this.barTip('Morale', 'morale', 'Crew spirits. Good company, tea and discoveries lift them.')),
     };
     // credits
     this.cIcon = S.gfx.icon('credits', { size: 22, color: C.mustard }); centerOn(this.cIcon, 880, 25); this.addChild(this.cIcon);
@@ -56,7 +56,7 @@ export class Hud extends Container {
   }
   refresh() {
     const g = this.ui.game; if (!g) return; const st = g.state, sh = st.ship;
-    this.nameL.setText(sh.name.toUpperCase()); this.capt.setText(`Capt. ${st.captain.name}`);
+    this.nameL.setText(sh.name.toUpperCase()); this.capt.setText(`Capt. ${String(st.captain.name).replace(/^(captain|capt\.?)\s+/i, '')}`);
     this.bars.fuel.set(sh.fuel, sh.fuelMax); this.bars.supplies.set(sh.supplies, sh.suppliesMax); this.bars.hull.set(sh.hull, sh.hullMax); this.bars.morale.set(sh.morale, 100);
     this.cred.setText(String(Math.round(st.credits)));
     const sdText = stardate(st.day); this.sd.setText(sdText); const x = 1160 - Math.max(this.sd.textWidth, this.sdl.textWidth); this.sd.x = x; this.sdl.x = x;

@@ -108,12 +108,76 @@ export const TRAITS = {
     desc: 'Speaks in even tones. Has never been seen to hurry.',
     effect: 'Vesperine rep gains +1 when positive; calms crew nearby.',
   },
+  ledger_eyes: {
+    id: 'ledger_eyes', name: 'Ledger Eyes',
+    desc: 'Reads a price list the way other people read poetry: for the tension.',
+    effect: '4% cheaper buys and 2% better sells.',
+    mods: { buyDiscount: 0.04, priceSell: 0.02 },
+  },
+  pantry_prophet: {
+    id: 'pantry_prophet', name: 'Pantry Prophet',
+    desc: 'Can make a week of meals from a sack of flour and a strong opinion.',
+    effect: 'Supplies last 10% longer.',
+    ability: 'thrifty_pantry',
+  },
+  jury_rig: {
+    id: 'jury_rig', name: 'Jury-Rig Genius',
+    desc: 'Has repaired a bulkhead with a spoon, a song and eleven minutes.',
+    effect: '+0.5 hull repaired per day.',
+    mods: { repairPerDay: 0.5 },
+  },
+  pen_and_ink: {
+    id: 'pen_and_ink', name: 'Fair-Copy Hand',
+    desc: 'Draws charts so clean that Meridian HQ frames them.',
+    effect: 'Charting a system pays +10 scrip.',
+    ability: 'pen_and_ink',
+  },
+  warm_host: {
+    id: 'warm_host', name: 'Warm Host',
+    desc: 'Lays a table in a cargo bay and somehow everyone feels invited.',
+    effect: '+0.4 morale per day, 2% cheaper buys.',
+    mods: { moraleRegen: 0.4, buyDiscount: 0.02 },
+  },
+  weather_eye: {
+    id: 'weather_eye', name: 'Weather Eye',
+    desc: 'Smells an ion-storm a day away and reroutes through the nice weather.',
+    effect: 'Travel hazards are 15% less likely.',
+    ability: 'weather_eye',
+  },
+  calming_chord: {
+    id: 'calming_chord', name: 'Calming Chord',
+    desc: 'Hums a note that unclenches shoulders across three decks.',
+    effect: '+0.5 morale per day.',
+    mods: { moraleRegen: 0.5 },
+  },
+  perfect_recall: {
+    id: 'perfect_recall', name: 'Perfect Recall',
+    desc: 'Remembers every page it has ever read, and where on the page.',
+    effect: '+1 science for the whole ship.',
+    mods: { skills: { science: 1 } },
+  },
+  silver_tongue: {
+    id: 'silver_tongue', name: 'Silver Tongue',
+    desc: 'Compliments so well-aimed that diplomats ask for a copy.',
+    effect: 'First positive rep gain per dock is +1.',
+    ability: 'gift_of_the_gab',
+  },
   resonant: {
     id: 'resonant', name: 'Resonant',
     desc: 'Hums, constantly and in tune. The crew finds it soothing.',
     effect: '+0.2 morale per day aboard; Vesperine hails go smoothly.',
     mods: { moraleRegen: 0.2 },
   },
+};
+
+// ---- fix round 1: SIGNATURE CREW ABILITIES -----------------------------------------------------
+// Some traits carry `ability: id` for effects beyond ship-bonus `mods`. The ENGINE must implement these
+// (active while that crew member is aboard; effects from several members stack additively unless noted):
+export const CREW_ABILITIES = {
+  thrifty_pantry: 'Daily supplies consumption x0.90 per crew member with this ability (min x0.7 overall).',
+  pen_and_ink: 'Charting a system pays +10 scrip (stacks with cartographers_table), toast "Fair copy: +10 scrip".',
+  weather_eye: 'The per-jump travel hazard chance is multiplied by 0.85 per crew member with this ability (min x0.6).',
+  gift_of_the_gab: 'First positive faction rep gain of each station visit gets +1 (once per dock).',
 };
 
 // ------------------------------------------------------------------ helpers
@@ -281,6 +345,72 @@ export const CREW_POOL = [
     skills: S(0, 0, 1, 4, 1), trait: 'tea_evangelist', hireCost: 210, portraitSeed: 220,
     bio: 'A tea-ceremony mistress turned freelance mediator. Has talked three feuding clans into a single pot of Earl Grey.',
     quote: '"Sit. Sip. The treaty will keep for ten minutes."',
+  },
+  {
+    id: 'cadet_juniper', name: 'Cadet Juniper Marsh', species: 'human', role: 'piloting',
+    skills: S(0, 1, 0, 0, 2), trait: 'optimist', hireCost: 60, portraitSeed: 222,
+    bio: 'A cheerful flight cadet looking for her first posting. Flies like she is carrying a tray of full teacups, which is exactly the standard we need.',
+    quote: '"Steady, steady... and tea has not spilled!"',
+  },
+  {
+    id: 'purser_halloran', name: 'Purser Edmund Halloran', species: 'human', role: 'diplomacy',
+    skills: S(0, 0, 0, 3, 0), trait: 'ledger_eyes', hireCost: 190, portraitSeed: 223,
+    bio: 'A retired cargo purser with an immaculate moustache and a photographic memory for freight tariffs. Haggles by simply sighing.',
+    quote: '"Mm. That is the price in this quarter of the galaxy. I shall wait while you reconsider."',
+  },
+  {
+    id: 'quartermaster_bell', name: 'Quartermaster Hetty Bell', species: 'human', role: 'engineering',
+    skills: S(0, 2, 1, 1, 0), trait: 'pantry_prophet', hireCost: 150, portraitSeed: 224,
+    bio: 'A ship\'s quartermaster who counts rations the way other people count blessings. Nothing aboard has ever gone to waste.',
+    quote: '"Waste not. Want not. Also, someone ate the last pickle."',
+  },
+  {
+    id: 'tinker_wick', name: 'Tinker Wick', species: 'drifter', role: 'engineering',
+    skills: S(0, 3, 0, 1, 1), trait: 'jury_rig', hireCost: 170, portraitSeed: 225,
+    minRep: { faction: 'drifters', n: 5 },
+    bio: 'A habitat mender who repairs hulls with whatever the cargo bay happens to hold. Has strong opinions about spoons.',
+    quote: '"It is not broken. It is simply in a new shape."',
+  },
+  {
+    id: 'cartographer_ness', name: 'Ness Aldersgate-Cho', species: 'human', role: 'science',
+    skills: S(3, 0, 0, 1, 2), trait: 'pen_and_ink', hireCost: 230, portraitSeed: 226,
+    bio: 'A Meridian chart-maker with beautiful handwriting and a habit of drawing sea monsters in unmapped corners. They are always friendly sea monsters.',
+    quote: '"Here be... possibly a very polite whale."',
+  },
+  {
+    id: 'host_zelia', name: 'Zelia Honey-Tongue', species: 'quillari', role: 'diplomacy',
+    skills: S(0, 0, 1, 3, 0), trait: 'warm_host', hireCost: 200, portraitSeed: 227,
+    minRep: { faction: 'quillari', n: 15 },
+    bio: 'A clan hostess between engagements. Hosts supper in the cargo bay; the cargo bay has never been so popular.',
+    quote: '"More soup, cousin. The galaxy can wait until the second helping."',
+  },
+  {
+    id: 'bosun_kettle', name: 'Bosun Kettle', species: 'drifter', role: 'piloting',
+    skills: S(1, 2, 0, 0, 3), trait: 'weather_eye', hireCost: 210, portraitSeed: 228,
+    minRep: { faction: 'drifters', n: 10 },
+    bio: 'A fleet bosun who reads storms like newspapers. Will not say why the route changed, only that it will be nicer.',
+    quote: '"Taste the air. No? Hm. Left, then."',
+  },
+  {
+    id: 'listener_oboe', name: 'Oboe-in-Evening', species: 'vesperine', role: 'medicine',
+    skills: S(1, 0, 3, 1, 0), trait: 'calming_chord', hireCost: 240, portraitSeed: 229,
+    minRep: { faction: 'vesperine', n: 20 },
+    bio: 'A Vesperine healer who treats worry as a note that has stopped resolving. The ward has never been quieter.',
+    quote: '[a low open fifth] "...Breathe out. We will resolve this together."',
+  },
+  {
+    id: 'footnote_7', name: 'Footnote-7', species: 'archivist', role: 'science',
+    skills: S(3, 0, 0, 2, 0), trait: 'perfect_recall', hireCost: 330, portraitSeed: 230,
+    minRep: { faction: 'archivists', n: 20 },
+    bio: 'A seventh-edition annotating unit who has read everything twice and filed the corrections. Speaks mostly in parentheses.',
+    quote: '"(SEE ALSO: THE PREVIOUS TIME THIS HAPPENED.)"',
+  },
+  {
+    id: 'envoy_sorrel', name: 'Envoy Sorrel Vance', species: 'human', role: 'diplomacy',
+    skills: S(0, 0, 0, 4, 0), trait: 'silver_tongue', hireCost: 320, portraitSeed: 231,
+    minRep: { faction: 'concord', n: 15 },
+    bio: 'A Concord junior envoy with a talent for the exact right compliment. Has been asked to leave only one treaty banquet, and was invited back.',
+    quote: '"What a marvellous hat. May I ask who made it?"',
   },
   {
     id: 'lamplighter_oss', name: 'Oss the Lamplighter', species: 'drifter', role: 'science',

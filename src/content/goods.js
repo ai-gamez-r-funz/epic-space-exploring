@@ -141,6 +141,28 @@ export const GOODS = [
     desc: 'Cooled slivers from the Lantern beacons. They glow faintly when someone nearby is telling the truth.',
     flavor: 'The most expensive thing on the market, and nobody can say what it does.',
   },
+
+  // ---- fix round 1: rival-route goods (Captain Tamsin Vell's free-trader stock, see RIVAL_GOODS) ----------
+  {
+    id: 'tamsin_marmalade', name: "Tamsin's Dockside Marmalade", category: 'food', base: 38, volatility: 0.35, bulk: 1, rival: 'tamsin',
+    desc: 'Orange-and-starfruit preserve boiled in a habitat galley on the Rim. Tamsin Vell swears the recipe came from her aunt, and the aunt swears otherwise.',
+    flavor: 'Spreads on anything. Settles arguments.',
+  },
+  {
+    id: 'rimlight_lanterns', name: 'Paper Rimlight Lanterns', category: 'luxury', base: 72, volatility: 0.4, bulk: 2, rival: 'tamsin',
+    desc: 'Hand-folded paper lanterns lit by a pinch of glow-moss. Festival staple in the Shoals; a Drifter nursery rhyme in the Rim.',
+    flavor: 'Light enough to carry. Bright enough to be asked about.',
+  },
+  {
+    id: 'shoal_glass_beads', name: 'Shoal-Glass Beads', category: 'luxury', base: 48, volatility: 0.3, bulk: 1,
+    desc: 'Tiny hollow beads blown from shoal-sand, strung on silk. Quillari children wear them; Drifters trade them as small change.',
+    flavor: 'The sound of a good bargain is a handful of these.',
+  },
+  {
+    id: 'felt_tip_cartridges', name: 'Felt-Tip Ink Cartridges', category: 'tech', base: 36, volatility: 0.15, bulk: 1,
+    desc: 'Archival ink for the Meridian survey pens. Cheap at the Gate, dear anywhere a map is being made for the first time.',
+    flavor: 'Smells of fresh ambition and mild solvent.',
+  },
 ];
 
 export const GOODS_BY_ID = Object.fromEntries(GOODS.map((g) => [g.id, g]));
@@ -150,11 +172,11 @@ export const ECONOMY_BIAS = {
   // ---- by station kind --------------------------------------------------
   trade: {
     // ordinary market: slight demand for luxury, surplus of bulk staples
-    ration_bars: 0.95, machine_parts: 0.95, curios: 1.05, teletype_ribbon: 0.9,
+    ration_bars: 0.95, machine_parts: 0.95, curios: 1.05, teletype_ribbon: 0.9, shoal_glass_beads: 1.05,
   },
   outpost: {
     // remote: fuel/food dear, finished goods fair
-    fuel_cells: 1.25, ration_bars: 1.2, medical_kits: 1.2, comet_ice: 0.85, antiserum_vials: 1.15, nebula_tea: 1.1,
+    fuel_cells: 1.3, ration_bars: 1.25, medical_kits: 1.25, comet_ice: 0.85, antiserum_vials: 1.2, nebula_tea: 1.1, tamsin_marmalade: 1.2,
   },
   shipyard: {
     machine_parts: 0.8, slide_rule_blanks: 0.9, salvage_lace: 1.2, fuel_cells: 0.9,
@@ -163,30 +185,30 @@ export const ECONOMY_BIAS = {
     vellum_sheets: 1.2, glass_brandy: 1.25, star_charts: 1.1, curios: 1.1, teletype_ribbon: 1.2,
   },
   archive: {
-    vellum_sheets: 0.65, curios: 0.85, slide_rule_blanks: 0.9, teletype_ribbon: 0.8,
+    vellum_sheets: 0.8, curios: 0.85, slide_rule_blanks: 0.9, teletype_ribbon: 0.8,
     machine_parts: 1.3, glass_brandy: 0.9, star_charts: 1.4, lantern_glass: 1.3,
   },
   habitat: {
-    hand_looms: 0.65, salvage_lace: 0.6, curios: 0.85, comet_ice: 0.8,
+    hand_looms: 0.65, salvage_lace: 0.6, curios: 0.85, comet_ice: 0.8, tamsin_marmalade: 0.7, rimlight_lanterns: 0.75,
     glass_brandy: 1.4, ration_bars: 1.3, machine_parts: 1.4, fuel_cells: 1.3, medical_kits: 1.35, seed_vault_crates: 1.25,
   },
 
   // ---- by controlling faction ------------------------------------------
   concord: {
-    ration_bars: 0.8, medical_kits: 0.8, machine_parts: 0.9, fuel_cells: 0.85, seed_vault_crates: 0.8, teletype_ribbon: 0.8,
+    ration_bars: 0.8, medical_kits: 0.8, machine_parts: 0.9, fuel_cells: 0.85, seed_vault_crates: 0.8, teletype_ribbon: 0.8, felt_tip_cartridges: 0.85, shoal_glass_beads: 1.2,
     glass_brandy: 1.2, smuggler_spice: 1.45, hand_looms: 1.25, aurora_silk: 1.2, tuning_crystals: 1.15,
   },
   quillari: {
-    glass_brandy: 0.65, nebula_tea: 0.9, smuggler_spice: 0.85, curios: 0.95,
+    glass_brandy: 0.65, nebula_tea: 0.9, smuggler_spice: 0.85, curios: 0.95, shoal_glass_beads: 0.7, rimlight_lanterns: 1.3, tamsin_marmalade: 1.3,
     star_charts: 1.35, vellum_sheets: 1.25, hand_looms: 1.2, tuning_crystals: 1.25, ration_bars: 1.25, medical_kits: 1.15, aurora_silk: 1.2,
   },
   vesperine: {
     tuning_crystals: 0.6, aurora_silk: 0.8, nebula_tea: 0.75, comet_ice: 0.9,
-    machine_parts: 1.5, fuel_cells: 1.3, glass_brandy: 1.1, vellum_sheets: 1.3, curios: 1.2, slide_rule_blanks: 1.2,
+    machine_parts: 1.5, fuel_cells: 1.3, glass_brandy: 1.1, vellum_sheets: 1.3, curios: 1.2, slide_rule_blanks: 1.2, rimlight_lanterns: 1.25,
   },
   archivists: {
-    vellum_sheets: 0.7, lantern_glass: 1.25, curios: 0.9, slide_rule_blanks: 0.9,
-    tuning_crystals: 1.2, star_charts: 1.35, machine_parts: 1.2, antiserum_vials: 1.2,
+    vellum_sheets: 0.82, lantern_glass: 1.25, curios: 0.9, slide_rule_blanks: 0.9,
+    tuning_crystals: 1.2, star_charts: 1.35, machine_parts: 1.2, antiserum_vials: 1.2, felt_tip_cartridges: 1.3,
   },
   drifters: {
     hand_looms: 0.7, salvage_lace: 0.65, smuggler_spice: 0.8, comet_ice: 0.85, curios: 0.85,
@@ -199,22 +221,22 @@ export const ECONOMY_BIAS = {
 
   // ---- by region (optional extra; engine may combine or ignore) ---------
   'region:gate': {
-    star_charts: 0.8, teletype_ribbon: 0.85, ration_bars: 0.9, curios: 1.15,
+    star_charts: 0.8, teletype_ribbon: 0.85, ration_bars: 0.9, curios: 1.15, felt_tip_cartridges: 0.75, fuel_cells: 0.9, rimlight_lanterns: 1.1,
   },
   'region:shoals': {
-    glass_brandy: 0.75, nebula_tea: 1.1, hand_looms: 1.15, fuel_cells: 1.05,
+    glass_brandy: 0.75, nebula_tea: 1.1, hand_looms: 1.15, fuel_cells: 1.05, shoal_glass_beads: 0.8, rimlight_lanterns: 1.2, tamsin_marmalade: 1.2, medical_kits: 1.1,
   },
   'region:veil': {
-    nebula_tea: 0.7, aurora_silk: 0.8, tuning_crystals: 0.8, machine_parts: 1.2,
+    nebula_tea: 0.7, aurora_silk: 0.8, tuning_crystals: 0.8, machine_parts: 1.2, fuel_cells: 1.2, ration_bars: 1.15, rimlight_lanterns: 1.15,
   },
   'region:choir': {
-    aurora_silk: 0.85, fuel_cells: 1.25, antiserum_vials: 1.15, curios: 0.9, lantern_glass: 0.9,
+    aurora_silk: 0.85, fuel_cells: 1.35, antiserum_vials: 1.2, curios: 0.9, lantern_glass: 0.9, ration_bars: 1.2, comet_ice: 0.8, medical_kits: 1.2,
   },
   'region:archive': {
-    vellum_sheets: 0.75, curios: 0.85, glass_brandy: 0.95,
+    vellum_sheets: 0.75, curios: 0.85, glass_brandy: 0.95, felt_tip_cartridges: 1.25, machine_parts: 1.15, ration_bars: 1.1,
   },
   'region:rim': {
-    hand_looms: 0.75, salvage_lace: 0.75, smuggler_spice: 0.8, fuel_cells: 1.25, medical_kits: 1.25, star_charts: 1.1,
+    hand_looms: 0.75, salvage_lace: 0.75, smuggler_spice: 0.8, fuel_cells: 1.35, medical_kits: 1.3, star_charts: 1.1, tamsin_marmalade: 0.8, rimlight_lanterns: 0.8, ration_bars: 1.2, felt_tip_cartridges: 1.2,
   },
 };
 
@@ -227,3 +249,23 @@ export const PRICE_RULES = {
   stockCheapBonus: 1.5,    // cheap goods (bias < 0.85) stock more
   minPrice: 6,
 };
+
+// ---------------------------------------------------------------------------------------------
+// TRADE LANES WITH PERSONALITY (hints for UI/missions; buy where cheap, sell where dear)
+// ---------------------------------------------------------------------------------------------
+export const TRADE_LANES = [
+  { good: 'glass_brandy', from: 'region:shoals', to: 'region:rim', note: 'The Shoals brew it; the Rim toasts with it.' },
+  { good: 'tuning_crystals', from: 'region:veil', to: 'region:archive', note: 'Choir-grown, Archive-catalogued.' },
+  { good: 'vellum_sheets', from: 'region:archive', to: 'region:veil', note: 'Paper for people who sing.' },
+  { good: 'hand_looms', from: 'region:rim', to: 'region:shoals', note: 'Drifter weaving on Quillari shelves.' },
+  { good: 'fuel_cells', from: 'region:gate', to: 'region:choir', note: 'Cheap at the Gate; precious past the pulsars.' },
+  { good: 'felt_tip_cartridges', from: 'region:gate', to: 'region:archive', note: 'Ink for those mapping the unmapped.' },
+  { good: 'tamsin_marmalade', from: 'region:rim', to: 'region:shoals', note: "Tamsin's own route; she will wave." },
+  { good: 'rimlight_lanterns', from: 'region:rim', to: 'region:shoals', note: 'Festival stock, in season.' },
+  { good: 'shoal_glass_beads', from: 'region:shoals', to: 'region:gate', note: 'Small, light, always welcome.' },
+  { good: 'comet_ice', from: 'region:choir', to: 'region:rim', note: 'Water where the sun is a rumour.' },
+];
+
+// Goods with `rival:'tamsin'` are the signature stock of the rival free-trader Captain Tamsin Vell. The engine may
+// prefer these when it picks state.rival.goodId (any good is still legal). See SPECIALS.rival_handshake.
+export const RIVAL_GOODS = GOODS.filter((g) => g.rival).map((g) => g.id);

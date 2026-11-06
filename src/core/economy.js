@@ -47,12 +47,48 @@ function profile(state, system, good) {
 }
 const hasQuillariLicence = (state) => hasSpecial(state, 'trade_licence_quillari');
 
+// ---------------------------------------------------------------- market news (seasonal festivals, gluts, shortages)
+export const SEASON = 20; // days per market "season"
+const FESTIVALS = {
+  concord: ['Charter Day Fair', 'the Festival of Orderly Queues'], quillari: ['the Glass-Fruit Gala', 'Feather-and-Bargain Week'],
+  vesperine: ['the Evening Resonance', 'the Festival of Held Notes'], archivists: ['Open Stacks Week', 'the Catalogue Jubilee'],
+  drifters: ['the Long Table Supper', 'Story-Knot Week'], none: ['a Lantern-Lighting Fair', 'Harbour Day'],
+};
+/** Active/upcoming market news for a trade system. Pure function of (seed, system, day). */
+export function newsFor(state, system, day = state.day) {
+  if (!system || !system.station || !(system.station.services || []).includes('trade') || !C.GOODS.length) return [];
+  const k = Math.floor((day - 1) / SEASON);
+  const out = [];
+  for (const kk of [k, k + 1]) {
+    const h = hashFloat(state.seed, system.id, 'news', kk);
+    const startDay = kk * SEASON + 1; const endDay = startDay + SEASON - 1;
+    const pickGood = (cats) => { const pool = C.GOODS.filter((g) => !cats || cats.includes(g.category)); return pool.length ? pool[Math.floor(hashFloat(state.seed, system.id, 'ng', kk) * pool.length)] : null; };
+    let item = null;
+    if (h < 0.2) {
+      const f = FESTIVALS[system.faction] || FESTIVALS.none;
+      const name = f[Math.floor(hashFloat(state.seed, system.id, 'nf', kk) * f.length)];
+      item = { kind: 'festival', title: name.charAt(0).toUpperCase() + name.slice(1), text: `${system.name} is celebrating ${name}. Luxuries and food fetch festival prices.`, goods: C.GOODS.filter((g) => ['luxury', 'food'].includes(g.category)).map((g) => g.id), mult: 1.3 };
+    } else if (h < 0.34) {
+      const g = pickGood(); if (g) item = { kind: 'glut', title: `${g.name} glut`, text: `Warehouses at ${system.name} are overflowing with ${g.name}. Bargains for anyone with cargo space.`, goods: [g.id], mult: 0.78 };
+    } else if (h < 0.5) {
+      const g = pickGood(['medical', 'food', 'material', 'tech']); if (g) item = { kind: 'shortage', title: `${g.name} shortage`, text: `${system.name} is running short of ${g.name}. Sellers are being thanked, loudly.`, goods: [g.id], mult: 1.3 };
+    }
+    if (item) out.push({ ...item, startDay, endDay, daysLeft: Math.max(0, endDay - day + 1), active: kk === k, upcoming: kk !== k });
+  }
+  return out;
+}
+function newsMult(state, system, goodId, day) {
+  let m = 1;
+  for (const n of newsFor(state, system, day)) if (n.active && n.goods.includes(goodId)) m *= n.mult;
+  return m;
+}
+
 /** Mid-market price for a good on a given day, before impact/stock. */
 export function midPrice(state, system, good, day = state.day) {
   const p = profile(state, system, good);
   const vol = clamp(good.volatility ?? 0.3, 0, 1);
   const drift = 1 + vol * (0.15 * noise(state.seed, system.id, good.id, day, 6, 'a') + 0.08 * noise(state.seed, system.id, good.id, day, 29, 'b'));
-  return good.base * p.prod * p.bias * drift;
+  return good.base * p.prod * p.bias * drift * newsMult(state, system, good.id, day);
 }
 
 export function ensureMarket(state, system) {

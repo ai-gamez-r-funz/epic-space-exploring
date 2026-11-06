@@ -35,7 +35,7 @@ export const FACTIONS = {
     ],
     farewell: 'Safe travels. Do write.',
     homeRegion: 'shoals',
-    likes: ['ration_bars', 'medical_kits', 'star_charts', 'vellum_sheets', 'seed_vault_crates'],
+    likes: ['ration_bars', 'medical_kits', 'star_charts', 'vellum_sheets', 'seed_vault_crates', 'felt_tip_cartridges'],
     dislikes: ['glass_brandy', 'smuggler_spice'],
     quirk: 'Rewards honesty, paperwork, and relief work. Faintly suspicious of anything fun that is not scheduled.',
     rumours: [
@@ -62,7 +62,7 @@ export const FACTIONS = {
     ],
     farewell: 'May your hold be heavy and your gossip fresh.',
     homeRegion: 'shoals',
-    likes: ['star_charts', 'curios', 'vellum_sheets', 'hand_looms', 'tuning_crystals'],
+    likes: ['star_charts', 'curios', 'vellum_sheets', 'hand_looms', 'tuning_crystals', 'shoal_glass_beads'],
     dislikes: ['ration_bars', 'machine_parts'],
     quirk: 'Haggle with warmth, never with a stopwatch. Gossip is a legitimate currency.',
     rumours: [
@@ -143,7 +143,7 @@ export const FACTIONS = {
     ],
     farewell: 'Bring us a better story next time.',
     homeRegion: 'rim',
-    likes: ['hand_looms', 'machine_parts', 'fuel_cells', 'ration_bars', 'salvage_lace'],
+    likes: ['hand_looms', 'machine_parts', 'fuel_cells', 'ration_bars', 'salvage_lace', 'tamsin_marmalade'],
     dislikes: ['star_charts', 'medical_kits'],
     quirk: 'Skip the charter-talk. Bring a story, a spare part, or a willing pair of hands.',
     rumours: [

@@ -1,7 +1,6 @@
 // Content registry. Pulls every WORLD/EVENTS module in tolerantly (a missing or partial file just yields
 // empty data) and builds lookup indexes. Tests may swap data in with setContent().
 //
-// Top-level await + dynamic import() keeps the engine bootable while content files are still landing.
 
 const EMPTY = () => ({
   FACTIONS: {}, GOODS: [], ECONOMY_BIAS: {}, PRICE_RULES: {},
@@ -17,7 +16,7 @@ const EMPTY = () => ({
 
 /** The live registry object (mutated in place so importers always see current data). */
 export const C = EMPTY();
-export const missing = [];
+export const missing = []; // kept for API compatibility (always empty now that imports are static)
 
 const asArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
 const asObjById = (v) => {
@@ -71,27 +70,18 @@ export function rebuild() {
   IDX.chapter = Object.fromEntries(C.CHAPTERS.map((c) => [c.id, c]));
 }
 
-async function tryImport(name, loader) {
-  try { absorb(await loader()); } catch (e) {
-    // only swallow "module not found"; surface real syntax/runtime errors on the console for the content authors
-    if (!(e && (e.code === 'ERR_MODULE_NOT_FOUND' || /Failed to fetch|Cannot find module|Unknown variable dynamic import|does not provide an export/i.test(String(e.message))))) {
-      try { console.warn(`[halcyon] content module ${name} failed to load:`, e && e.message); } catch { /* ignore */ }
-    }
-    missing.push(name);
-  }
-}
+// Static imports: a broken content file fails loudly at build/start-up instead of being swallowed.
+import * as factions from '../content/factions.js';
+import * as goods from '../content/goods.js';
+import * as upgrades from '../content/upgrades.js';
+import * as crew from '../content/crew.js';
+import * as missionsMod from '../content/missions.js';
+import * as story from '../content/story.js';
+import * as codex from '../content/codex.js';
+import * as names from '../content/names.js';
+import * as events from '../content/events/index.js';
 
-await Promise.all([
-  tryImport('factions', () => import('../content/factions.js')),
-  tryImport('goods', () => import('../content/goods.js')),
-  tryImport('upgrades', () => import('../content/upgrades.js')),
-  tryImport('crew', () => import('../content/crew.js')),
-  tryImport('missions', () => import('../content/missions.js')),
-  tryImport('story', () => import('../content/story.js')),
-  tryImport('codex', () => import('../content/codex.js')),
-  tryImport('names', () => import('../content/names.js')),
-  tryImport('events', () => import('../content/events/index.js')),
-]);
+for (const m of [factions, goods, upgrades, crew, missionsMod, story, codex, names, events]) absorb(m);
 rebuild();
 
 /** Replace/extend content (tests, fixtures). Pass `{ __reset: true }` to start from empty. */

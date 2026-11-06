@@ -34,7 +34,7 @@ export const Input = {
   get top() { return layers[layers.length - 1] || null; },
   init() {
     window.addEventListener('keydown', Input._onKey, true);
-    window.addEventListener('pointerdown', () => { keyboardMode = false; Input.keyboardMode = false; if (focused) focused._setFocus?.(false); }, true);
+    window.addEventListener('pointerdown', () => { Input.clickGuard = 0; keyboardMode = false; Input.keyboardMode = false; if (focused) focused._setFocus?.(false); }, true);
   },
   /** Push a scope. Hotkeys owned by objects inside `root` are active only while this is the top layer. Returns pop(). */
   pushLayer(layer) {
@@ -103,7 +103,7 @@ export const Input = {
     const up = (ev) => {
       if (ev.pointerId !== id) return;
       window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
-      if (moved) Input.clickGuard = performance.now() + 120;
+      if (moved) Input.clickGuard = performance.now() + 60;
       onEnd?.(moved);
     };
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);

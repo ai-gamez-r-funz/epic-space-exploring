@@ -11,6 +11,9 @@ export const RECENT_WINDOW = 8;
 
 export function eventById(id) { return IDX.event[id] || BUILTIN_BY_ID[id] || null; }
 
+/** The event definition behind a cursor (inline events are stored on the cursor itself). */
+function evOf(cur) { return cur.inline || eventById(cur.eventId); }
+
 function seenInfo(st, id) { return (st.evt.seen[id]) || null; }
 
 /** Eligible events for a context kind. */
@@ -62,8 +65,9 @@ export function startEvent(g, ev, ctx = {}, opts = {}) {
   const cur = {
     eventId: event.id, node: null, phase: 'node', kind: event.ctx,
     ctx: { systemId: ctx.systemId || st.pos, planetId: ctx.planetId || null, phenomenon: ctx.phenomenon || null, feature: ctx.feature || null, crewId: ctx.crewId || null, crewRandom: ctx.crewId || (crew && crew.id) || null, eventId: event.id },
-    result: null, next: null, afterArrive: !!opts.afterArrive, auto: null,
+    result: null, next: null, afterArrive: !!opts.afterArrive, auto: null, setPiece: opts.setPiece || null,
   };
+  if (event.inline || (!IDX.event[event.id] && !BUILTIN_BY_ID[event.id])) cur.inline = event;
   st.pending = cur;
   const rec = st.evt.seen[event.id] || { n: 0, last: 0 };
   rec.n += 1; rec.last = st.day;
@@ -80,7 +84,7 @@ export function startEvent(g, ev, ctx = {}, opts = {}) {
 }
 
 function enterNode(g, cur, nodeId) {
-  const event = eventById(cur.eventId);
+  const event = evOf(cur);
   const node = event && event.nodes && event.nodes[nodeId];
   if (!node) { finish(g, cur); return; }
   cur.node = nodeId; cur.phase = 'node'; cur.result = null; cur.next = null; cur.auto = null;
@@ -94,7 +98,7 @@ function enterNode(g, cur, nodeId) {
 
 function finish(g, cur) {
   const st = g.state;
-  const event = eventById(cur.eventId);
+  const event = evOf(cur);
   st.pending = null;
   // wonder bonuses
   if (event && (event.tags || []).includes('wonder')) {
@@ -117,7 +121,7 @@ export function resolveChoice(g, index) {
   const st = g.state;
   const cur = st.pending;
   if (!cur) return { ok: false, reason: 'No event in progress' };
-  const event = eventById(cur.eventId);
+  const event = evOf(cur);
   if (!event) { st.pending = null; return { ok: false, reason: 'Event data missing' }; }
 
   if (cur.phase === 'result') {
@@ -178,7 +182,7 @@ export function pendingView(g) {
   const st = g.state;
   const cur = st.pending;
   if (!cur) return null;
-  const event = eventById(cur.eventId);
+  const event = evOf(cur);
   if (!event) return null;
   const node = event.nodes[cur.node] || {};
   const T = (s) => template(st, s, cur.ctx);

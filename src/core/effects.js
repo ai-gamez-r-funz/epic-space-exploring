@@ -8,6 +8,7 @@ import { bfs, adjacency } from './galaxy.js';
 export const FX_KEYS = new Set([
   'fuel', 'supplies', 'hull', 'morale', 'credits', 'days', 'rep', 'cargo', 'item', 'flag', 'clearFlag', 'counter', 'xp', 'mood', 'recruit',
   'mission', 'missionProgress', 'codex', 'reveal', 'chart', 'upgrade', 'teleport', 'shop', 'toast', 'tone', 'log', 'sfx', 'ending', 'startEvent',
+  'distress', // spawn a timed distress signal: {distress: days}
   'tow', // internal: emergency tow (built-in events only)
 ]);
 
@@ -207,6 +208,7 @@ export function applyEffects(g, fx, ctx = {}) {
           case 'sfx': g.emit('sfx', { name: v }); break;
           case 'ending': g._pendingEnding = v; break;
           case 'startEvent': g._chain = v; break;
+          case 'distress': g.spawnDistress(typeof v === 'number' ? v : undefined); break;
           case 'tow': g.tow(v === 'cheap'); break;
           default: break; // unknown keys are reported by content validation, ignored at runtime
         }

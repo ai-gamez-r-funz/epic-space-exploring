@@ -10,7 +10,7 @@ const no = (reason) => ({ ok: false, reason });
 export const COND_KEYS = new Set([
   'credits', 'fuel', 'supplies', 'hull', 'morale', 'item', 'cargo', 'flag', 'notFlag', 'flagEq', 'rep', 'upgrade', 'skill',
   'crewRole', 'crew', 'day', 'mission', 'missionDone', 'codex', 'survey', 'system', 'planetType', 'feature', 'phenomenon',
-  'random', 'not', 'any', 'counter', 'orbit', 'docked', 'visited', 'ringed',
+  'random', 'not', 'any', 'counter', 'orbit', 'docked', 'visited', 'ringed', 'rival', 'distress',
 ]);
 
 function ctxSystem(g, ctx) {
@@ -87,6 +87,12 @@ function evalOne(g, key, val, ctx, opts) {
       const p = ctxPlanet(g, ctx, sys);
       return (p ? !!p.ringed : false) === !!val || (!p && sys && sys.planets.some((x) => x.ringed) === !!val) ? ok() : no('Needs a ringed world');
     }
+    case 'rival': {
+      const r = st.rival; const here = (ctx && ctx.systemId) || st.pos;
+      if (!r) return no('No rival about');
+      return val === 'here' ? (r.systemId === here ? ok() : no('Not here')) : val === 'ally' ? (st.flags.rival_ally ? ok() : no('Not allied')) : ok();
+    }
+    case 'distress': return st.distress ? ((val === 'here' ? st.distress.systemId === ((ctx && ctx.systemId) || st.pos) : true) ? ok() : no('Not here')) : no('No distress call');
     case 'orbit': return st.orbit ? ok() : no('Must be in orbit');
     case 'docked': return st.docked ? ok() : no('Must be docked');
     case 'system': {
