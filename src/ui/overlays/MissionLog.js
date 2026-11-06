@@ -172,7 +172,7 @@ export class MissionLog extends Overlay {
       const vl = new Label({ text: String(v), preset: 'num', size: 22, color: C.cream }); vl.x = x + 14; vl.y = y + 28; root.addChild(vl);
     });
     // regions
-    let y = 250; const h = heading('Regions charted'); h.y = y; root.addChild(h); y += 26;
+    let y = 292; const h = heading('Regions charted'); h.y = y; root.addChild(h); y += 26;
     const regs = S.content.REGIONS || {}; const by = {};
     for (const s of st.galaxy.systems) { const r0 = (by[s.region] ||= { total: 0, charted: 0, known: 0, planets: 0, scanned: 0 }); r0.total++; if (s.status === 'charted') r0.charted++; if (s.status !== 'unknown') r0.known++; for (const p of s.planets) { r0.planets++; if (p.scanned) r0.scanned++; } }
     const ids = Object.keys(regs).filter((id) => by[id]).concat(Object.keys(by).filter((id) => !regs[id]));

@@ -9,7 +9,7 @@ import { Anim } from '../kit/anim.js';
 import { S } from '../services.js';
 import { cap, pretty, factionName, heading, chip, slimBar } from './parts2/common.js';
 
-const CATS = [['all', 'All'], ['species', 'Peoples'], ['place', 'Places'], ['phenomenon', 'Phenomena'], ['history', 'History'], ['tech', 'Tech']];
+const CATS = [['all', 'All'], ['species', 'Peoples'], ['place', 'Places'], ['phenomenon', 'Phenom.'], ['history', 'History'], ['tech', 'Tech']];
 const CAT_ICON = { species: 'crew', place: 'planet', phenomenon: 'science', history: 'log', tech: 'engineering', all: 'codex' };
 const FACTION_SPECIES = { concord: 'human', quillari: 'quillari', vesperine: 'vesperine', archivists: 'archivist', drifters: 'drifter' };
 const PHENS = ['nebula', 'pulsar', 'ionstorm', 'wormhole', 'asteroids', 'derelict', 'comet', 'rift', 'aurora', 'beacon'];
@@ -88,7 +88,7 @@ export class Codex extends Overlay {
     const bar = this.catBar; bar.removeChildren().forEach((c) => c.destroy({ children: true })); const all = this._all(); let x = 0;
     for (const [id, label] of CATS) {
       const list = id === 'all' ? all : all.filter((e) => e.category === id); const k = list.filter((e) => e.known).length;
-      const b = new Button({ label: `${label}  ${k}/${list.length}`, icon: CAT_ICON[id], w: 168, h: 40, fontSize: 13, upper: false, variant: this.cat === id ? 'brass' : 'ghost', selected: this.cat === id, onClick: () => { this.cat = id; this.sel = null; this._cats(); this._list(); } });
+      const b = new Button({ label: `${label}  ${k}/${list.length}`, icon: CAT_ICON[id], w: 168, h: 40, fontSize: 12, upper: false, variant: this.cat === id ? 'brass' : 'ghost', selected: this.cat === id, onClick: () => { this.cat = id; this.sel = null; this._cats(); this._list(); } });
       b.x = x; bar.addChild(b); x += 174;
     }
   }

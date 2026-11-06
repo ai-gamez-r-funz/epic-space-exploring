@@ -160,7 +160,7 @@ export class EndScreen extends Overlay {
     const y = this.BH - 46; const g = this.game; const f = this.btns = new Container(); f.y = y; this.root.addChild(f);
     const specs = [
       { label: 'New Voyage', icon: 'jump', variant: 'primary', w: 210, hotkey: 'n', onClick: () => { this.close(); this.ui.goto('NewGame', {}, { kind: 'iris' }); } },
-      { label: 'Title Screen', icon: 'star', variant: 'brass', w: 190, hotkey: 't', onClick: () => { this.close(); this.ui.goto('Title'); } },
+      { label: 'Title', icon: 'star', variant: 'brass', w: 150, hotkey: 't', onClick: () => { this.close(); this.ui.goto('Title'); } },
     ];
     const canKeep = !this.loss && typeof g.continueVoyage === 'function';
     if (canKeep) specs.push({ label: 'Keep Exploring', icon: 'planet', variant: 'teal', w: 210, hotkey: 'k', onClick: () => { const r = g.continueVoyage(); if (r?.ok === false) { this.ui.toast(r.reason || 'Cannot continue.', 'bad'); return; } this.close(); } });
