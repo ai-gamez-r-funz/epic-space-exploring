@@ -8,6 +8,8 @@ import { diffOf } from './ship.js';
 import { bfs, adjacency } from './galaxy.js';
 
 const WEEK = 7;
+/** Engine-side scale on authored mission credits (keeps income in step with the tighter fuel/supply economy). */
+const REWARD_SCALE = 0.45;
 const sysById = (st, id) => st.galaxy.systems.find((s) => s.id === id);
 const isKnown = (s) => s.status !== 'unknown';
 
@@ -111,7 +113,7 @@ function draftStatic(g, def, fromId, rng) {
   if (!objectives) return null;
   const diff = diffOf(g.state);
   const reward = { ...(def.reward || {}) };
-  if (reward.credits) reward.credits = Math.round(reward.credits * diff.reward);
+  if (reward.credits) reward.credits = Math.round(reward.credits * diff.reward * (def.arc === 'main' ? 1 : REWARD_SCALE));
   return {
     id: def.id, defId: def.id, title: def.title, giver: def.giver || null, faction: (def.giver && def.giver.faction) || 'none', kind: def.kind,
     blurb: def.blurb, accept: def.accept, reward, deadlineDays: def.deadlineDays ? Math.round(def.deadlineDays * diff.deadline) : null,
@@ -152,7 +154,7 @@ function draftTemplate(g, t, sys, rng, key) {
   let credits = 0;
   if (rw.credits && typeof rw.credits === 'object') credits = (rw.credits.base || 0) + (rw.credits.perUnit || 0) * (qty || 0) + (rw.credits.perJump || 0) * hops;
   else credits = rw.credits || 0;
-  credits = Math.max(10, Math.round((credits * diff.reward * (0.92 + rng.next() * 0.2)) / 5) * 5);
+  credits = Math.max(10, Math.round((credits * diff.reward * REWARD_SCALE * (0.92 + rng.next() * 0.2)) / 5) * 5);
   const rep = {};
   for (const [f, n] of Object.entries(rw.rep || {})) {
     const fid = f === '$faction' ? faction : f;

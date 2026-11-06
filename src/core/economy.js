@@ -88,7 +88,9 @@ export function midPrice(state, system, good, day = state.day) {
   const p = profile(state, system, good);
   const vol = clamp(good.volatility ?? 0.3, 0, 1);
   const drift = 1 + vol * (0.15 * noise(state.seed, system.id, good.id, day, 6, 'a') + 0.08 * noise(state.seed, system.id, good.id, day, 29, 'b'));
-  return good.base * p.prod * p.bias * drift * newsMult(state, system, good.id, day);
+  // news can't push the combined bias outside the normal band: keeps cross-market spreads (and trade profit/day) bounded
+  const eff = clamp(p.bias * newsMult(state, system, good.id, day), 0.72, 1.3);
+  return good.base * p.prod * eff * drift;
 }
 
 export function ensureMarket(state, system) {

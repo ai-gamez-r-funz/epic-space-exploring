@@ -17,10 +17,10 @@ const HAZARD_TEXT = {
   nebula: 'Thick nebula gas drags at the hull and the sensors go milky. Visibility is a matter of opinion.',
 };
 export function hazardPhenomenon(dest) { return dest.phenomena.find((p) => HAZARD_TEXT[p]) || null; }
-export function hazardEvent(dest) {
+export function hazardEvent(dest, mult = 1) {
   const d = Math.max(1, dest.danger);
   const ph = hazardPhenomenon(dest);
-  const hull = 3 + 2 * d;
+  const hull = Math.round((4 + 3 * d) * mult);
   return ev('core_hazard', 'travel', 'Rough Lane', { scene: ph && ['ionstorm', 'asteroids', 'pulsar', 'rift'].includes(ph) ? ph : 'nebula' }, {
     a: {
       speaker: { name: 'Dobbin', species: 'robot' },

@@ -272,7 +272,7 @@ export class GalaxyMap extends Scene {
     if (prefs.anim !== false) {
       const ant = { p: 0 }; const ox = this.world.x, oy = this.world.y;
       await Anim.to(ant, { p: 1 }, 800, { ease: 'inQuad', onUpdate: () => {
-        const k = ant.p; this.fx.clear();
+        if (this._dead) return; const k = ant.p; this.fx.clear();
         for (let i = 0; i < 3; i++) { const q = (k * 1.6 - i * 0.25); if (q > 0 && q < 1) this.fx.circle(A.x, A.y, 8 + (1 - q) * 70).stroke({ width: 2.5, color: C.tealLight, alpha: 0.2 + q * 0.7 }); }
         ship.scale.set(0.32 * (1 + 0.18 * Math.sin(k * 30) * k)); ship.update?.(0.016);
         if (prefs.shake !== false) { this.world.x = ox + (Math.random() - 0.5) * 3.5 * k; this.world.y = oy + (Math.random() - 0.5) * 3.5 * k; }
@@ -280,20 +280,21 @@ export class GalaxyMap extends Scene {
       this.world.x = ox; this.world.y = oy; ship.scale.set(0.32); this.fx.clear();
     } else await Anim.wait(250);
     sfx('jump');
-    const prog = { p: 0 }; const glide = Anim.to(prog, { p: 1 }, 1300, { ease: 'inOutCubic', onUpdate: () => { ship.x = A.x + (B.x - A.x) * prog.p; ship.y = A.y + (B.y - A.y) * prog.p; ship.update?.(0.016); this.fx.clear().moveTo(A.x, A.y).lineTo(ship.x, ship.y).stroke({ width: 3, color: C.tealLight, alpha: 0.7 }); } });
-    await glide.promise;
+    const prog = { p: 0 }; const glide = Anim.to(prog, { p: 1 }, 1300, { ease: 'inOutCubic', onUpdate: () => { if (this._dead) return; ship.x = A.x + (B.x - A.x) * prog.p; ship.y = A.y + (B.y - A.y) * prog.p; ship.update?.(0.016); this.fx.clear().moveTo(A.x, A.y).lineTo(ship.x, ship.y).stroke({ width: 3, color: C.tealLight, alpha: 0.7 }); } });
+    await glide.promise; if (this._dead) return;
     // warp streaks
     const warp = new Container(); this.view.addChild(warp); const sg = new Graphics(); warp.addChild(sg);
     const flash = new Graphics().rect(0, 0, W, H).fill(0xffffff); flash.alpha = 0; warp.addChild(flash);
     const dark = new Graphics().rect(0, 0, W, H).fill({ color: 0x03040d }); dark.alpha = 0; warp.addChildAt(dark, 0);
     const streaks = Array.from({ length: 150 }, () => ({ a: Math.random() * 6.283, d: 20 + Math.random() * 100, sp: 0.6 + Math.random() * 1.4, col: Math.random() < 0.3 ? C.tealLight : Math.random() < 0.5 ? C.cream : C.mustard }));
     const wp = { p: 0 }; const run = Anim.to(wp, { p: 1 }, 1100, { ease: 'inQuad', onUpdate: () => {
+      if (this._dead) return;
       dark.alpha = Math.min(1, wp.p * 3); sg.clear(); const k = wp.p;
       for (const s of streaks) { const r0 = s.d + k * k * 900 * s.sp, r1 = r0 + 6 + k * 420 * s.sp; sg.moveTo(W / 2 + Math.cos(s.a) * r0, H / 2 + Math.sin(s.a) * r0 * 0.75).lineTo(W / 2 + Math.cos(s.a) * r1, H / 2 + Math.sin(s.a) * r1 * 0.75).stroke({ width: 1.2 + k * 2, color: s.col, alpha: 0.4 + k * 0.6 }); }
       flash.alpha = Math.max(0, (k - 0.82) / 0.18); if (prefs.shake !== false) { warp.x = (Math.random() - 0.5) * 6 * k; warp.y = (Math.random() - 0.5) * 6 * k; } } });
     // perform the actual jump mid-warp
     setTimeout(() => { this._result = g.jump(to); }, 300);
-    await run.promise;
+    await run.promise; if (this._dead) return;
     const r = this._result; this.fx.clear();
     if (!r || r.ok === false) { this.ui.toast(r?.reason || 'The jump fizzled.', 'bad'); warp.destroy({ children: true }); ship.destroy(); this.jumping = false; this.ui.holdEvents = false; this.planBtn.eventMode = 'static'; Anim.to(this.side, { alpha: 1, x: W - 340 }, 300); this.build(); this.refreshSide(); return; }
     this.ui.sfx('arrive');
@@ -315,5 +316,5 @@ export class GalaxyMap extends Scene {
       if (this.sel) { const s = this.game.system(this.sel); if (s) for (let k = 0; k < 6; k++) { const a = this.t + k * Math.PI / 3; arcSeg(g, s.x, s.y, 24, a, a + 0.55).stroke({ width: 2.5, color: C.mustard }); } }
     }
   }
-  exit() { super.exit(); this.ui.holdEvents = false; }
+  exit() { this._dead = true; super.exit(); this.ui.holdEvents = false; }
 }

@@ -221,8 +221,7 @@ test('flags: every flag an event/mission/ending reads is set somewhere', () => {
   for (const en of Object.values(C.ENDINGS)) collect(en.conditions, en.id);
   for (const ch of C.CHAPTERS) { collect(ch.gate, 'chapter'); collect(ch.completeWhen, 'chapter'); }
   const chapterDone = /^chapter_\d_done$/;
-  // KNOWN GAP (see docs/REQUESTS.md [ENGINE]): no event sets fellowship_known yet; remove from this list once EVENTS adds it.
-  const KNOWN_GAPS = new Set(['fellowship_known']);
+  const KNOWN_GAPS = new Set([]);
   const unset = reads.filter(([n]) => !set.has(n) && !chapterDone.test(n) && !KNOWN_GAPS.has(n));
   assert.deepEqual(unset, [], 'flags read but never set: ' + unset.map(([n, w]) => `${n} (${w})`).join(', '));
 });

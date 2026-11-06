@@ -95,7 +95,7 @@ test('no profitable infinite loop: best two-station run is bounded per day', () 
       }
     }
   }
-  assert.ok(best < 220, `best trade run ${best.toFixed(1)} scrip/day is too lucrative`);
+  assert.ok(best < 160, `best trade run ${best.toFixed(1)} scrip/day is too lucrative`);
 });
 
 test('cargo capacity and stock are respected', () => {

@@ -17,12 +17,11 @@ import { NewGame } from './scenes/NewGame.js';
 import { Intro } from './scenes/Intro.js';
 import { Bridge } from './scenes/Bridge.js';
 import { GalaxyMap } from './scenes/GalaxyMap.js';
-import { KitDemo } from './dev/KitDemo.js';
 import { installPrefs, Prefs } from './overlays/parts2/prefs.js';
 import { TutorialHints } from './overlays/parts2/tutorial.js';
 import { Responsive } from './responsive.js';
 
-const SCENES = { Title, NewGame, Intro, Bridge, GalaxyMap, KitDemo };
+const SCENES = { Title, NewGame, Intro, Bridge, GalaxyMap };
 const MUSIC = { Title: 'title', NewGame: 'title', Intro: 'wonder', Bridge: 'bridge', GalaxyMap: 'map' };
 
 export class App {
@@ -34,6 +33,7 @@ export class App {
 
   async init() {
     await Promise.all([loadFonts(), loadServices()]);
+    if (import.meta.env.DEV) SCENES.KitDemo = (await import('./dev/KitDemo.js')).KitDemo; // gallery is dev-only
     const app = this.pixi = new Application();
     await app.init({ width: W, height: H, background: C.ink, antialias: true, resolution: 1, autoDensity: false, preference: 'webgl', powerPreference: 'high-performance' });
     const host = document.getElementById('game') || document.body;

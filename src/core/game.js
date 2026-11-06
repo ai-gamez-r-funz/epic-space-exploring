@@ -179,9 +179,25 @@ export class Game {
     const m = Econ.listing(this.state, s);
     if (!m) return null;
     m.services = this.servicePrices(sysId);
+    m.tips = Ship.hasSpecial(this.state, 'market_ear') ? this._marketTips(s, m) : [];
     m.cargoUsed = this.cargoUsed();
     m.cargoMax = this.state.ship.cargoMax;
     return m;
+  }
+  _marketTips(sys, m) {
+    const st = this.state;
+    const tips = [];
+    for (const gd of m.goods) {
+      if (!gd.buy) continue;
+      let best = null;
+      for (const o of st.galaxy.systems) {
+        if (o.id === sys.id || (o.status !== 'visited' && o.status !== 'charted') || !st.markets[o.id]) continue;
+        const sell = Econ.quoteSell(st, o, gd.id, 1);
+        if (sell && (!best || sell > best.sell)) best = { goodId: gd.id, systemId: o.id, systemName: o.name, sell };
+      }
+      if (best && best.sell >= gd.buy * 1.25) tips.push({ ...best, ratio: best.sell / gd.buy });
+    }
+    return tips.sort((a, b) => b.ratio - a.ratio).slice(0, 3).map(({ ratio, ...t }) => t);
   }
   shipyard(sysId = this.state.pos) {
     const s = this.system(sysId);
@@ -271,6 +287,8 @@ export class Game {
       // supplies upkeep (fractional accumulator keeps it deterministic)
       let rate = (0.4 + 0.2 * st.crew.length) * diff.upkeep * (opts.extraUpkeep || 1);
       if (opts.rest && Ship.hasSpecial(st, 'rest_cure')) rate *= 0.75;
+      if (Ship.hasSpecial(st, 'thrifty_galley')) rate *= 0.75;
+      rate *= Math.max(0.7, Math.pow(0.9, Ship.abilityCount(st, 'thrifty_pantry')));
       st.counters.supAcc = (st.counters.supAcc || 0) + rate;
       const whole = Math.floor(st.counters.supAcc);
       st.counters.supAcc -= whole;
@@ -279,8 +297,9 @@ export class Game {
         st.ship.supplies = Math.max(0, have - whole);
       }
       // morale
-      let dm = d.moraleRegen - 0.45; // life aboard wears on a crew; lounges, rests and shore leave mend it
+      let dm = d.moraleRegen - 0.6; // life aboard wears on a crew; lounges, rests and shore leave mend it
       if (st.docked) dm += 0.6;
+      if (opts.rest && Ship.hasSpecial(st, 'field_hospital')) { dm += 2; st.ship.hull = clamp(st.ship.hull + 1, 0, st.ship.hullMax); }
       if (opts.rest) { dm += 3; if (Ship.hasSpecial(st, 'tea_service')) dm += 1.5; }
       if (st.docked && Ship.hasSpecial(st, 'tea_service')) dm += 0.5;
       if (st.ship.supplies <= 0) dm -= 2.5;
@@ -511,6 +530,7 @@ export class Game {
     this.log('discovery', `${s.name} charted.`);
     this.emit('discovery', { kind: 'chart', text: `${s.name} charted`, id: s.id });
     this.toast(`${s.name} charted`, 'good');
+    if (Ship.abilityCount(st, 'pen_and_ink') > 0) { applyEffects(this, [{ credits: 10 }], {}); this.toast('Fair copy: +10 scrip', 'good'); }
     if (Ship.hasSpecial(st, 'cartographers_table')) { applyEffects(this, [{ credits: 25 }], {}); this.toast('Meridian bounty: +25 scrip', 'good'); }
     this.emit('sfx', { name: 'discovery' });
   }
@@ -711,16 +731,18 @@ export class Game {
     const ph = SP.hazardPhenomenon(dest);
     if (ph && ['ionstorm', 'nebula', 'asteroids'].includes(ph) && Ship.hasSpecial(st, 'steady_hand')) return false;
     // everyday wear and tear
-    if (diff.damage > 0.6 && this.rng.chance(0.4)) applyEffects(this, [{ hull: -1 }], { noScale: true });
-    let chance = (0.05 + 0.13 * dest.danger) * diff.hazard + (ph ? 0.08 : 0);
+    if (diff.damage > 0.6 && this.rng.chance(0.6)) applyEffects(this, [{ hull: -1 }], { noScale: true });
+    let chance = (0.07 + 0.15 * dest.danger) * diff.hazard + (ph ? 0.08 : 0);
     if (Ship.hasSpecial(st, 'barrel_roll_gyro')) chance *= 0.75;
+    chance *= Math.max(0.6, Math.pow(0.85, Ship.abilityCount(st, 'weather_eye')));
+    const dmgMult = Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1;
     if (!this.rng.chance(chance)) return false;
     if (dest.danger === 0) {
-      const r = applyEffects(this, [{ hull: -2 }], { noScale: true });
+      const r = applyEffects(this, [{ hull: -Math.round(2 * dmgMult) }], { noScale: true });
       this.toast(`Rough space: ${r.summary.join(', ')}`, 'bad');
       return false;
     }
-    return Events.startEvent(this, SP.hazardEvent(dest), { systemId: dest.id }, { afterArrive: true });
+    return Events.startEvent(this, SP.hazardEvent(dest, dmgMult), { systemId: dest.id }, { afterArrive: true });
   }
   _arrive(firstVisit) {
     const st = this.state;
@@ -735,6 +757,7 @@ export class Game {
     for (const ph of s.phenomena) this._codexTrigger('phenomenon', ph);
     if (s.faction !== 'none') this._codexTrigger('faction', s.faction);
     this._tryChart(s);
+    if (Ship.hasSpecial(st, 'ice_scoop') && s.phenomena.includes('comet')) { applyEffects(this, [{ fuel: 3 }], {}); this.toast('Ice scoop: +3 fuel from the comet tail', 'good'); }
     if (st.phase === 'play' && st.distress && st.distress.systemId === s.id) {
       const ctx = { systemId: s.id };
       const ev = Events.pickEvent(this, 'distress', ctx) || SP.distressEvent(this, st.distress);
@@ -781,9 +804,14 @@ export class Game {
     st.ship.supplies = Math.max(0, st.ship.supplies - 1);
     this.advanceDays(1, { deferCheck: true });
     p.scanned = true;
+    if (Ship.hasSpecial(st, 'prize_cartography')) {
+      const prize = Math.min(60, 8 + 12 * p.features.length);
+      applyEffects(this, [{ credits: prize }], {});
+      this.toast(`Prize cartography +${prize} scrip`, 'good');
+    }
     st.stats.planetsScanned = (st.stats.planetsScanned || 0) + 1;
     const lifeBonus = { microbial: 8, flora: 12, fauna: 18, civilized: 25 }[p.life] || 0;
-    const bounty = Math.round((12 + lifeBonus + p.features.length * 8) * diffOf(st).reward);
+    const bounty = Math.round((12 + lifeBonus + p.features.length * 8) * diffOf(st).reward * 0.7);
     applyEffects(this, [{ credits: bounty }, { xp: { science: st.crew.some((c) => c.trait === 'compulsive_cataloguer') ? 2 : 1 } }], {});
     this.emit('sfx', { name: 'scan' });
     this.log('discovery', `Scanned ${p.name}: ${prettify(p.type)}, life: ${p.life}${p.features.length ? ', ' + p.features.map(prettify).join('/') : ''} (+${bounty} scrip).`);
@@ -874,6 +902,11 @@ export class Game {
     const sys = this.here();
     const faction = sys.station ? sys.station.faction : sys.faction;
     if (!faction || faction === 'none') {
+      if (Ship.hasSpecial(st, 'long_range_hails') && !st.counters['hails_' + sys.id]) {
+        st.counters['hails_' + sys.id] = 1;
+        applyEffects(this, [{ reveal: 'nearest' }], {});
+        this.toast('Long-range hail: a distant signal answers, and a new system appears on the chart', 'good');
+      }
       return { ok: true, event: false, message: 'Only the quiet hum of the void answers. Politely.' };
     }
     const key = 'hail_' + sys.id;
@@ -898,6 +931,12 @@ export class Game {
     if (st.docked) return { ok: false, reason: 'Already docked' };
     st.docked = true;
     st.orbit = null;
+    st.counters.gab_used = 0;
+    if (Ship.hasSpecial(st, 'false_floor') && (sys.faction === 'concord' || sys.station.faction === 'concord') && this.rng.chance(0.15)) {
+      const fine = Math.min(40, st.credits);
+      applyEffects(this, [{ credits: -fine }, { rep: { concord: -2 } }], {});
+      this.toast(`Customs spot-check finds the false floor: -${fine} scrip, Concord -2`, 'bad');
+    }
     this.emit('sfx', { name: 'dock' });
     this.log('nav', `Docked at ${sys.station.name}.`);
     if (sys.station.faction && sys.station.faction !== 'none') this._codexTrigger('faction', sys.station.faction);
@@ -945,6 +984,10 @@ export class Game {
     const g0 = this._guard(); if (g0) return g0;
     const s = this._station('trade'); if (s.err) return s.err;
     const r = Econ.sellGoods(this.state, s.sys, goodId, qty);
+    if (r.ok && Ship.hasSpecial(this.state, 'rival_handshake') && this.state.rival && goodId === this.state.rival.goodId) {
+      const extra = Math.floor(r.gain * 0.08);
+      this.state.credits += extra; r.gain += extra;
+    }
     if (r.ok) {
       this.state.stats.creditsEarned = (this.state.stats.creditsEarned || 0) + r.gain;
       this.emit('sfx', { name: 'coin' });

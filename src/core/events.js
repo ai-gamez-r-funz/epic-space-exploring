@@ -41,6 +41,7 @@ function weightOf(g, e, ctx) {
   const tags = e.tags || [];
   if (tags.includes('hazard')) w *= 0.5 + 0.35 * (sys ? sys.danger : 0);
   if (tags.includes('relief') && st.ship.morale < 50) w *= 1.8;
+  if (tags.includes('relief') && hasSpecial(st, 'distress_transponder')) w *= 1.5;
   if (tags.includes('mystery') && hasSpecial(st, 'lantern_attunement')) w *= 2;
   if (tags.includes('wonder') && st.ship.morale < 60) w *= 1.3;
   return Math.max(0.01, w);
@@ -64,7 +65,7 @@ export function startEvent(g, ev, ctx = {}, opts = {}) {
   const crew = st.crew.length ? st.crew[g.rng.int(0, st.crew.length - 1)] : null;
   const cur = {
     eventId: event.id, node: null, phase: 'node', kind: event.ctx,
-    ctx: { systemId: ctx.systemId || st.pos, planetId: ctx.planetId || null, phenomenon: ctx.phenomenon || null, feature: ctx.feature || null, crewId: ctx.crewId || null, crewRandom: ctx.crewId || (crew && crew.id) || null, eventId: event.id },
+    ctx: { systemId: ctx.systemId || st.pos, planetId: ctx.planetId || null, phenomenon: ctx.phenomenon || null, feature: ctx.feature || null, crewId: ctx.crewId || null, crewRandom: ctx.crewId || (crew && crew.id) || null, eventId: event.id, tags: event.tags || [] },
     result: null, next: null, afterArrive: !!opts.afterArrive, auto: null, setPiece: opts.setPiece || null,
   };
   if (event.inline || (!IDX.event[event.id] && !BUILTIN_BY_ID[event.id])) cur.inline = event;

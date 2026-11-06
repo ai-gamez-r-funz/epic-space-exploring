@@ -3,7 +3,6 @@
 // blanks the screen. S.gfx / S.audio are "safe" facades: each call tries the real module, falls back to the mock.
 import { mockGfx } from './dev/mocks/mockGfx.js';
 import { mockAudio } from './dev/mocks/mockAudio.js';
-import { MockGame } from './dev/mocks/MockGame.js';
 import { MOCK_CONTENT } from './dev/mocks/mockContent.js';
 
 const globs = import.meta.glob([
@@ -18,7 +17,7 @@ const warned = new Set();
 const warnOnce = (k, e) => { if (!warned.has(k)) { warned.add(k); console.warn('[ui] ' + k, e?.message || e || ''); } };
 
 export const S = {
-  Game: MockGame, gfx: null, audio: null, content: { ...MOCK_CONTENT },
+  Game: null, gfx: null, audio: null, content: { ...MOCK_CONTENT },
   real: { game: false, gfx: false, audio: false, content: {} },
   rawGfx: null, rawAudio: null,
 };
@@ -54,6 +53,7 @@ export async function loadServices() {
     audMod = await tryImport('../audio/index.js');
   }
   if (gameMod?.Game) { S.Game = gameMod.Game; S.real.game = true; }
+  else if (import.meta.env.DEV || forceMock) { S.Game = (await import('./dev/mocks/MockGame.js')).MockGame; } // dev-only fallback; stripped from production builds
   const gfx = gfxMod?.gfx || gfxMod?.default || (gfxMod && Object.keys(gfxMod).length > 3 ? gfxMod : null);
   const aud = audMod?.audio || audMod?.default || (audMod && audMod.sfx ? audMod : null);
   S.rawGfx = gfx; S.rawAudio = aud;

@@ -74,7 +74,8 @@ function chooseEvent(g, policy, rnd) {
 function manage(g, policy, mem, rnd) {
   const st = g.state;
   const sys = g.here();
-  const careful = policy === 'cautious';
+  const careful = policy === 'cautious' || policy === 'story';
+  const reckless = policy === 'reckless';
   const s = sys.station;
   if (!s) return;
   if (!st.docked) g.dock();
@@ -92,13 +93,13 @@ function manage(g, policy, mem, rnd) {
     }
   }
   if (svc('repair')) {
-    const frac = careful ? 0.8 : 0.6;
+    const frac = careful ? 0.8 : reckless ? 0.3 : 0.6;
     if (st.ship.hull < st.ship.hullMax * frac) g.repair('max');
-    if (st.ship.fuel < st.ship.fuelMax * (careful ? 0.9 : 0.7)) g.refuel('max');
-    if (st.ship.supplies < st.ship.suppliesMax * (careful ? 0.8 : 0.6)) g.restock('max');
+    if (st.ship.fuel < st.ship.fuelMax * (careful ? 0.9 : reckless ? 0.45 : 0.7)) g.refuel('max');
+    if (st.ship.supplies < st.ship.suppliesMax * (careful ? 0.8 : reckless ? 0.35 : 0.6)) g.restock('max');
   }
   if (svc('missions') && st.missions.active.length < 4) {
-    const offers = g.missionBoard().slice().sort((a, b) => (b.reward.credits || 0) - (a.reward.credits || 0));
+    const offers = g.missionBoard().slice().sort((a, b) => ((b.arc === 'main' ? 1e6 : 0) + (b.reward.credits || 0)) - ((a.arc === 'main' ? 1e6 : 0) + (a.reward.credits || 0)));
     for (const o of offers) {
       if (st.missions.active.length >= 4) break;
       const noExtra = o.deadlineDays !== null && o.deadlineDays !== undefined && o.deadlineDays < 6;
@@ -145,6 +146,10 @@ function manage(g, policy, mem, rnd) {
 
 function pickDestination(g, policy, mem, rnd) {
   const st = g.state;
+  if (policy === 'story') {
+    const no = g.nextObjective();
+    if (no && no.systemId && no.systemId !== st.pos) { const r0 = route(g, (x) => x.id === no.systemId); if (r0) return r0; }
+  }
   // 1. mission targets (skip deliveries we cannot yet fulfil)
   let bestMission = null;
   for (const am of st.missions.active) {
@@ -162,7 +167,7 @@ function pickDestination(g, policy, mem, rnd) {
   }
   // 2. retire when ready
   const sv = g.surveyProgress();
-  if ((policy === 'cautious' && sv.pct >= 65) || (policy === 'greedy' && sv.pct >= 85)) {
+  if ((policy === 'cautious' && sv.pct >= 65) || ((policy === 'greedy' || policy === 'reckless') && sv.pct >= 85)) {
     if (g.canRetire().ok) return null; // handled by caller
     const r = route(g, (s) => s.station && (s.station.faction === 'concord' || /meridian/i.test(s.station.name)));
     if (r) return r;
@@ -199,10 +204,10 @@ function actCareful(g, policy, mem, rnd) {
   }
   if (g.canRetire().ok) {
     const sv = g.surveyProgress();
-    if ((policy === 'cautious' && sv.pct >= 65) || (policy === 'greedy' && sv.pct >= 85)) { g.retire(); return; }
+    if ((policy === 'cautious' && sv.pct >= 65) || ((policy === 'greedy' || policy === 'reckless') && sv.pct >= 85)) { g.retire(); return; }
   }
   // fuel safety: if the next hop would leave us below the return reserve, go to a station first
-  const margin = policy === 'cautious' ? 3 : 1;
+  const margin = (policy === 'cautious' || policy === 'story') ? 3 : policy === 'reckless' ? 0 : 1;
   let dest = pickDestination(g, policy, mem, rnd);
   if (!dest) { g.rest(1); return; }
   const next = dest.path[0];
@@ -237,27 +242,30 @@ function actCareful(g, policy, mem, rnd) {
 function actRandom(g, mem, rnd) {
   const st = g.state;
   const sys = g.here();
-  const roll = rnd.next();
-  const nbs = g.neighbors();
-  if (roll < 0.45 && nbs.length) {
-    const n = rnd.pick(nbs);
-    const r = g.jump(n.id);
-    if (!r.ok) g.rest(1);
-  } else if (roll < 0.6) {
-    const p = sys.planets.find((x) => !x.scanned);
-    if (p) g.scanPlanet(p.id); else g.rest(1);
-  } else if (roll < 0.7) {
-    if (sys.station) { if (!st.docked) g.dock(); else g.undock(); } else g.rest(1);
-  } else if (roll < 0.8 && st.docked) {
+  const acts = [];
+  const jumps = g.neighbors().filter((n) => g.canJump(n.id).ok);
+  if (jumps.length) acts.push([5, () => g.jump(rnd.pick(jumps).id)]);
+  const unscanned = sys.planets.filter((x) => !x.scanned);
+  if (unscanned.length) acts.push([3, () => g.scanPlanet(rnd.pick(unscanned).id)]);
+  const landable = sys.planets.filter((x) => x.scanned && !x.landed && x.type !== 'gas');
+  if (landable.length) acts.push([1, () => g.landingParty(rnd.pick(landable).id)]);
+  if (sys.phenomena.length) acts.push([1, () => g.investigate(rnd.pick(sys.phenomena))]);
+  if (sys.station && !st.docked) acts.push([2, () => g.dock()]);
+  if (st.docked) {
+    acts.push([1, () => g.undock()]);
     const m = g.market();
-    if (m && m.goods.length) { const gd = rnd.pick(m.goods); rnd.chance(0.5) ? g.buy(gd.id, rnd.int(1, 4)) : g.sell(gd.id, rnd.int(1, 4)); }
-  } else if (roll < 0.85 && st.docked) {
-    const o = rnd.pick(g.missionBoard()); if (o) g.acceptMission(o.id);
-  } else if (roll < 0.9 && st.docked) {
-    rnd.chance(0.5) ? g.refuel(rnd.int(1, 20)) : g.repair(rnd.int(1, 20));
-  } else if (roll < 0.94) {
-    const p = sys.planets.find((x) => x.scanned && !x.landed); if (p) g.landingParty(p.id); else g.hail();
-  } else g.rest(rnd.int(1, 3));
+    if (m && m.goods.length) acts.push([2, () => { const gd = rnd.pick(m.goods); return rnd.chance(0.5) ? g.buy(gd.id, rnd.int(1, 4)) : g.sell(gd.id, rnd.int(1, 4)); }]);
+    const offers = g.missionBoard();
+    if (offers.length) acts.push([1, () => g.acceptMission(rnd.pick(offers).id)]);
+    acts.push([1, () => (rnd.chance(0.5) ? g.refuel(rnd.int(1, 20)) : rnd.chance(0.5) ? g.repair(rnd.int(1, 20)) : g.restock(rnd.int(1, 20)))]);
+    const ups = g.shipyard().filter((u) => u.available);
+    if (ups.length) acts.push([0.5, () => g.buyUpgrade(rnd.pick(ups).id)]);
+  }
+  acts.push([1, () => g.hail()]);
+  acts.push([1, () => g.rest(rnd.int(1, 3))]);
+  if (st.crew.length) acts.push([0.5, () => g.crewTalk(rnd.pick(st.crew).id)]);
+  const pick = rnd.weighted(acts, (a) => a[0]);
+  pick[1]();
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -295,6 +303,7 @@ export function playGame({ seed = 1, policy = 'cautious', maxDays = 600, maxStep
 function summarize(results, policy) {
   const n = results.length;
   const wins = results.filter((r) => r.ending && r.kind !== 'loss').length;
+  const lantern = results.filter((r) => r.ending && /^lantern_/.test(r.ending)).length;
   const losses = results.filter((r) => r.kind === 'loss').length;
   const timeouts = results.filter((r) => r.timeout && !r.ending).length;
   const stuck = results.filter((r) => r.stuck).length;
@@ -309,7 +318,7 @@ function summarize(results, policy) {
   const cpd = results.reduce((a, r) => a + r.credits / Math.max(1, r.day), 0) / n;
   const out = [];
   out.push(`policy=${policy} runs=${n}`);
-  out.push(`non-loss endings: ${pct(wins)} | loss endings: ${pct(losses)} | timeouts: ${pct(timeouts)} | needed a tow: ${pct(strand)}`);
+  out.push(`non-loss endings: ${pct(wins)} | lantern_* endings: ${pct(lantern)} | loss endings: ${pct(losses)} | timeouts: ${pct(timeouts)} | needed a tow: ${pct(strand)}`);
   out.push(`avg days: ${avg((r) => r.day)} | avg credits at end: ${avg((r) => r.credits)} | credits/day (end balance): ${cpd.toFixed(1)} | avg survey: ${avg((r) => r.survey)}% | avg missions: ${avg((r) => r.missions)} | avg score: ${avg((r) => r.score)}`);
   out.push('endings: ' + Object.entries(endings).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}=${v}`).join(', '));
   out.push(`event coverage: ${seen.size - [...seen].filter((id) => id.startsWith('core_')).length}/${C.EVENTS.length}; never fired (${never.length}): ${never.join(', ') || '-'}`);
@@ -335,7 +344,7 @@ async function main() {
   setStorage(memoryStorage());
   Game.strict = true;
   const a = parseArgs(process.argv.slice(2));
-  const policies = a.policy === 'all' ? ['random', 'greedy', 'cautious'] : [a.policy];
+  const policies = a.policy === 'all' ? ['random', 'reckless', 'greedy', 'cautious', 'story'] : [a.policy];
   let fail = false;
   for (const policy of policies) {
     const results = [];

@@ -25,6 +25,11 @@
 //   codex_lantern_voices   - The Voices in the Light
 //   codex_lantern_invite   - The Lantern Invitation
 //
+// ROUND 2 additions: derelict_cartographers_ship, nebula_kite_fleet, pulsar_listening_post, asteroids_claim_dispute,
+//   comet_hitchhiker, ionstorm_stranded_packet, wormhole_wrong_door, rift_echo_of_you, rival_tamsin_storm (all multi-node).
+// CODEX (new): codex_cartographers_ship codex_pulsar_greeting codex_comet_tumbleweed codex_wormhole_manners codex_lantern_syntax
+// FLAGS (new): cartographer_finished, kite_fleet_friend, pulsar_greeting, comet_friend, distress_active (set/cleared in
+//   ionstorm_stranded_packet), rosewing_friend, rival_helped, rival_snubbed, rival_race (read: rival_met from station_crew.js)
 // FLAGS set:  lantern_1, lantern_2, lantern_3, lantern_4, lantern_5 (each chained: lantern_N needs lantern_{N-1}),
 //             lantern_hint (also set in planets.js), lantern_path_diplomat / lantern_path_curious / lantern_path_quiet
 //             (how the captain answered the final Lantern; for story.js endings),
@@ -480,6 +485,327 @@ export default [
             pass: { text: `The socket is a key and a question. {crew:science} works out what it asks: not an object, but a person, willing. You offer your hand. The Lantern lights, and shows you the shape of everything the Reach once was.`, fx: [{ flag: 'lantern_5' }, { flag: 'lantern_path_curious' }, { codex: 'codex_lantern_invite' }, { xp: { science: 4 } }, { morale: 12 }, { reveal: { radius: 8 } }, { chart: true }] },
             fail: { text: `The socket stays a mystery. But the Lantern, patient, brightens until you can see the answer in the glow: the offer of a hand. You place yours in it. The light answers.`, fx: [{ flag: 'lantern_5' }, { flag: 'lantern_path_curious' }, { codex: 'codex_lantern_invite' }, { morale: 10 }, { reveal: { radius: 5 } }] } },
           { label: `Sit beside it, and say nothing`, tag: 'wait', do: { text: `The crew sits in the glow. No orders, no questions. After a time, the Lantern's flame leans toward the ship like a flower. It asks nothing more. You decide, together, to keep its secret. A calm settles that stays with you.`, fx: [{ flag: 'lantern_5' }, { flag: 'lantern_path_quiet' }, { codex: 'codex_lantern_invite' }, { morale: 15 }, { rep: { archivists: 2 } }] } },
+        ],
+      },
+    },
+  },
+  // ================================================================ ROUND 2: PHENOMENON CHAINS
+  {
+    id: 'derelict_cartographers_ship',
+    title: 'The Cartographer\'s Last Chart',
+    tags: ['mystery', 'wonder', 'science'],
+    ctx: 'phenomenon',
+    weight: 9,
+    when: [{ phenomenon: 'derelict' }],
+    once: true,
+    art: { scene: 'derelict', species: 'human', palette: 'dusk' },
+    start: 'a',
+    nodes: {
+      a: {
+        text: `A survey ship, older than the Halcyon, drifts with her lights on. Her hull reads MERIDIAN SOCIETY, in the old lettering. A single chair at the chart table is pulled out. A pencil sits on a half-drawn star map. The kettle, impossibly, is warm.`,
+        choices: [
+          { label: `Board and read the chart`, tag: 'science', do: { text: `The chart is half-finished and exquisitely drawn. It shows the Reach, with the Lanterns marked in gold. The margin says: "Remember to look up."`, goto: 'b' } },
+          { label: `Scan for life signs`, tag: 'science', check: { skill: 'medicine', diff: 2 },
+            pass: { text: `No one aboard, no bodies, no distress. The kettle runs on a loop-timer. The ship was abandoned in good order, and its keeper expected to come back.`, fx: [{ xp: { medicine: 1 } }], goto: 'b' },
+            fail: { text: `The scan flickers with ghost readings and then settles on "empty". {crew:medicine} is quiet for a while. The kettle ticks.`, goto: 'b' } },
+        ],
+      },
+      b: {
+        text: `On the chart table: a logbook. The last page reads, in a careful hand: "Chart unfinished. If you've found this, you are likelier than I to finish it. The Society will want the Lantern positions. The kettle's yours."`,
+        choices: [
+          { label: `Finish the chart in the cartographer's pencil`, tag: 'science', check: { skill: 'piloting', diff: 3 },
+            pass: { text: `You fill in what the ship's sensors can see, line by line, in the old hand. By dawn the chart is finished. A tidy gold star flares at its corner and goes dim. Peace.`, fx: [{ days: 1 }, { chart: true }, { reveal: { radius: 5 } }, { xp: { piloting: 2 } }, { flag: 'cartographer_finished' }], goto: 'c' },
+            fail: { text: `Your lines are good but not their lines. You work until the pencil is a stub and the chart is nearly right. Nearly is, you decide, a form of respect.`, fx: [{ days: 1 }, { reveal: { radius: 3 } }, { flag: 'cartographer_finished' }], goto: 'c' } },
+          { label: `Take the log and chart with you, unfinished`, tag: 'wait', do: { text: `The chart goes in the safe, to be finished another day. The kettle goes in the galley. Gus-7 holds it with reverence.`, fx: [{ reveal: { radius: 3 } }, { morale: 3 }], goto: 'c' } },
+        ],
+      },
+      c: {
+        text: `As you leave, the ship's lights dim one by one, as if finally allowed to rest. The chart table's chair slides in, politely. On the airlock door, a hand-painted sign you hadn't noticed: "Thank you. Do come again."`,
+        choices: [
+          { label: `Salute the ship from the airlock`, tag: 'diplomacy', do: { text: `A formal Meridian salute, unreturned but felt. Your logbook gains an entry in your best handwriting. The crew files out in a hush.`, fx: [{ morale: 8 }, { rep: { concord: 2 } }, { codex: 'codex_cartographers_ship' }] } },
+          { label: `Take the kettle and go`, tag: 'trade', do: { text: `The kettle is battered, dented, and makes the best tea in the sector. It comes aboard without complaint. The galley never lets you forget it.`, fx: [{ supplies: 3 }, { morale: 6 }, { codex: 'codex_cartographers_ship' }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'nebula_kite_fleet',
+    title: 'The Lost Kite-Fleet',
+    tags: ['relief', 'diplomacy', 'hazard'],
+    ctx: 'phenomenon',
+    weight: 9,
+    when: [{ phenomenon: 'nebula' }],
+    cooldown: 30,
+    art: { scene: 'nebula', species: 'drifter', palette: 'cool' },
+    start: 'a',
+    nodes: {
+      a: {
+        speaker: { name: 'Fleet-Mother Brindle Aske', species: 'drifter' },
+        text: `A faint, cheery voice in the fog. "Anyone out there? We're six kite-ships on a picnic, and the nebula has swallowed our compass. We're not lost, exactly. We're surprised. We'd be grateful for a tow, or a lantern."`,
+        choices: [
+          { label: `Set a guide-light and talk them out`, tag: 'diplomacy', check: { skill: 'diplomacy', diff: 2 },
+            pass: { text: `You talk them gently through the fog, kite by kite. Fleet-Mother Brindle cracks jokes the whole way. By the time they emerge, the whole fleet is singing.`, fx: [{ rep: { drifters: 4 } }, { morale: 6 }], goto: 'b' },
+            fail: { text: `The guide-light flickers in the haze. Two kites arrive; four more wander off to sulk. A longer, wearier rescue, but all is well in the end.`, fx: [{ days: 1 }, { rep: { drifters: 2 } }], goto: 'b' } },
+          { label: `Take the fleet in tow (brute force)`, tag: 'flee', check: { skill: 'piloting', diff: 4 },
+            pass: { text: `A heroic, slow tow through the murk. Six kites, a long cable, a ship humming with strain. You emerge into starlight, triumphant, with a train of laughing picnickers.`, fx: [{ fuel: -1 }, { xp: { piloting: 3 } }, { rep: { drifters: 5 } }], goto: 'b' },
+            fail: { text: `The cable tangles in the haze. A day of unpicking; two kites lose their sails. The fleet is saved, but the fuel isn't.`, fx: [{ fuel: -3 }, { days: 1 }, { rep: { drifters: 2 } }], goto: 'b' } },
+          { label: `Bear on: you can't spare the fuel`, tag: 'flee', do: { text: `Brindle's voice fades into the hiss. You feel awful. The nebula, for its part, sings a little sadder.`, fx: [{ morale: -4 }, { rep: { drifters: -1 } }] } },
+        ],
+      },
+      b: {
+        speaker: { name: 'Fleet-Mother Brindle Aske', species: 'drifter' },
+        text: `Back in clear space, the fleet circles the Halcyon in celebration, kites trailing ribbons. Brindle's voice is on every channel: "Captain, you've saved a picnic. We never go anywhere without cake. Would you do us the honour of staying for some?"`,
+        choices: [
+          { label: `Stay for cake`, tag: 'wait', do: { text: `Forty drifters, six kites, one enormous lemon cake. Someone plays a concertina. Morale is sky-high, and the fleet's navigator hands you a hand-drawn chart of the neighbouring currents.`, fx: [{ days: 1 }, { supplies: 2 }, { morale: 10 }, { reveal: { radius: 4 } }, { flag: 'kite_fleet_friend' }] } },
+          { label: `Decline politely; accept the chart`, tag: 'trade', do: { text: `A swift, warm farewell. The chart is a lovely thing, with little pictures of picnics in the margin. You make good time and a fine reputation.`, fx: [{ reveal: { radius: 3 } }, { rep: { drifters: 3 } }, { flag: 'kite_fleet_friend' }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'pulsar_listening_post',
+    title: 'The Listening Post',
+    tags: ['mystery', 'wonder', 'diplomacy'],
+    ctx: 'phenomenon',
+    weight: 10,
+    when: [{ phenomenon: 'pulsar' }, { flag: 'pulsar_fan' }],
+    once: true,
+    art: { scene: 'pulsar', species: 'vesperine', palette: 'cool' },
+    start: 'a',
+    nodes: {
+      a: {
+        speaker: { name: 'Listener Aun-Veyra', species: 'vesperine' },
+        text: `*A bright chord:* "You are the ones who danced to the Hour. We heard. Come, please. We keep a post here, a small station of listeners, and tonight the pulsar plays a piece we have waited eleven years to hear."`,
+        choices: [
+          { label: `Dock and join the listeners`, tag: 'diplomacy', do: { text: `A narrow gantry, a round room, a hundred glass bells hung from the ceiling. The listeners sit in a ring, eyes closed. You find a cushion and wait.`, goto: 'b' } },
+          { label: `Listen from the ship, to keep a safe distance`, tag: 'wait', do: { text: `You stay at the viewscreen, tea in hand. The piece is lovely, but you feel the faint distance of watching a feast through a window.`, fx: [{ morale: 3 }], goto: 'b' } },
+        ],
+      },
+      b: {
+        text: `The pulsar plays. The glass bells ring in sympathy, each at its own note, until the room becomes an organ built from starlight. At the heart of the piece, three notes repeat: the same three the Lantern pulses. The room goes still.`,
+        choices: [
+          { label: `Whisper: "That's the Lantern's greeting."`, tag: 'persuade', do: { text: `Aun-Veyra's chord trembles. "We had wondered. The pulsar has been saying hello for a very long time, to the same ones who lit the lamps." A bell rings on its own.`, fx: [{ flag: 'pulsar_greeting' }, { codex: 'codex_pulsar_greeting' }, { rep: { vesperine: 4 } }], goto: 'c' } },
+          { label: `Record the piece for the Archive`, tag: 'science', check: { skill: 'science', diff: 3 },
+            pass: { text: `The recording is flawless, the three notes isolated and annotated. {crew:science} will be writing about this for years. The listeners hum in thanks.`, fx: [{ xp: { science: 3 } }, { codex: 'codex_pulsar_greeting' }, { rep: { vesperine: 3 }}], goto: 'c' },
+            fail: { text: `Static creeps into the recording. The three notes are there, but muddy. {crew:science} sighs, then smiles: some things can only be heard once.`, fx: [{ rep: { vesperine: 2 } }], goto: 'c' } },
+        ],
+      },
+      c: {
+        speaker: { name: 'Listener Aun-Veyra', species: 'vesperine' },
+        text: `*A softer chord:* "You listen well. Take a bell, please, for your ship. It will ring when you are near something that sings. A listener's gift."`,
+        choices: [
+          { label: `Accept the bell`, tag: 'diplomacy', do: { text: `A glass bell the size of a thumb, humming faintly. It hangs at the bridge window and chimes, at odd hours, when the ship passes through something worth hearing. The crew is quietly delighted.`, fx: [{ item: { choir_reed: 1 } }, { morale: 8 }, { reveal: { radius: 3 } }] } },
+          { label: `Offer a tuning crystal in exchange`, tag: 'trade', if: [{ cargo: { tuning_crystals: 1 } }],
+            do: { text: `The crystal is hung at the centre of the ceiling. The whole room rings in unison, and Aun-Veyra stands with eyes closed for a long time. "A gift answered by a gift."`, fx: [{ cargo: { tuning_crystals: -1 } }, { item: { choir_reed: 1 } }, { rep: { vesperine: 6 } }, { morale: 10 }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'asteroids_claim_dispute',
+    title: 'Two Prospectors, One Rock',
+    tags: ['diplomacy', 'comedy', 'persuade'],
+    ctx: 'phenomenon',
+    weight: 9,
+    when: [{ phenomenon: 'asteroids' }],
+    cooldown: 30,
+    art: { scene: 'asteroids', species: 'quillari', palette: 'warm' },
+    start: 'a',
+    nodes: {
+      a: {
+        text: `Two small prospector pods hover on either side of a single asteroid, each flying a hand-lettered banner: MINE and NO, MINE. A Quillari and a Drifter, nose to beak, shout very politely at each other on an open channel. They hail you as the nearest authority.`,
+        choices: [
+          { label: `Mediate the dispute`, tag: 'diplomacy', do: { text: `You offer to hear both sides. The Quillari prospector, Orrith, goes first. Then the Drifter, Matty Pell. By the end, they're both being very reasonable at the same time.`, goto: 'b' } },
+          { label: `Inspect the rock for a tie-breaker`, tag: 'science', check: { skill: 'science', diff: 3 },
+            pass: { text: `A split in the rock reveals it is two asteroids stuck together, along a clean seam. A surgical nudge and both claims are real. Both prospectors are staggered with joy.`, fx: [{ rep: { quillari: 3, drifters: 3 } }, { xp: { science: 2 } }, { credits: 40 }], goto: 'b' },
+            fail: { text: `The scan shows a rock. Just a rock, a good one, of the kind you can't divide. The two prospectors regard you with matching, pitying looks.`, goto: 'b' } },
+          { label: `Fly on; this isn't your business`, tag: 'flee', do: { text: `A long silence follows you down the channel. Then both prospectors start shouting again, at each other, with renewed vigour. You feel faintly guilty and extremely quiet.`, fx: [{ morale: -1 }] } },
+        ],
+      },
+      b: {
+        text: `Orrith and Matty Pell eye the rock. "Share?" says Matty. "Half and half?" says Orrith. A small pause. "Do you know," says Matty, "that's what I wanted all along?" The channel fills with relieved laughter.`,
+        choices: [
+          { label: `Propose a joint claim and a shared lunch`, tag: 'persuade', check: { skill: 'diplomacy', diff: 2 },
+            pass: { text: `A joint claim, a pot of stew, a handshake. Both prospectors pay you a modest finder's fee in ore and scrip, and promise to name the rock after the Halcyon.`, fx: [{ credits: 60 }, { cargo: { machine_parts: 1 } }, { rep: { quillari: 3, drifters: 3 } }, { codex: 'codex_miner_coops' }], goto: 'c' },
+            fail: { text: `The lunch goes well; the claim doesn't. A week of arguing awaits. They give you a tin of rock-candy to apologise in advance.`, fx: [{ supplies: 1 }, { rep: { quillari: 1, drifters: 1 } }], goto: 'c' } },
+          { label: `Leave them to settle the paperwork`, tag: 'wait', do: { text: `You leave the channel open as you pull away. The two voices fade, murmuring over an invoice. The last you hear is a laugh.`, fx: [{ rep: { quillari: 1, drifters: 1 } }], goto: 'c' } },
+        ],
+      },
+      c: {
+        text: `Weeks later, a postcard arrives by relay: a snapshot of Orrith and Matty Pell on the rock, arm in arm, under a banner reading OURS. Beneath it, in a looping scrawl: "Come visit. Bring cake."`,
+        choices: [
+          { label: `Pin it in the lounge`, tag: 'wait', do: { text: `It joins the others on the lounge wall, a growing album of small kindnesses. The crew pauses beside it more often than they would admit.`, fx: [{ morale: 5 }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'comet_hitchhiker',
+    title: 'The Comet Hitchhiker',
+    tags: ['wonder', 'comedy', 'science'],
+    ctx: 'phenomenon',
+    weight: 8,
+    when: [{ phenomenon: 'comet' }],
+    once: true,
+    art: { scene: 'comet', species: 'unknown', palette: 'cool' },
+    start: 'a',
+    nodes: {
+      a: {
+        text: `Something is riding the comet's tail: a drifting tumbleweed of silver filaments, glimmering. It spins when the comet spins and seems to be, unmistakably, enjoying itself. As the Halcyon draws alongside, it waves a thread at the viewscreen.`,
+        choices: [
+          { label: `Wave back with the arm-lights`, tag: 'diplomacy', do: { text: `The thing curls up and unrolls twice, the way a cat stretches. A thread of silver drifts across the gap and settles on the hull. It seems to want a ride.`, goto: 'b' } },
+          { label: `Scan before doing anything rash`, tag: 'science', check: { skill: 'science', diff: 3 },
+            pass: { text: `A silicate-filament organism: eats starlight, drinks comet-ice, travels by cometary hitchhiking. It seems friendly. {crew:science} flags it as the cutest thing in the sector.`, fx: [{ xp: { science: 2 } }, { codex: 'codex_comet_tumbleweed' }], goto: 'b' },
+            fail: { text: `The scan comes back with "decorative". The organism seems insulted. It stays, hopeful, at the edge of the screen.`, goto: 'b' } },
+        ],
+      },
+      b: {
+        text: `The tumbleweed is on the hull now, a glittering shawl. It hums when the ship hums. It has clearly decided you are a comet. You are to be a very large, rather slow comet, but a comet nonetheless.`,
+        choices: [
+          { label: `Let it ride to the next system`, tag: 'wait', do: { text: `It rides for three days, humming a tuneless song. When the ship arrives, it detaches and drifts to a passing comet, dropping a silver filament on your windshield in thanks.`, fx: [{ morale: 8 }, { reveal: { radius: 3 } }, { flag: 'comet_friend' }, { codex: 'codex_comet_tumbleweed' }] } },
+          { label: `Ask it, gently, to find its own comet`, tag: 'persuade', check: { skill: 'diplomacy', diff: 2 },
+            pass: { text: `It understands. With one more sweeping wave, it lets go, sails away on the solar wind, and leaves behind a hair-fine thread of silver in the vents. The air smells faintly of cinnamon.`, fx: [{ morale: 5 }, { item: { aurora_thread: 1 } }, { codex: 'codex_comet_tumbleweed' }] },
+            fail: { text: `It does not understand, or does not wish to. The Halcyon is slow to shed it: a day of gentle manoeuvring and a lot of tea.`, fx: [{ days: 1 }, { supplies: -1 }, { morale: 2 }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'ionstorm_stranded_packet',
+    title: 'Distress in the Static',
+    tags: ['relief', 'hazard', 'diplomacy'],
+    ctx: 'phenomenon',
+    weight: 10,
+    when: [{ phenomenon: 'ionstorm' }, { notFlag: 'distress_active' }],
+    cooldown: 25,
+    art: { scene: 'ionstorm', species: 'quillari', palette: 'dusk' },
+    start: 'a',
+    nodes: {
+      a: {
+        speaker: { name: 'Captain Trill of the Packet Rosewing', species: 'quillari' },
+        text: `Through the static: "Halcyon! The storm has eaten our engines, cooked our pantry and toasted our manners. We're drifting toward the lightning. Would you be kind enough to hold our hands? Figuratively. A tow line is cheaper."`,
+        choices: [
+          { label: `Answer the distress call`, tag: 'diplomacy', do: { text: `You turn the Halcyon into the storm's edge. Lightning crawls along the hull. The Rosewing wallows ahead, a small brass kettle of a ship, her crew waving.`, fx: [{ flag: 'distress_active' }], goto: 'b' } },
+          { label: `Relay their call to the nearest station and stand by`, tag: 'wait', do: { text: `The relay is quick and the answer slow. You hold position, offering what comfort you can. A tender arrives in two days. The Rosewing sends thanks.`, fx: [{ days: 2 }, { rep: { quillari: 2 } }] } },
+        ],
+      },
+      b: {
+        text: `The storm leans on the ship. The Rosewing is forty metres off, spinning slowly. A grappling line could reach her, if the pilot is steady and the nerve holds. Or the engineer could patch her engine remotely, if the links hold. Or both.`,
+        choices: [
+          { label: `Fire the grapple and tow her clear`, tag: 'flee', check: { skill: 'piloting', diff: 4 },
+            pass: { text: `A perfect throw. A sizzling arc of lightning follows the line, and the Rosewing lurches into your wake. Out of the storm's reach, the tow slackens. Cheers on two bridges.`, fx: [{ xp: { piloting: 3 } }, { clearFlag: 'distress_active' }], goto: 'c' },
+            fail: { text: `The line snaps in a spray of sparks. A second throw lands. The tow is rougher than planned, and the hull pays the price.`, fx: [{ hull: -7 }, { fuel: -2 }, { clearFlag: 'distress_active' }], goto: 'c' } },
+          { label: `Patch their engine remotely`, tag: 'science', check: { skill: 'engineering', diff: 3 },
+            pass: { text: `{crew:engineering} talks the Rosewing's chief through a quarter-hour of rerouting. The engine coughs, catches, purrs. The packet pulls herself out of the storm by her own bootstraps.`, fx: [{ xp: { engineering: 3 } }, { clearFlag: 'distress_active' }], goto: 'c' },
+            fail: { text: `The patch half-takes. The Rosewing limps out at quarter-speed, trailing steam. You escort her to open space and a long, slow kettle of a day.`, fx: [{ days: 1 }, { fuel: -1 }, { clearFlag: 'distress_active' }], goto: 'c' } },
+          { label: `Brave the storm with the solar sails (if equipped)`, tag: 'flee', if: [{ upgrade: 'solar_sails' }],
+            do: { text: `The sails catch the storm's charged wind and the Halcyon surges ahead like a kite. The line catches. Rosewing is tugged, with startling grace, out of danger.`, fx: [{ fuel: 1 }, { xp: { piloting: 2 } }, { clearFlag: 'distress_active' }], goto: 'c' } },
+        ],
+      },
+      c: {
+        speaker: { name: 'Captain Trill of the Packet Rosewing', species: 'quillari' },
+        text: `"Marvellous!" Trill lies on the deck of the Rosewing bridge. "Absolutely marvellous. We owe you a cask of the good brandy, a tin of our best, and a rather good story. May we send them over?"`,
+        choices: [
+          { label: `Accept the brandy and the story`, tag: 'trade', do: { text: `A cask of brandy comes over by line, with a card in six colours of ink. The story is long, funny and mostly true. The crew is still talking about it a week later.`, fx: [{ cargo: { glass_brandy: 2 } }, { rep: { quillari: 5 } }, { morale: 6 }, { flag: 'rosewing_friend' }] } },
+          { label: `Decline payment; ask for a letter of introduction`, tag: 'diplomacy', do: { text: `Trill is astonished and then moved. The letter is written on the spot, sealed in wax, and addressed to every Quillari harbour-master in the sector. It will open doors.`, fx: [{ item: { quillari_guest_feather: 1 } }, { rep: { quillari: 8 } }, { flag: 'rosewing_friend' }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'wormhole_wrong_door',
+    title: 'The Wrong Door',
+    tags: ['hazard', 'comedy', 'science'],
+    ctx: 'phenomenon',
+    weight: 8,
+    when: [{ phenomenon: 'wormhole' }],
+    cooldown: 25,
+    art: { scene: 'wormhole', species: 'unknown', palette: 'dusk' },
+    start: 'a',
+    nodes: {
+      a: {
+        text: `The wormhole flickers like a neon sign, and the nav computer murmurs the awful words "alternate throat". The throat you wanted has shut. A second one, slightly crooked, has opened where the first was. It is, you are assured, probably fine.`,
+        choices: [
+          { label: `Take the crooked throat`, tag: 'flee', do: { text: `The ship slides into a throat that feels wrong, as a shoe feels wrong on the wrong foot. The stars stretch sideways. Somebody in the galley says "oh dear" very quietly.`, goto: 'b' } },
+          { label: `Wait for the old throat to reopen`, tag: 'wait', do: { text: `A day passes. A second. The crooked throat flickers shut. The old one never returns. You chart both and move on, a little wiser and slightly behind schedule.`, fx: [{ days: 2 }, { supplies: -1 }, { codex: 'codex_wormhole_manners' }] } },
+        ],
+      },
+      b: {
+        text: `The ship emerges upside-down, relatively speaking, in a system whose sun is the wrong colour and whose planets are in the wrong order. A fuel gauge blinks. A cup of tea has formed a perfect sphere in mid-air. Gus-7 is trying to catch it.`,
+        choices: [
+          { label: `Right the ship and take a bearing`, tag: 'flee', check: { skill: 'piloting', diff: 3 },
+            pass: { text: `A smooth roll, a burst of thruster, and the horizon comes right. The tea sphere is caught by Gus-7 in a saucer. Stars align; a bearing is taken; you are not as lost as feared.`, fx: [{ xp: { piloting: 2 } }, { reveal: { radius: 3 } }], goto: 'c' },
+            fail: { text: `The roll overcorrects. The ship tumbles end over end for a minute, before a firm hand on the stick steadies her. Fuel is burnt, tea is lost, nobody is happy.`, fx: [{ fuel: -3 }, { hull: -3 }, { morale: -2 }], goto: 'c' } },
+          { label: `Scan to find out where you are`, tag: 'science', check: { skill: 'science', diff: 3 },
+            pass: { text: `The star-chart matches nothing, then one thing: a faint Lantern glow at the edge of the sensors. You are not lost; you are somewhere new. {crew:science} looks delighted and a bit ill.`, fx: [{ xp: { science: 2 } }, { reveal: { radius: 5 } }, { chart: true }], goto: 'c' },
+            fail: { text: `The sensors disagree with each other, with the chart and with the cat. A few hours of triangulation finally yields a rough position.`, fx: [{ days: 1 }, { reveal: { radius: 2 } }], goto: 'c' } },
+        ],
+      },
+      c: {
+        text: `The crew gathers in the lounge. A cup of tea is placed in every hand. {crew:random} raises theirs. "To the wrong door," they say. "May it always lead somewhere interesting." There is a short, stunned silence, then laughter.`,
+        choices: [
+          { label: `Raise a cup`, tag: 'wait', do: { text: `Everyone drinks. The tea, for once, is perfect. The wrong door becomes a story the crew tells on the way home.`, fx: [{ morale: 8 }, { mood: { all: 3 } }, { codex: 'codex_wormhole_manners' }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'rift_echo_of_you',
+    title: 'The Rift Plays You Back',
+    tags: ['mystery', 'wonder', 'relief'],
+    ctx: 'phenomenon',
+    weight: 8,
+    when: [{ phenomenon: 'rift' }, { flag: 'lantern_2' }],
+    once: true,
+    art: { scene: 'rift', species: 'vesperine', palette: 'dusk' },
+    start: 'a',
+    nodes: {
+      a: {
+        text: `The rift hums, but this time it hums a tune you recognise: the Halcyon's own launch jingle, slightly detuned. Then a voice, yours, tired and kind, saying something you said on the first day of the voyage. The rift seems to be playing the ship back at itself.`,
+        choices: [
+          { label: `Listen to the whole thing`, tag: 'wait', do: { text: `It is a montage: laughter in the galley, a cheer on the bridge, a hum in the engine room. Moments you thought were lost. The rift hums them softly, in order, as if keeping a diary.`, goto: 'b' } },
+          { label: `Ask the rift to play something older`, tag: 'persuade', check: { skill: 'diplomacy', diff: 3 },
+            pass: { text: `The rift considers. Then the montage changes: voices from decades back, strangers on other ships, saying hello at this very rift. A long line of travellers, a family of passers-by.`, fx: [{ rep: { vesperine: 3 } }], goto: 'b' },
+            fail: { text: `The rift hums, uncertain, and plays the first montage again. Fair enough. It has only so many ears.`, goto: 'b' } },
+        ],
+      },
+      b: {
+        text: `The last item is not a voice but a silence, shaped like a person leaning in to listen. You realise the rift has been doing, for centuries, what the Lanterns do: keeping every traveller. It plays back one last line: "You were here. Thank you for being here."`,
+        choices: [
+          { label: `Reply: "We were. We're glad."`, tag: 'diplomacy', do: { text: `The rift rings softly, one warm note, and folds a tiny crystal out of nothing into the sample drawer: a chime, with your voice inside it. The crew files past it quietly all evening.`, fx: [{ item: { rift_chime: 1 } }, { morale: 12 }, { mood: { all: 4 } }, { codex: 'codex_singing_rifts' }] } },
+          { label: `Record it and go quietly`, tag: 'science', do: { text: `The recording is perfect and you never play it. It stays in the log as a kind of comfort, a letter you know is there.`, fx: [{ morale: 6 }, { xp: { science: 2 } }] } },
+        ],
+      },
+    },
+  },
+  {
+    id: 'rival_tamsin_storm',
+    title: 'Captain Vell Stuck in the Static',
+    tags: ['diplomacy', 'comedy', 'relief'],
+    ctx: 'phenomenon',
+    weight: 14,
+    when: [{ any: [{ phenomenon: 'ionstorm' }, { phenomenon: 'nebula' }, { phenomenon: 'asteroids' }] }, { flag: 'rival_met' }, { notFlag: 'rival_helped' }, { notFlag: 'rival_snubbed' }],
+    once: true,
+    art: { scene: 'ionstorm', species: 'human', palette: 'dusk' },
+    start: 'a',
+    nodes: {
+      a: {
+        speaker: { name: 'Captain Tamsin Vell', species: 'human' },
+        text: `"Halcyon! Tamsin Vell, ISV Perihelion. Lovely weather we're not having. I'm drifting on three engines and a fib. I'd rather you didn't tell anyone I asked, but I'd rather still not drift into that big purple thing. Care to assist a rival?"`,
+        choices: [
+          { label: `"Of course, Tamsin. Tow line out."`, tag: 'diplomacy', do: { text: `You pass the line without fuss. Vell takes it with a flourish, and the Perihelion follows meekly out of the weather. "Don't gloat," she says. You don't. Much.`, fx: [{ fuel: -1 }, { flag: 'rival_helped' }, { rep: { concord: 3 } }], goto: 'b' } },
+          { label: `Diagnose her engines over the comm`, tag: 'science', check: { skill: 'engineering', diff: 3 },
+            pass: { text: `{crew:engineering} spots it in six minutes: a mis-seated valve and an unsound belief about thermal margins. The Perihelion's third engine catches. Vell is silent, then gracious.`, fx: [{ xp: { engineering: 2 } }, { flag: 'rival_helped' }, { rep: { concord: 2 } }], goto: 'b' },
+            fail: { text: `The diagnosis is close but not quite. A long towing job follows. Vell is polite throughout, in the way of a captain who is counting.`, fx: [{ fuel: -2 }, { flag: 'rival_helped' }], goto: 'b' } },
+          { label: `Sail on; she can manage`, tag: 'flee', do: { text: `The Perihelion limps out in her own time. She does not call. Later, a wry note: "Noted." You feel the weight of it, a little.`, fx: [{ flag: 'rival_snubbed' }, { morale: -2 }, { rep: { concord: -2 } }] } },
+        ],
+      },
+      b: {
+        speaker: { name: 'Captain Tamsin Vell', species: 'human' },
+        text: `"I owe you one, Captain. I'll deny it publicly. Privately: there is a pass I charted last week that you haven't, between two systems you'll want. I'll mark it on your chart. It's not a gift. It's a debt, tidily settled."`,
+        choices: [
+          { label: `Accept the chart`, tag: 'trade', do: { text: `A neat hand-drawn pass appears on the display, with a note: "Bring tea next time." The rivalry is, for the moment, a friendship with a competitive streak.`, fx: [{ reveal: { radius: 4 } }, { cargo: { star_charts: 1 } }, { morale: 5 }] } },
+          { label: `Wave it off and propose a race instead`, tag: 'persuade', do: { text: `"A race!" says Vell, delighted. "Next time we both reach the same port, loser buys dinner." The pact is sealed over the comm. The crew will be insufferable about it for days.`, fx: [{ morale: 8 }, { flag: 'rival_race' }, { mood: { all: 3 } }] } },
         ],
       },
     },

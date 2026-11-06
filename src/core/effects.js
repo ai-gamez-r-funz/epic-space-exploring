@@ -2,7 +2,7 @@
 // Resource changes clamp to [0,max]; negative hull/morale respects difficulty floors; specials/traits tweak results.
 import { C, IDX, goodName, itemName, factionName, prettify } from './content.js';
 import { template } from './text.js';
-import { DIFF, diffOf, hasSpecial, clamp, recompute, installUpgrade } from './ship.js';
+import { DIFF, diffOf, hasSpecial, clamp, recompute, installUpgrade, abilityCount } from './ship.js';
 import { bfs, adjacency } from './galaxy.js';
 
 export const FX_KEYS = new Set([
@@ -61,8 +61,10 @@ function moodDelta(c, n) {
   c.mood = clamp(Math.round(v), 0, 100);
 }
 
-function repGain(g, f, n) {
+function repGain(g, f, n, ctx) {
   if (n > 0) {
+    if (hasSpecial(g.state, 'distress_transponder') && ctx && (ctx.tags || []).includes('relief')) n = Math.ceil(n * 1.25);
+    if (abilityCount(g.state, 'gift_of_the_gab') > 0 && !g.state.counters.gab_used) { g.state.counters.gab_used = 1; n += 1; }
     if (hasSpecial(g.state, 'diplomatic_pouch')) n = Math.max(1, Math.ceil(n * 1.25));
     for (const c of g.state.crew) {
       if (c.trait === 'former_clerk' && f === 'concord') { n += 1; break; }
@@ -115,7 +117,8 @@ export function applyEffects(g, fx, ctx = {}) {
           }
           case 'credits': {
             const before = st.credits;
-            st.credits = Math.max(0, Math.round(before + v));
+            const amt = v > 0 && hasSpecial(st, 'distress_transponder') && (ctx.tags || []).includes('relief') ? Math.ceil(v * 1.25) : v;
+            st.credits = Math.max(0, Math.round(before + amt));
             const d = st.credits - before;
             if (d) { summary.push(`${sgn(d)} scrip`); d > 0 ? good++ : bad++; }
             if (d > 0) st.stats.creditsEarned = (st.stats.creditsEarned || 0) + d;
@@ -125,7 +128,7 @@ export function applyEffects(g, fx, ctx = {}) {
           case 'rep': {
             for (const [f, n0] of Object.entries(v || {})) {
               if (!(f in st.rep)) continue;
-              const n = repGain(g, f, n0);
+              const n = repGain(g, f, n0, ctx);
               const before = st.rep[f];
               st.rep[f] = clamp(before + n, -100, 100);
               const d = st.rep[f] - before;

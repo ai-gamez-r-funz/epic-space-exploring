@@ -122,6 +122,7 @@ export function checkOdds(state, skill, diff, opts = {}) {
   let bonus = diffOf(state).odds;
   if (hasSpecial(state, 'slide_rule_array') && (skill === 'science' || skill === 'engineering')) bonus += 0.05;
   if (hasSpecial(state, 'barrel_roll_gyro') && skill === 'piloting' && opts.tag === 'flee') bonus += 0.10;
+  if (hasSpecial(state, 'field_hospital') && skill === 'medicine') bonus += 0.10;
   if (hasSpecial(state, 'translator_parrot') && skill === 'diplomacy' && ['vesperine', 'archivists', 'unknown'].includes(opts.faction || opts.species)) total += 1;
   const b = bestCrew(state, skill);
   if (b) {
@@ -163,12 +164,23 @@ export function upgradeStatus(state, up, opts = {}) {
 }
 
 /** Install (replacing the slot occupant). No money handling here. Returns the replaced id or null. */
+/** Number of crew whose trait carries a given ability id. */
+export function abilityCount(state, id) {
+  let n = 0;
+  for (const c of state.crew || []) { const t = C.TRAITS[c.trait]; if (t && t.ability === id) n++; }
+  return n;
+}
+
 export function installUpgrade(state, id) {
   const up = IDX.upgrade[id];
   if (!up) return { ok: false, reason: 'Unknown upgrade' };
   const old = installedInSlot(state, up.slot);
   if (old) state.upgrades = state.upgrades.filter((x) => x !== old.id);
   state.upgrades.push(id);
+  if (up.special === 'rival_handshake' && !state.flags.rival_handshake_given) {
+    state.flags.rival_handshake_given = true;
+    state.counters.rival_friend = (state.counters.rival_friend || 0) + 2;
+  }
   recompute(state);
   return { ok: true, replaced: old ? old.id : null };
 }
@@ -179,7 +191,7 @@ export function removeUpgrade(state, id) {
 }
 
 // ---- service pricing (refuel / repair / restock) ----------------------------------------------------------
-export const SERVICE_BASE = { fuel: 5, supplies: 4, repair: 4 };
+export const SERVICE_BASE = { fuel: 7, supplies: 5, repair: 5 };
 
 export function repDiscount(rep) {
   if (rep >= 60) return 0.10;
