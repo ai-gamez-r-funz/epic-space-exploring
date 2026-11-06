@@ -404,7 +404,8 @@ export class Game {
     const st = this.state;
     if (st.distress) return false;
     const d = bfs(st.galaxy, st.pos);
-    const cands = st.galaxy.systems.filter((x) => x.status !== 'unknown' && x.id !== st.pos && d[x.id] >= 2 && d[x.id] <= 5);
+    let cands = st.galaxy.systems.filter((x) => x.status !== 'unknown' && x.id !== st.pos && d[x.id] >= 2 && d[x.id] <= 5);
+    if (!cands.length) cands = st.galaxy.systems.filter((x) => x.status !== 'unknown' && x.id !== st.pos && d[x.id] >= 1 && d[x.id] <= 5);
     if (!cands.length) return false;
     const rng = new RNG(hashString(`${st.seed}|distress|${st.day}`));
     const sys = rng.pick(cands);
@@ -732,7 +733,10 @@ export class Game {
     const st = this.state;
     if (st.phase === 'ended') return;
     if (cur.setPiece === 'distress' && st.distress) {
+      const wasBuiltin = cur.eventId === 'core_distress';
+      const bounty = Math.round(60 + (st.distress.reward || 0));
       st.distress = null; delete st.flags.distress_active; this._scheduleDistress(); st.counters.distress_answered = (st.counters.distress_answered || 0) + 1;
+      if (!wasBuiltin) { applyEffects(this, [{ credits: bounty }, { morale: 2 }], {}); this.toast(`Meridian Relief bounty: +${bounty} scrip`, 'good'); }
     }
     if (this._chain && !this._pendingEnding) {
       const id = this._chain; this._chain = null;

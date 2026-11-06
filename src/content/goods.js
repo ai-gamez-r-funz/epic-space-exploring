@@ -283,3 +283,13 @@ export const TRADE_LANES = [
 // Goods with `rival:'tamsin'` are the signature stock of the rival free-trader Captain Tamsin Vell. The engine may
 // prefer these when it picks state.rival.goodId (any good is still legal). See SPECIALS.rival_handshake.
 export const RIVAL_GOODS = GOODS.filter((g) => g.rival).map((g) => g.id);
+
+/** Each region's 2 signature exports: cheap there (region bias < 0.75), dear one or two regions away. */
+export const SIGNATURE_EXPORTS = {
+  gate: ['felt_tip_cartridges', 'ration_bars'],
+  shoals: ['glass_brandy', 'shoal_glass_beads'],
+  veil: ['nebula_tea', 'tuning_crystals'],
+  choir: ['comet_ice', 'aurora_silk'],
+  archive: ['vellum_sheets', 'slide_rule_blanks'],
+  rim: ['hand_looms', 'tamsin_marmalade'],
+};

@@ -681,7 +681,7 @@ export const UPGRADES = [
     flavor: 'Nothing is eaten that cannot be pickled first.',
     bonus: { suppliesMax: 6, moraleRegen: -0.1 },
   }),
-  U('ice_scoop', 'Comet-Ice Scoop', 'special', 1, 380, {
+  U('ice_scoop', 'Comet-Ice Scoop', 'special', 1, 340, {
     build: 'explorer', special: 'ice_scoop',
     desc: 'A folding scoop that harvests ice from comet tails and cracks it into fuel.',
     flavor: 'Free fuel, if you are willing to chase it.',
