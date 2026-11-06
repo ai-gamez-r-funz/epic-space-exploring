@@ -55,7 +55,10 @@ export function pickEvent(g, kind, ctx = {}, opts = {}) {
   if (!all.length) return null;
   const recent = new Set(g.state.evt.recent);
   const fresh = all.filter((e) => !recent.has(e.id));
-  const pool = fresh.length ? fresh : all;
+  let pool = fresh.length ? fresh : all;
+  // story-critical events (weight >= 50) always win over ambient ones when eligible
+  const heavy = pool.filter((e) => (e.weight || 0) >= 50);
+  if (heavy.length) pool = heavy;
   return g.rng.weighted(pool, (e) => weightOf(g, e, ctx)) || null;
 }
 
