@@ -93,7 +93,7 @@ function manage(g, policy, mem, rnd) {
     }
   }
   if (svc('repair')) {
-    const frac = policy === 'cautious' ? 0.5 : careful ? 0.8 : reckless ? 0.15 : 0.6; // cautious = a sensible player who lets minor scrapes ride
+    const frac = policy === 'cautious' ? 0.33 : careful ? 0.8 : reckless ? 0.15 : 0.6; // cautious = a sensible player who lets minor scrapes ride
     if (st.ship.hull < st.ship.hullMax * frac) g.repair('max');
     if (st.ship.fuel < st.ship.fuelMax * (careful ? 0.9 : reckless ? 0.45 : 0.7)) g.refuel('max');
     if (st.ship.supplies < st.ship.suppliesMax * (careful ? 0.8 : reckless ? 0.35 : 0.6)) g.restock('max');
