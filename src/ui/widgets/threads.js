@@ -11,45 +11,35 @@ const sysName = (g, id) => g.system(id)?.name || id;
 
 export function rivalLine(g) {
   try {
-    if (typeof g.rivalStatus === 'function') { const r = g.rivalStatus(); if (r) return typeof r === 'string' ? { text: r } : { text: r.text || r.line, systemId: r.systemId || null }; }
-  } catch (e) { /* derive */ }
-  try {
-    const ri = g.rivalInfo?.(); const R = S.content.RIVAL; const name = (R?.name || ri?.name || 'Tamsin Vell').replace(/^Captain\s+/, '');
-    if (!ri && !R) return null;
-    if (ri?.systemId) {
-      const n = jumpsTo(g, ri.systemId); const here = ri.here ? ' — right here' : n ? ` · ${n} jump${n > 1 ? 's' : ''}` : '';
-      return { text: `${name} is at ${ri.systemName}${here}`, systemId: ri.systemId, tip: ri.goodName ? `Hauling ${ri.goodName}. Beat her to the market.` : '' };
+    const r = g.rivalStatus?.(); if (!r) return null;
+    const name = (r.name || 'Tamsin Vell').replace(/^Captain\s+/, '');
+    if (r.systemId) {
+      const n = r.jumps; const tail = r.here ? ' \u2014 right here' : n ? ` \u00b7 ${n} jump${n > 1 ? 's' : ''}` : '';
+      return { text: `${name} is at ${r.systemName}${tail}`, systemId: r.systemId, tip: r.line + (r.beaten ? '' : ' Beat her to the best market.') };
     }
-    return { text: `${name}: whereabouts unknown`, tip: R?.systemHint || 'Dock at trade stations to catch the gossip.' };
+    return { text: `${name}: whereabouts unknown`, tip: r.line || r.systemHint || 'Dock at trade stations to catch the gossip.' };
   } catch (e) { return null; }
 }
 
 export function lanternLine(g) {
   try {
-    const CH = S.content.CHAPTERS || []; const fl = g.state.flags; if (!CH.length) return null;
-    const done = CH.map((c) => !!fl['lantern_' + c.n]);
-    const cur = CH.find((c) => !fl['lantern_' + c.n]);
-    if (!cur) return { pips: done, text: 'All five Lanterns answered', done: true };
-    const open = !!fl[cur.flag || 'chapter_' + cur.n];
-    const mk = g.mapMarkers?.().markers.find((m) => m.kind === 'lantern');
-    const eta = cur.etaDays ? `${cur.etaDays[0]}–${cur.etaDays[1]} days` : '';
-    const text = open ? `Lantern ${cur.n}: ${cur.title}${eta ? ' · ~' + eta : ''}` : `Lantern ${cur.n} — chart more of the Reach to open it`;
-    return { pips: done, text, systemId: mk?.systemId || null, tip: cur.hint || '' };
+    const arc = g.arcProgress?.() || []; if (!arc.length) return null;
+    const pips = arc.map((c) => c.status === 'done'); const cur = arc.find((c) => c.status !== 'done');
+    if (!cur) return { pips, text: 'All five Lanterns answered', done: true };
+    const eta = cur.etaDays ? `${cur.etaDays[0]}\u2013${cur.etaDays[1]} days` : '';
+    const text = cur.status === 'open' ? `Lantern ${cur.n}: ${cur.title}${eta ? ' \u00b7 ~' + eta : ''}` : `Lantern ${cur.n} \u2014 chart more of the Reach to open it`;
+    const step = (cur.steps || []).find((x) => !x.done);
+    return { pips, text, systemId: cur.lanternSystemId || null, tip: (cur.journal || '') + (step ? `\nNext: ${step.text}` : '') };
   } catch (e) { return null; }
 }
 
+/** One dock line (rotates daily through the engine's bulletin) + all lines for the tooltip. */
 export function dockBulletin(g) {
   try {
-    if (typeof g.dockBulletin === 'function') { const b = g.dockBulletin(); if (b) return typeof b === 'string' ? { text: b } : { text: b.text || b.line, systemId: b.systemId || null }; }
-  } catch (e) { /* derive */ }
-  try {
-    const parts = []; let sid = null;
-    const d = g.distressSignals?.()[0]; if (d) { parts.push(`Distress at ${d.systemName}, ${d.daysLeft} day${d.daysLeft === 1 ? '' : 's'} left`); sid = d.systemId; }
-    const m = g.market?.(g.state.pos); const b = m?.bestSell?.[0];
-    if (b) { parts.unshift(`Sell ${S.content.GOODS_BY_ID?.[b.goodId]?.name || b.goodId} at ${b.systemName}: +${Math.round(b.pct)}%${b.jumps ? ` (${b.jumps} jump${b.jumps > 1 ? 's' : ''})` : ''}`); sid = b.systemId; }
-    const r = g.rivalInfo?.(); if (r?.systemId && !r.here && parts.length < 2) parts.push(`${(r.name || 'Tamsin').replace(/^Captain\s+/, '')} is hauling ${r.goodName} at ${r.systemName}`);
-    if (!parts.length) { const o = g.nextObjective?.(); if (o?.text) { parts.push(o.text); sid = o.systemId || null; } }
-    return parts.length ? { text: parts.slice(0, 2).join('  ·  '), systemId: sid } : null;
+    const b = g.dockBulletin?.(); if (!b || !b.lines?.length) return null;
+    const pick = b.lines.filter((l) => l.kind !== 'objective');
+    const main = (pick.length ? pick : b.lines)[(g.state.day || 0) % (pick.length || b.lines.length)];
+    return { text: main.text, systemId: main.systemId || null, all: b.lines };
   } catch (e) { return null; }
 }
 
@@ -71,7 +61,7 @@ export class ThreadsBar extends Container {
     this.removeChildren().forEach((c) => c.destroy({ children: true }));
     const focus = (id, title) => () => { if (id && this.ui.showOnMap) this.ui.showOnMap([id], title); else this.ui.openOverlay('MissionLog'); };
     let y = 0; const H = 24;
-    if (docked) { const b = dockBulletin(g); if (b) { this.addChild(this._pill(0, y, this.W, H, C.mustard, 'news', b.text, focus(b.systemId, 'Dock bulletin'), { title: 'Dock bulletin', body: b.text, footer: b.systemId ? 'Click to show it on the Chart' : '' })); y += H + 6; } }
+    if (docked) { const b = dockBulletin(g); if (b) { this.addChild(this._pill(0, y, this.W, H, C.mustard, 'news', b.text, focus(b.systemId, 'Dock bulletin'), { title: 'Dock bulletin', body: b.all.map((l) => '\u2022 ' + l.text).join('\n'), footer: b.systemId ? 'Click to show it on the Chart' : '' })); y += H + 6; } }
     const r = rivalLine(g); const l = lanternLine(g); const parts = [r, l].filter(Boolean);
     let x = 0; const gap = 8; const w1 = r && l ? Math.floor((this.W - gap) * 0.46) : this.W;
     if (r) { this.addChild(this._pill(x, y, w1, H, 0xf08a9a, 'rival', r.text, focus(r.systemId, r.text), { title: 'Rival trader', body: r.tip || r.text, footer: r.systemId ? 'Click to show on the Chart' : '' })); x += w1 + gap; }

@@ -125,7 +125,7 @@ export class Shipyard extends Overlay {
     this.yardNote = new Container(); this.yardNote.x = LW - 292; this.yardNote.y = 10; this.sch.addChild(this.yardNote);
     this.mode = 'upgrades'; this.crewSel = this.g.state.crew[0]?.id || null; this.modeBtns = {};
     [['upgrades', 'Upgrades'], ['refits', 'Refits'], ['training', 'Training']].forEach(([id, label], i) => {
-      const b = new Button({ label, w: 98, h: 28, fontSize: 12, variant: 'ghost', upper: true, onClick: () => this._setMode(id) }); b.x = this.RW - 3 * 100 + i * 100; b.y = -2; R.addChild(b); this.modeBtns[id] = b;
+      const b = new Button({ label, w: 104, h: 28, fontSize: 11, variant: 'ghost', upper: true, onClick: () => this._setMode(id) }); b.x = this.RW - 3 * 106 + i * 106; b.y = -2; R.addChild(b); this.modeBtns[id] = b;
     });
     this._paintModes();
     this.listPane = new ScrollPane({ w: this.RW, h: 262, bottomPad: 4 }); this.listPane.y = 34; R.addChild(this.listPane);
@@ -140,7 +140,7 @@ export class Shipyard extends Overlay {
   }
   _buildSimple() {
     const ref = this.mode === 'refits'; const c = this.listPane.content; c.removeChildren().forEach((x) => x.destroy({ children: true }));
-    this.slotTitle.setText(ref ? 'Refits \u00b7 comforts for ship and crew' : 'Crew training \u00b7 sharpen an officer'); this.slotTitle.setColor(C.brassLight);
+    this.slotTitle.setText(ref ? 'Refits \u00b7 ship comforts' : 'Training \u00b7 sharpen an officer'); this.slotTitle.setColor(C.brassLight);
     this.yardNote.removeChildren().forEach((x) => x.destroy({ children: true }));
     const yp = pill({ icon: this.g.state.docked ? 'check' : 'lock', text: this.g.state.docked ? 'DOCKED' : 'DOCK TO BUY', color: this.g.state.docked ? C.good : C.mustard, h: 22, size: 10, preset: 'headSm', padX: 10 }); yp.x = 280 - yp.w; this.yardNote.addChild(yp);
     let y = 0; const W = this.RW - 12; this.cards = {};
@@ -171,12 +171,12 @@ export class Shipyard extends Overlay {
     const ref = this.mode === 'refits';
     const ic = ico(ref ? 'heart' : 'crew', 34, C.tealLight); ic.x = 16; ic.y = 14; D.addChild(ic);
     const nm = new Label({ text: it.name, preset: 'head', size: 16, color: C.brassLight, w: W - 230, h: 24, fit: true, upper: true }); nm.x = 62; nm.y = 12; D.addChild(nm);
-    const sub = new Label({ text: ref ? `REFIT \u00b7 ${it.days} DAYS IN DRYDOCK` : `TRAINING \u00b7 ${it.days} DAYS \u00b7 ${it.tag}`, preset: 'headSm', size: 9, color: C.tealLight }); sub.x = 62; sub.y = 40; D.addChild(sub);
+    const sub = new Label({ text: ref ? `REFIT \u00b7 ${it.days} DAY${it.days === 1 ? '' : 'S'} IN DRYDOCK` : `TRAINING \u00b7 ${it.days} DAY${it.days === 1 ? '' : 'S'} \u00b7 ${it.tag}`, preset: 'headSm', size: 9, color: C.tealLight }); sub.x = 62; sub.y = 40; D.addChild(sub);
     const d = new Label({ text: it.desc || '', preset: 'small', size: 14, lineHeight: 18, color: C.cream, w: W - 36, maxLines: 3 }); d.x = 18; d.y = 66; D.addChild(d);
     if (it.flavor) { const f = new Label({ text: '\u201c' + it.flavor + '\u201d', preset: 'tiny', size: 12, color: C.textDim, w: W - 36, maxLines: 2 }); f.x = 18; f.y = 66 + Math.min(d.textHeight, 54) + 6; D.addChild(f); }
     const msg = !it.available && it.reason ? it.reason : it.owned ? 'Already done.' : `Time passes while this is done: crew eat, deadlines tick.`;
     const ml = new Label({ text: msg, preset: 'small', size: 13, color: !it.available ? C.mustard : C.textDim, w: W - 260 }); ml.x = 18; ml.y = this.DH - 58; D.addChild(ml);
-    const bb = new Button({ label: it.owned ? 'Fitted' : `${ref ? 'Book refit' : 'Enrol'} \u00b7 ${num(it.price)}`, icon: 'credits', w: 220, h: 46, variant: 'primary', disabled: !it.available, disabledReason: it.reason || '', onClick: () => this._buySimple(it) });
+    const bb = new Button({ label: it.owned ? 'Fitted' : `${ref ? 'Book' : 'Enrol'} \u00b7 ${num(it.price)}`, icon: 'credits', w: 220, h: 46, variant: 'primary', disabled: !it.available, disabledReason: it.reason || '', onClick: () => this._buySimple(it) });
     bb.x = W - 238; bb.y = this.DH - 62; D.addChild(bb); this.buyBtn = bb;
   }
   async _buySimple(it) {
@@ -204,7 +204,7 @@ export class Shipyard extends Overlay {
     this.slotTitle.setText(`${meta.name} · ${inst ? 'fitted: ' + inst.name : 'empty socket'}`); this.slotTitle.setColor(meta.col === C.mustard ? C.brassLight : lighten(meta.col, 0.3));
     this.yardNote.removeChildren().forEach((c) => c.destroy({ children: true }));
     const yp = pill({ icon: this.hasYard ? 'check' : 'lock', text: this.hasYard ? 'SHIPYARD OPEN' : 'VIEW ONLY · DOCK AT A YARD', color: this.hasYard ? C.good : C.mustard, h: 22, size: 10, preset: 'headSm', padX: 10 }); yp.x = 280 - yp.w; yp.y = 0; this.yardNote.addChild(yp);
-    try { const rot = this.hasYard && this.g.yardRotation?.(); if (rot) { const rp = pill({ icon: 'star', text: `${rot.title.toUpperCase()} \u00b7 ${rot.daysLeft}D`, color: C.mustard, h: 22, size: 9, preset: 'headSm', padX: 9, tip: { title: rot.title, body: rot.text + (rot.discountPct ? `\n${rot.discountPct}% off selected items.` : ''), footer: `${rot.daysLeft} days left` } }); rp.x = 280 - rp.w; rp.y = 28; this.yardNote.addChild(rp); } } catch (e) { /* optional */ }
+    try { const rot = this.hasYard && this.g.yardRotation?.(); if (rot) { const rp = pill({ icon: 'star', text: `${rot.title.toUpperCase()} \u00b7 ${rot.daysLeft}D`, color: C.mustard, h: 22, size: 9, preset: 'headSm', padX: 9, tip: { title: rot.title, body: rot.text + (rot.discountPct ? `\n${rot.discountPct}% off selected items.` : ''), footer: `${rot.daysLeft} days left` } }); rp.x = -262; rp.y = 316; this.yardNote.addChild(rp); } } catch (e) { /* optional */ }
     const c = this.listPane.content; c.removeChildren().forEach((x) => x.destroy({ children: true }));
     let y = 0; let lastBuild = null; this.cards = {}; const W = this.RW - 12;
     const items = this._slotItems(slot);

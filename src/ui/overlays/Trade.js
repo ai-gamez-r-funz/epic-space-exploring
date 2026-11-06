@@ -48,7 +48,7 @@ export class Trade extends Overlay {
     try { const act = (this.g.marketNews?.(sys.id) || []).filter((n) => n.active); const room = modal.bodyW - 130 - 548 - 12;
       if (act.length && room > 140) { const n = act[0]; const p = pill({ text: `${n.title} · ${n.daysLeft}d`, color: n.mult > 1 ? C.good : C.mustard, h: 26, size: 11, padX: 10, preset: 'headSm', tip: { title: n.title, body: n.text, tone: 'info' } }); p.x = 548; p.y = 101; this.root.addChild(p); }
     } catch (e) { /* news is optional */ }
-    try { const bl = dockBulletin(g); if (bl) { const bp = pill({ icon: 'news', text: bl.text, color: C.mustard, h: 30, size: 12, padX: 12, preset: 'small', tip: { title: 'Why jump now', body: bl.text } }); const mw = 440; if (bp.w > mw) { bp.destroy({ children: true }); } else { bp.x = 540; bp.y = 99; this.root.addChild(bp); } if (bp.w > mw) { const l = new Label({ text: bl.text, preset: 'small', size: 12, color: C.mustard, w: mw, h: 30, fit: true }); l.x = 540; l.y = 102; this.root.addChild(l); } } } catch (e) { /* optional */ }
+    try { const bl = dockBulletin(g); if (bl) { const bp = pill({ icon: 'news', text: bl.text, color: C.mustard, h: 30, size: 12, padX: 12, preset: 'small', tip: { title: 'Why jump now', body: bl.all.map((l) => '\u2022 ' + l.text).join('\n') } }); const mw = 440; if (bp.w > mw) { bp.destroy({ children: true }); } else { bp.x = 540; bp.y = 99; this.root.addChild(bp); } if (bp.w > mw) { const l = new Label({ text: bl.text, preset: 'small', size: 12, color: C.mustard, w: mw, h: 30, fit: true }); l.x = 540; l.y = 102; this.root.addChild(l); } } } catch (e) { /* optional */ }
     this.PH = modal.bodyH - 96 - 46;
     this.marketPane = this.tabs.panes.market; this.svcPane = this.tabs.panes.services;
     this.marketPane.y = this.svcPane.y = 96 + 46;
@@ -240,7 +240,7 @@ export class Trade extends Overlay {
     bb.x = gx; bb.y = y; D.addChild(bb); y += 52;
     const sq = Math.min(q, gd.held);
     const sellOK = docked && gd.held > 0;
-    const sb = new Button({ label: gd.held ? `Sell ${sq} · ${num(this._quote('sell', gd.id, sq))}` : 'Nothing to sell', w: Math.floor(gw * 0.58) - 4, h: 44, variant: 'teal', fontSize: 15, tooltip: 'Sell (S). Shift-click sells everything.', disabled: !sellOK, disabledReason: !docked ? 'Dock first.' : 'None in your hold.', onClick: () => this._sell(this.shift ? gd.held : sq) });
+    const sb = new Button({ label: gd.held ? `Sell ${sq} · ${num(this._quote('sell', gd.id, sq))}` : 'None held', w: Math.floor(gw * 0.58) - 4, h: 44, variant: 'teal', fontSize: 15, tooltip: 'Sell (S). Shift-click sells everything.', disabled: !sellOK, disabledReason: !docked ? 'Dock first.' : 'None in your hold.', onClick: () => this._sell(this.shift ? gd.held : sq) });
     const sa = new Button({ label: `All · ${num(this._quote('sell', gd.id, gd.held))}`, w: Math.ceil(gw * 0.42) - 4, h: 44, variant: 'coral', fontSize: 14, tooltip: 'Sell every one in the hold (A)', disabled: !sellOK, disabledReason: 'None in your hold.', onClick: () => this._sell(gd.held) });
     sb.x = gx; sb.y = y; sa.x = gx + Math.floor(gw * 0.58) + 4; sa.y = y; D.addChild(sb, sa);
     this.detailBtns = { bb, sb, sa };
