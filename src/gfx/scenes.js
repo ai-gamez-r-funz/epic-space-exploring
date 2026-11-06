@@ -23,55 +23,96 @@ function upd(c) { return (dt) => { for (const k of c.children) if (k.update) k.u
 function blinkRect(g, x, y, w, h, col) { g.roundRect(x, y, w, h, Math.min(w, h) * 0.3).fill(col); }
 
 // -------------------------------------------------------------- stations
+const poly = (rx, ry, a0, a1, n = 28, tilt = 0) => { const pts = []; for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n, x = Math.cos(a) * rx, y = Math.sin(a) * ry; pts.push(x * Math.cos(tilt) - y * Math.sin(tilt), x * Math.sin(tilt) + y * Math.cos(tilt)); } return pts; };
+const strokePts = (g, pts, width, color, alpha = 1) => { g.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]); g.stroke({ width, color, alpha, cap: 'round', join: 'round' }); };
+function solar(g, x, y, w, h) { g.roundRect(x, y, w, h, 1).fill(0x23336a); g.roundRect(x, y, w, h, 1).stroke({ width: 0.8, color: 0x8fb0e8, alpha: 0.8 }); const n = Math.max(2, Math.round(w / 6)); for (let i = 1; i < n; i++) g.moveTo(x + i * w / n, y).lineTo(x + i * w / n, y + h).stroke({ width: 0.5, color: 0x8fb0e8, alpha: 0.6 }); g.rect(x + 1, y + 1, w - 2, h * 0.25).fill({ color: 0xffffff, alpha: 0.12 }); }
+function dish(g, x, y, r, rot = -0.6) { const d = new Graphics(); d.ellipse(0, 0, r, r * 0.38).fill(0xf2e3b8); d.ellipse(0, 0, r, r * 0.38).stroke({ width: 0.8, color: 0x8a6a2a }); d.moveTo(0, 0).lineTo(r * 0.1, -r * 0.9).stroke({ width: 0.8, color: 0xb98a30 }); d.circle(r * 0.1, -r * 0.9, 1).fill(0xef6f5e); d.position.set(x, y); d.rotation = rot; return d; }
+
 export function createStation({ kind = 'trade', size = 100 } = {}) {
   const root = animated();
-  const k = size / 100, g = new Graphics(), R = rng(hashStr('st' + kind));
-  const ringG = new Graphics();
+  const body = new Container(); body.scale.set(size / 100); root.addChild(body);
+  const R = rng(hashStr('st' + kind));
+  const stat = new Graphics(), back = new Graphics(), front = new Graphics();
   const lights = [];
-  const addLight = (x, y, col, r = 2) => { const l = glowSprite(col, r * 3.2, 0.9, 2); l.position.set(x * k, y * k); root.addChild(l); lights.push([l, R.range(0.8, 2.4), R() * 6]); };
-  const brass = P.brass, cream = P.cream;
-  const hull = (x, y, w, h, c = 0xb8a888) => { g.roundRect(x, y, w, h, Math.min(w, h) * 0.35).fill(c); g.roundRect(x, y, w, h * 0.35, Math.min(w, h) * 0.3).fill({ color: 0xffffff, alpha: 0.22 }); };
-  g.scale.set(k);
+  const addLight = (x, y, col, r = 2) => { const l = glowSprite(col, r * 3.2, 0.9, 2); l.position.set(x, y); lights.push([l, R.range(0.8, 2.4), R() * 6]); return l; };
+  const extras = [];
+  const hubV = (x, w, top, bot, col = 0xe8d8a8) => { stat.roundRect(x - w / 2, top, w, bot - top, w * 0.35).fill(col); stat.roundRect(x - w / 2, top, w * 0.35, bot - top, w * 0.3).fill({ color: 0xffffff, alpha: 0.25 }); stat.roundRect(x + w * 0.2, top, w * 0.3, bot - top, w * 0.2).fill({ color: 0x000000, alpha: 0.15 }); stat.roundRect(x - w / 2, top, w, bot - top, w * 0.35).stroke({ width: 0.9, color: 0x8a6a2a, alpha: 0.9 }); };
+  let wheel = null; // {rx, ry, tilt, colA, colB, domes}
+  let spokes = 8, spin = 0.25;
   if (kind === 'trade') {
-    for (const s of [-1, 1]) { g.rect(s * 38 - 1, -2, 2, 4).fill(0x8a8a90); g.roundRect(s * 54 - 7, -14, 14, 28, 2).fill(0x3d78b8).stroke({ width: 0.8, color: cream, alpha: 0.5 }); }
-    g.rect(-48, -1.2, 96, 2.4).fill(0x8a8a90);
-    hull(-10, -22, 20, 44, 0xe8d8a8); hull(-5, -30, 10, 60, 0xd9a441);
-    for (let i = 0; i < 5; i++) g.circle(0, -18 + i * 9, 1.4).fill(0x2a3566);
-    for (let i = 0; i < 6; i++) { g.rect(-14 + i * 5, 22, 5, 5).fill(i % 2 ? 0xef6f5e : 0xf2e3b8); } // awning stripes
-    addLight(0, -31, 0xffe08a, 2.5); addLight(-54, -14, P.good, 1.6); addLight(54, 14, P.coral, 1.6);
+    hubV(0, 14, -34, 34); stat.poly([-7, -34, 0, -44, 7, -34]).fill(0xd9a441); stat.rect(-1, -52, 2, 9).fill(0x8a8a90);
+    stat.roundRect(-10, 34, 20, 6, 3).fill(0xb98a30);
+    for (let i = 0; i < 6; i++) stat.circle(0, -26 + i * 10, 1.5).fill(i % 2 ? 0x2a3566 : 0xffe08a);
+    solar(stat, -62, -4, 20, 8); solar(stat, 42, -4, 20, 8); stat.rect(-42, -0.5, 8, 1.6).fill(0x8a8a90); stat.rect(34, -0.5, 8, 1.6).fill(0x8a8a90);
+    wheel = { rx: 46, ry: 14, tilt: -0.12, colA: 0xf2e3b8, colB: 0xd9a441 }; spokes = 8;
+    addLight(0, -52, 0xffe08a, 2.4); addLight(-62, 0, P.good, 1.4); addLight(62, 0, P.coral, 1.4); addLight(0, 40, P.teal, 1.5);
   } else if (kind === 'outpost') {
-    hull(-18, -9, 36, 18, 0xb8b0a0); g.roundRect(-18, -9, 36, 18, 6).stroke({ width: 1, color: 0x6a6460 });
-    g.moveTo(8, -9).lineTo(8, -26); g.stroke({ width: 1.6, color: 0x8a8a90 }); g.ellipse(8, -28, 10, 3.5).fill(cream).stroke({ width: 0.8, color: 0x8a8a90 });
-    g.rect(-30, -2, 12, 4).fill(0x2a3566); g.rect(18, -2, 12, 4).fill(0x2a3566);
-    g.roundRect(-8, -4, 8, 5, 1).fill(0xffe08a); addLight(-8, -2, 0xffe08a, 1.5); addLight(-15, -9, P.coral, 1.3);
+    hubV(0, 22, -12, 12, 0xcfc6b0); stat.roundRect(-34, -5, 22, 10, 3).fill(0xb8b0a0).stroke({ width: 0.8, color: 0x6a6460 }); stat.roundRect(12, -5, 22, 10, 3).fill(0xb8b0a0).stroke({ width: 0.8, color: 0x6a6460 });
+    stat.roundRect(-5, -8, 10, 6, 1).fill(0xffe08a); stat.moveTo(0, -12).lineTo(0, -34).stroke({ width: 1.4, color: 0x8a8a90 }); extras.push(dish(stat, 8, -34, 12, -0.4));
+    solar(stat, -62, -22, 24, 10); solar(stat, 38, -22, 24, 10); stat.moveTo(-38, -17).lineTo(-12, -8).moveTo(38, -17).lineTo(12, -8).stroke({ width: 1.2, color: 0x8a8a90 });
+    stat.rect(-3, 12, 6, 8).fill(0x8a8a90); stat.roundRect(-8, 20, 16, 4, 2).fill(0xb98a30);
+    addLight(0, -36, P.coral, 1.8); addLight(-12, 0, 0xffe08a, 1.4); addLight(14, 6, P.teal, 1.2);
   } else if (kind === 'shipyard') {
-    // scaffold + half-built hull
-    g.ellipse(0, 0, 30, 9).fill(0xd9a441); g.ellipse(0, -1, 26, 6).fill(0xf2e3b8);
-    for (let i = -3; i <= 3; i++) g.moveTo(i * 12, -26).lineTo(i * 12, 26);
-    g.stroke({ width: 1, color: 0x8a8a90 }); g.moveTo(-40, -26).lineTo(40, -26); g.moveTo(-40, 26).lineTo(40, 26); g.stroke({ width: 1.4, color: 0xb98a30 });
-    g.poly([34, -26, 46, -34, 46, -26]).fill(0xef6f5e);
-    addLight(-40, -26, 0xffe08a, 1.6); addLight(40, 26, 0xffe08a, 1.6); addLight(0, -26, P.teal, 1.5);
+    // gantry truss with half-built saucer hull
+    stat.ellipse(0, 4, 34, 9).fill(0xd9a441); stat.ellipse(0, 2, 30, 6).fill(0xf2e3b8); stat.ellipse(0, 4, 34, 9).stroke({ width: 0.9, color: 0x8a6a2a });
+    for (const sx of [-1, 1]) { stat.rect(sx * 46 - 2, -30, 4, 62).fill(0x9aa3b8); for (let i = 0; i < 7; i++) stat.moveTo(sx * 46 - 2, -30 + i * 9).lineTo(sx * 46 + 2, -21 + i * 9).stroke({ width: 0.7, color: 0x5a6280 }); }
+    stat.rect(-48, -32, 96, 4).fill(0xb98a30); stat.rect(-48, 28, 96, 4).fill(0xb98a30);
+    for (let i = -4; i <= 4; i++) stat.moveTo(i * 10, -28).lineTo(i * 10 + 5, 28).stroke({ width: 0.6, color: 0x9aa3b8, alpha: 0.55 });
+    stat.rect(-3, -44, 6, 12).fill(0x9aa3b8); stat.moveTo(0, -44).lineTo(24, -34).stroke({ width: 2, color: 0xef6f5e }); stat.moveTo(24, -34).lineTo(24, -18).stroke({ width: 0.8, color: 0xf2e3b8 }); stat.rect(21, -18, 6, 4).fill(0xef6f5e);
+    stat.roundRect(-58, 8, 10, 22, 3).fill(0x3d78b8); stat.roundRect(48, 8, 10, 22, 3).fill(0x3d78b8);
+    addLight(-46, -32, 0xffe08a, 1.6); addLight(46, 32, 0xffe08a, 1.6); addLight(0, -44, P.coral, 1.5);
   } else if (kind === 'embassy') {
-    hull(-8, -34, 16, 68, 0xe8eef6); g.poly([-8, -34, 0, -50, 8, -34]).fill(0x5aa0e0); g.ellipse(0, 0, 36, 7).fill(0xf2e3b8).stroke({ width: 1, color: brass });
-    for (let i = -2; i <= 2; i++) { g.rect(i * 12 - 1.5, -16, 3, 16).fill(0xef6f5e); g.poly([i * 12 - 1.5, 0, i * 12 + 1.5, 0, i * 12, 5]).fill(0xef6f5e); }
-    addLight(0, -51, 0xffe08a, 2.2); addLight(-36, 0, P.teal, 1.5); addLight(36, 0, P.teal, 1.5);
+    hubV(0, 12, -40, 30, 0xe8eef6); stat.poly([-6, -40, 0, -56, 6, -40]).fill(0x5aa0e0); stat.rect(-1, -66, 2, 12).fill(0xb98a30);
+    stat.poly([1, -66, 14, -62, 1, -58]).fill(0xef6f5e);
+    wheel = { rx: 38, ry: 9, tilt: 0.1, colA: 0xf2e3b8, colB: 0x5aa0e0 }; spokes = 6; spin = 0.12;
+    for (const sx of [-1, 1]) { stat.roundRect(sx * 24 - 6, -22, 12, 8, 2).fill(0xe8eef6).stroke({ width: 0.7, color: 0x5aa0e0 }); }
+    extras.push(dish(stat, -14, 24, 9, -0.8));
+    stat.roundRect(-9, 30, 18, 5, 2).fill(0xb98a30);
+    addLight(0, -66, 0xffe08a, 2.2); addLight(-38, 0, P.teal, 1.4); addLight(38, 3, P.teal, 1.4);
   } else if (kind === 'archive') {
-    g.circle(0, 0, 26).fill(0x8a6a2a); g.circle(-1, -1, 25).fill(brass); g.circle(-7, -8, 15).fill({ color: cream, alpha: 0.3 });
-    g.ellipse(0, 0, 38, 6).stroke({ width: 2.4, color: 0xb98a30 }); g.ellipse(0, 0, 30, 18).stroke({ width: 1.2, color: 0x8a6a2a, alpha: 0.7 });
-    g.circle(0, 0, 7).fill(0x2a2218); g.circle(0, 0, 4.8).fill(0xfff0b0);
-    addLight(0, 0, 0xffe08a, 3); addLight(-30, -4, 0xffe08a, 1.3); addLight(30, 4, 0xffe08a, 1.3);
-  } else { // habitat (drifters): cluster of patchwork domes + lantern strings
-    const cols = [0xef8f5e, 0x3fc1b0, 0xe8b94a, 0x8c5a8a];
-    [[-26, 4, 14], [0, -6, 20], [26, 6, 12], [-6, 22, 9], [18, -22, 8]].forEach(([x, y, r], i) => { g.circle(x, y, r).fill(lerpc(cols[i % 4])); g.circle(x - r * 0.25, y - r * 0.3, r * 0.6).fill({ color: 0xffffff, alpha: 0.18 }); g.circle(x, y, r).stroke({ width: 1, color: 0x2a1a10, alpha: 0.6 }); });
-    for (const [x1, y1, x2, y2] of [[-26, 4, 0, -6], [0, -6, 26, 6], [0, -6, -6, 22], [0, -6, 18, -22]]) g.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: 2, color: 0x6a5a52 });
-    addLight(-26, 4, 0xffd070, 2); addLight(0, -6, 0xffd070, 2.5); addLight(26, 6, 0xffd070, 2); addLight(18, -22, P.coral, 1.5);
+    stat.circle(0, 0, 22).fill(0x8a6a2a); stat.circle(-1, -1, 21.2).fill(P.brass); stat.circle(-7, -8, 13).fill({ color: P.cream, alpha: 0.3 });
+    stat.circle(0, 0, 21.2).stroke({ width: 1, color: 0xfff1c8, alpha: 0.5 }); stat.circle(0, 0, 8).fill(0x2a2218); stat.circle(0, 0, 5.6).fill(0xfff0b0);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; stat.circle(Math.cos(a) * 15, Math.sin(a) * 15, 0.9).fill(0x8a6a2a); }
+    stat.moveTo(0, -22).lineTo(0, -44).stroke({ width: 1.6, color: 0xb98a30 }); stat.circle(0, -46, 3).fill(0xffe08a); stat.moveTo(0, 22).lineTo(0, 40).stroke({ width: 1.6, color: 0xb98a30 }); stat.roundRect(-7, 40, 14, 4, 2).fill(0xb98a30);
+    extras.push(dish(stat, 26, -26, 9, -0.9)); solar(stat, -64, -6, 18, 10); stat.rect(-46, -1, 24, 2).fill(0x8a8a90);
+    wheel = { rx: 44, ry: 10, tilt: -0.3, colA: 0xd9a441, colB: 0x8a6a2a, thin: true }; spokes = 0;
+    addLight(0, -46, 0xffe08a, 2.6); addLight(0, 0, 0xffe08a, 3.6); addLight(-62, 4, 0xffe08a, 1.3);
+  } else { // habitat: lantern ring of patchwork domes
+    hubV(0, 12, -26, 26, 0xb8a48a);
+    wheel = { rx: 46, ry: 15, tilt: -0.15, colA: 0x8a7a6a, colB: 0x6a5a52, domes: [0xef8f5e, 0x3fc1b0, 0xe8b94a, 0x8c5a8a, 0xef6f5e, 0x8fb996, 0x5aa0e0, 0xd9a441] }; spokes = 4; spin = 0.15;
+    stat.moveTo(0, -26).lineTo(-26, -42).moveTo(0, -26).lineTo(26, -42).stroke({ width: 0.9, color: 0x6a5a52 });
+    addLight(-26, -42, 0xffd070, 2); addLight(26, -42, 0xffd070, 2); addLight(0, 28, 0xffd070, 2);
+    stat.poly([-4, -26, 4, -26, 0, -34]).fill(0xef8f5e);
   }
-  root.addChildAt(g, 0); root.addChildAt(ringG, 1);
-  let t = R() * 5;
-  root.update = (dt) => { t += dt; for (const [l, sp, ph] of lights) l.alpha = 0.4 + 0.6 * (Math.sin(t * sp + ph) > 0.2 ? 1 : 0.2); g.rotation = Math.sin(t * 0.15) * 0.03; };
+  body.addChild(back, stat, front);
+  for (const e of extras) body.addChild(e);
+  for (const [l] of lights) body.addChild(l);
+  let t = R() * 5, ang = R() * TAU;
+  const wg = new Graphics(); // dynamic ring layers
+  body.addChildAt(wg, 0);
+  root.update = (dt) => {
+    t += dt; ang += dt * spin;
+    for (const [l, sp, ph] of lights) l.alpha = 0.4 + 0.6 * (Math.sin(t * sp + ph) > 0.2 ? 1 : 0.2);
+    body.rotation = Math.sin(t * 0.15) * 0.03;
+    if (!wheel) return;
+    const w = wheel; back.clear(); front.clear(); wg.clear();
+    const th = w.thin ? 3 : 8;
+    // back half (behind hub): y<0 arc, spokes, then front half over hub
+    strokePts(back, poly(w.rx, w.ry, Math.PI, TAU, 28, w.tilt), th, w.colB); strokePts(back, poly(w.rx, w.ry, Math.PI, TAU, 28, w.tilt), th * 0.5, w.colA);
+    for (let i = 0; i < spokes; i++) { const a = ang + i / spokes * TAU, c = Math.cos(a), s = Math.sin(a); const x = c * w.rx, y = s * w.ry; const px = x * Math.cos(w.tilt) - y * Math.sin(w.tilt), py = x * Math.sin(w.tilt) + y * Math.cos(w.tilt); (s < 0 ? back : front).moveTo(0, 0).lineTo(px, py).stroke({ width: 1.4, color: 0x9aa3b8 }); }
+    strokePts(front, poly(w.rx, w.ry, 0, Math.PI, 28, w.tilt), th, w.colB); strokePts(front, poly(w.rx, w.ry, 0, Math.PI, 28, w.tilt), th * 0.5, w.colA);
+    strokePts(front, poly(w.rx, w.ry, 0.05, Math.PI - 0.05, 28, w.tilt), 0.8, 0xffffff, 0.35);
+    // windows / domes travelling round the ring
+    const n = w.domes ? w.domes.length : 14;
+    for (let i = 0; i < n; i++) {
+      const a = ang * 1.0 + i / n * TAU, x = Math.cos(a) * w.rx, y = Math.sin(a) * w.ry, px = x * Math.cos(w.tilt) - y * Math.sin(w.tilt), py = x * Math.sin(w.tilt) + y * Math.cos(w.tilt), tgt = Math.sin(a) < 0 ? back : front;
+      if (w.domes) { tgt.circle(px, py - 3, 5.5).fill(w.domes[i]); tgt.circle(px - 1.5, py - 4.5, 2.2).fill({ color: 0xffffff, alpha: 0.3 }); tgt.circle(px, py - 3, 5.5).stroke({ width: 0.7, color: 0x2a1a10, alpha: 0.6 }); tgt.circle(px + 1, py - 2, 1.1).fill(0xffe08a); }
+      else if (!w.thin || i % 2) tgt.roundRect(px - 1.5, py - 1, 3, 2, 0.8).fill(i % 3 ? 0xffe08a : 0x2a3566);
+    }
+  };
+  root.update(0);
   return root;
 }
-const lerpc = (c) => c;
 
 // -------------------------------------------------------------- scene builders
 const S = {};
@@ -290,11 +331,13 @@ S.market = (w, h, R) => {
 };
 S.landing = (w, h, R, spec) => {
   const c = animated();
-  const warm = R() < 0.5;
+  const gt = spec.planet || spec.planetType;
+  const warm = gt === 'barren' || gt === 'desert' || gt === 'lava' ? true : gt === 'ice' || gt === 'ocean' || gt === 'jungle' || gt === 'toxic' ? false : R() < 0.5;
   c.addChild(gradRect(w, h, warm ? [[0, '#2a2a5e'], [0.5, '#c46a70'], [1, '#f2b070']] : [[0, '#0f2a4a'], [0.5, '#2f7a8a'], [1, '#a8e0c0']]));
   const sf = createStarfield({ w, h: h * 0.5, seed: R() * 99 | 0, bg: false, density: 0.7 }); sf.alpha = 0.6; c.addChild(sf);
   const sun = glowSprite(warm ? 0xffe0a0 : 0xe8fff0, h * 0.5, 0.7, 2); sun.position.set(w * 0.2, h * 0.58); c.addChild(sun);
-  const big = createPlanet({ type: R.pick(['gas', 'ice', 'ocean', 'terran', 'crystal']), seed: R() * 999 | 0, radius: h * 0.22, ringed: R() < 0.5, moons: 1 }); big.position.set(w * 0.72, h * 0.26); c.addChild(big);
+  const bt = R.pick(['gas', 'ice', 'barren', 'gas']);
+  const big = createPlanet({ type: bt, seed: R() * 999 | 0, radius: h * (bt === 'barren' ? 0.14 : 0.22), ringed: bt === 'gas' && R() < 0.5, moons: bt === 'barren' ? 0 : 1 }); big.position.set(w * 0.72, h * 0.26); c.addChild(big);
   const Nz = makeNoise(R() * 9999 | 0);
   const hills = (base, amp, col, f, off) => { const g = new Graphics(); g.moveTo(0, h); for (let i = 0; i <= 60; i++) { const x = i / 60 * w; g.lineTo(x, h * base - Nz.fbm(i * f + off, 1, 2, 3) * amp); } g.lineTo(w, h).closePath().fill(col); return g; };
   c.addChild(hills(0.72, h * 0.18, warm ? 0x6a3a5a : 0x1f5a6a, 0.09, 1), hills(0.8, h * 0.14, warm ? 0x4a2a48 : 0x164a58, 0.12, 9), hills(0.9, h * 0.09, warm ? 0x2a1a30 : 0x0d2a3a, 0.16, 20));

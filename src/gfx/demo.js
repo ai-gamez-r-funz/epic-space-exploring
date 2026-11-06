@@ -62,6 +62,11 @@ sections.scenes = () => {
   kinds.forEach((k, i) => { const x = 14 + (i % 3) * (cw + 14), y = Y + 14 + Math.floor(i / 3) * (ch + 28); place(gfx.sceneArt({ scene: k, species: sp[i % sp.length] && (['bridge', 'lounge', 'ship_alien', 'market', 'comet', 'station'].includes(k)) ? sp[i % sp.length] || 'human' : undefined, seed: i + 1 }, cw, ch), x, y); label(k, x + 4, y + ch + 2, 11); });
   Y += Math.ceil(kinds.length / 3) * (ch + 28) + 20;
 };
+sections.stations = () => {
+  place(gfx.starfield({ w: W, h: 520, seed: 31 }), 0, Y);
+  ['trade', 'outpost', 'shipyard', 'embassy', 'archive', 'habitat'].forEach((k, i) => { const x = 210 + (i % 3) * 430, y = Y + 140 + Math.floor(i / 3) * 250; place(gfx.station({ kind: k, size: 170 }), x, y); label(k, x - 20, y + 105); });
+  Y += 540;
+};
 sections.icons = () => {
   const bg = new Graphics().rect(0, Y, W, 560).fill(0x1b2140); stage.addChild(bg);
   const names = gfx.iconNames;
