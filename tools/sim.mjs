@@ -61,7 +61,7 @@ function chooseEvent(g, policy, rnd) {
       let s = c.odds !== undefined ? c.odds : 0.75;
       if (policy === 'cautious' && c.tag === 'flee') s -= 0.15;
       if (c.tag === 'wait') s += 0.02;
-      return s + rnd.next() * 0.05;
+      return s + rnd.next() * ((policy === 'story' || policy === 'explorer') ? 0.4 : 0.05);
     };
     pick = ok.slice().sort((a, b) => score(b) - score(a))[0];
   }
@@ -74,7 +74,7 @@ function chooseEvent(g, policy, rnd) {
 function manage(g, policy, mem, rnd) {
   const st = g.state;
   const sys = g.here();
-  const careful = policy === 'cautious' || policy === 'story';
+  const careful = policy === 'cautious' || policy === 'story' || policy === 'explorer';
   const reckless = policy === 'reckless';
   const s = sys.station;
   if (!s) return;
@@ -132,20 +132,33 @@ function manage(g, policy, mem, rnd) {
     }
   }
   if (svc('shipyard')) {
+    mem.yardDay = st.day;
     const reserve = careful ? 250 : 120;
     const prio = ['engine', 'hull', 'cargo', 'sensors', 'lounge', 'lab', 'comms', 'special'];
     const opts = g.shipyard().filter((u) => u.available && u.price <= st.credits - reserve && !u.reward);
     opts.sort((a, b) => prio.indexOf(a.slot) - prio.indexOf(b.slot) || a.price - b.price);
-    if (opts[0] && !(opts[0].tier < 2 && opts[0].price > 400)) g.buyUpgrade(opts[0].id);
+    if (opts[0] && !(opts[0].tier < 2 && opts[0].price > 400)) { const r = g.buyUpgrade(opts[0].id); if (r.ok) (mem.upgDays ||= []).push(st.day); }
   }
-  if (svc('crew') && st.crew.length < 6 && st.credits > 400) {
-    const c = g.crewForHire().find((x) => x.available && x.hireCost < st.credits - 250);
+  if (svc('crew') && st.crew.length < (policy === 'explorer' ? 7 : 6) && st.credits > (policy === 'explorer' ? 250 : 400)) {
+    const c = g.crewForHire().find((x) => x.available && x.hireCost < st.credits - 150);
     if (c) g.hireCrew(c.id);
   }
 }
 
 function pickDestination(g, policy, mem, rnd) {
   const st = g.state;
+  // a player with money to burn heads for a shipyard (every ~12 days at most)
+  if (policy !== 'random' && policy !== 'reckless' && st.credits > 520 && st.day - (mem.yardDay || -99) > 10) {
+    const hereYard = g.here().station && g.here().station.services.includes('shipyard');
+    if (!hereYard) {
+      const r = route(g, (x) => x.station && x.station.services.includes('shipyard'));
+      if (r && r.path.length <= 4) return r;
+    } else mem.yardDay = st.day;
+  }
+  if (policy === 'explorer') {
+    const ah = st.galaxy.systems.find((x) => x.story === 'archive_heart');
+    if (ah && ah.status !== 'unknown' && !ah.planets.every((p) => p.landed || p.type === 'gas') && ah.id !== st.pos) { const r0 = route(g, (x) => x.id === ah.id); if (r0) return r0; }
+  }
   if (policy === 'story') {
     const no = g.nextObjective();
     if (no && no.systemId && no.systemId !== st.pos) { const r0 = route(g, (x) => x.id === no.systemId); if (r0) return r0; }
@@ -196,11 +209,11 @@ function actCareful(g, policy, mem, rnd) {
   }
   if (sys.station) { manage(g, policy, mem, rnd); if (st.pending || st.phase === 'ended') return; }
   // social time: chat with the crew now and then, rest occasionally (keeps morale up, exercises idle/crew events)
-  if (policy !== 'reckless' && !st.pending && st.docked && (st.day - (mem.lastChat || 0)) > 9) {
+  if (policy !== 'reckless' && !st.pending && st.docked && (st.day - (mem.lastChat || 0)) > (policy === 'explorer' ? 4 : 9)) {
     mem.lastChat = st.day;
     const c = rnd.pick(st.crew); if (c) g.crewTalk(c.id);
     if (st.pending) return;
-    if (rnd.chance(0.5) && st.ship.supplies > 10) { g.rest(1); if (st.pending) return; }
+    if ((rnd.chance(0.5) || (policy === 'explorer' && st.ship.morale < 75)) && st.ship.supplies > 10) { g.rest(policy === 'explorer' ? 2 : 1); if (st.pending) return; }
   }
   if (g.canRetire().ok) {
     const sv = g.surveyProgress();
@@ -277,11 +290,13 @@ export function playGame({ seed = 1, policy = 'cautious', maxDays = 600, maxStep
   try {
     g = Game.create({ seed, captainName: 'Bot', shipName: 'Halcyon', difficulty, legacy: false, autosave: false });
     const mem = { basis: {}, hailed: new Set(), holdDays: 0 };
+    res.mem = mem;
     let lastDay = g.state.day; let sameDay = 0;
     while (g.state.phase !== 'ended') {
       res.steps++;
       if (res.steps > maxSteps) { res.timeout = true; break; }
       if (g.state.day > maxDays) { res.timeout = true; break; }
+      if (g.state.day >= (res.nextSample ?? 10)) { (res.timeline ||= []).push([g.state.day, g.state.credits]); res.nextSample = (res.nextSample ?? 10) + 10; }
       if (g.state.pending) { chooseEvent(g, policy, rnd); }
       else if (policy === 'random') actRandom(g, mem, rnd);
       else actCareful(g, policy, mem, rnd);
@@ -294,6 +309,10 @@ export function playGame({ seed = 1, policy = 'cautious', maxDays = 600, maxStep
     const st = g.state;
     res.day = st.day; res.credits = st.credits; res.tows = st.stats.tows || 0; res.survey = g.surveyProgress().pct; res.missions = st.stats.missionsDone || 0;
     res.events = Object.keys(st.evt.seen);
+    res.upgDays = (res.mem && res.mem.upgDays) || [];
+    res.upgrades = st.upgrades.length;
+    res.brokeDays = (res.timeline || []).filter(([d, c]) => d >= 20 && c < 30).length;
+    delete res.mem;
     if (st.ending) { res.ending = st.ending.id; res.kind = st.ending.kind; res.score = st.ending.score; }
   }
   return res;
@@ -322,6 +341,11 @@ function summarize(results, policy) {
   out.push(`avg days: ${avg((r) => r.day)} | avg credits at end: ${avg((r) => r.credits)} | credits/day (end balance): ${cpd.toFixed(1)} | avg survey: ${avg((r) => r.survey)}% | avg missions: ${avg((r) => r.missions)} | avg score: ${avg((r) => r.score)}`);
   out.push('endings: ' + Object.entries(endings).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}=${v}`).join(', '));
   out.push(`event coverage: ${seen.size - [...seen].filter((id) => id.startsWith('core_')).length}/${C.EVENTS.length}; never fired (${never.length}): ${never.join(', ') || '-'}`);
+  const at = (day) => { const v = results.map((r) => (r.timeline || []).find(([d]) => d === day)).filter(Boolean).map((x) => x[1]); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : '-'; };
+  out.push(`credits over time (avg, day 20/40/60/90/120/160): ${[20, 40, 60, 90, 120, 160].map(at).join(' / ')}`);
+  const gaps = results.flatMap((r) => r.upgDays.map((d, i) => d - (i ? r.upgDays[i - 1] : 0)));
+  const firstUp = results.filter((r) => r.upgDays.length).map((r) => r.upgDays[0]);
+  out.push(`upgrades: ${(results.reduce((a, r) => a + r.upgrades, 0) / n).toFixed(1)}/run | first upgrade day ${firstUp.length ? (firstUp.reduce((a, b) => a + b, 0) / firstUp.length).toFixed(0) : '-'} | avg days between upgrades ${gaps.length ? (gaps.reduce((a, b) => a + b, 0) / gaps.length).toFixed(1) : '-'} | broke (<30 scrip after day 20) in ${pct(results.filter((r) => r.brokeDays >= 2).length)} of runs`);
   out.push(`stuck: ${stuck} | exceptions: ${errors}`);
   return { text: out.join('\n'), wins: wins / n, stuck, errors, timeouts };
 }
@@ -344,7 +368,7 @@ async function main() {
   setStorage(memoryStorage());
   Game.strict = true;
   const a = parseArgs(process.argv.slice(2));
-  const policies = a.policy === 'all' ? ['random', 'reckless', 'greedy', 'cautious', 'story'] : [a.policy];
+  const policies = a.policy === 'all' ? ['random', 'reckless', 'greedy', 'cautious', 'story', 'explorer'] : [a.policy];
   let fail = false;
   for (const policy of policies) {
     const results = [];

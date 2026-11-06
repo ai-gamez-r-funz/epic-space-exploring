@@ -14,7 +14,7 @@ for (const [w, h] of SIZES) {
   const browser = await pw.chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const page = await (await browser.newContext({ viewport: { width: w, height: h } })).newPage();
   const errs = []; page.on('pageerror', (e) => errs.push(e.message)); page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text().slice(0, 200)); });
-  await page.addInitScript("localStorage.setItem('halcyon.tutorial', JSON.stringify({ step: 9, enabled: false }))");
+  await page.addInitScript("localStorage.setItem('halcyon.tutorial', JSON.stringify({ step: 9, enabled: false })); localStorage.setItem('halcyon.firstOrders', '1')");
   await page.goto(BASE + '?debug=1&scene=Bridge&quick=1');
   await page.waitForFunction(() => window.__halcyon?.scene === 'Bridge' && !window.__halcyon.busy, null, { timeout: 30000 });
   await page.waitForTimeout(800);
@@ -35,7 +35,7 @@ for (const [w, h] of SIZES) {
     let ok = false; for (let i = 0; i < 20 && !ok; i++) { await page.waitForTimeout(100); ok = await expectFn(); }
     if (!ok) { fails++; console.log(`FAIL [${w}x${h}] ${desc}`); } else console.log(`ok   [${w}x${h}] ${desc}`);
   };
-  const closeTop = async () => { await page.keyboard.press('Escape'); await page.waitForTimeout(500); };
+  const closeTop = async () => { if (await overlays()) { await page.keyboard.press('Escape'); await page.waitForTimeout(500); } };   // Esc only when something is open (Esc with nothing open = Pause)
   const has = (name) => async () => (await overlays()).includes(name); // overlays are matched by title (class names are minified in production)
   const none = async () => (await overlays()) === '';
 

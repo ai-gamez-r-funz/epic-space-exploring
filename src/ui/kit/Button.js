@@ -45,8 +45,13 @@ export class Button extends Container {
     this.on('pointerout', () => this._set('idle'));
     this.on('pointerdown', () => { if (this.enabled) this._set('press'); });
     this.on('pointerup', () => { if (this.enabled) this._set('hover'); });
-    this.on('pointerupoutside', () => this._set('idle'));
-    this.on('pointertap', (e) => { if (!Input.clickAllowed()) return; this._click(e); });
+    this.on('pointerupoutside', () => { this._downAt = 0; this._set('idle'); });
+    // Click = pointertap, with a down->up fallback: Pixi only emits `pointertap` when down and up hit the very same object,
+    // which fails if the layout shifts under the cursor (modal pop-in animation, list refresh, HiDPI rounding). We accept any
+    // press+release that both landed on this button within 900 ms, de-duplicated against pointertap.
+    this.on('pointerdown', () => { this._downAt = performance.now(); });
+    this.on('pointertap', () => { if (!Input.clickAllowed()) return; this._fireClick(); });
+    this.on('pointerup', () => { const n = performance.now(); if (this._downAt && n - this._downAt < 900 && Input.clickAllowed()) setTimeout(() => this._fireClick(), 0); });
     if (o.hotkey) this._unbind = Input.bind(this, o.hotkey, () => this.activate(), () => this.enabled || true);
     this._unfocus = Input.addFocusable(this);
     this._tip = null;
@@ -124,6 +129,9 @@ export class Button extends Container {
     if (this._shake > 0) { this._shake -= dt; this.content.x = Math.sin(this._shake * 70) * 3 * (this._shake / 0.25); if (this._shake <= 0) this.content.x = 0; }
   }
   _setFocus(f) { this._focus = f; this._redraw(); }
+  _fireClick() { // dedupe pointertap + pointerup
+    const n = performance.now(); if (n - (this._lastFire || 0) < 250) return; this._lastFire = n; this._downAt = 0; if (!this.destroyed) this._click();
+  }
   _click() {
     if (!this.enabled) { sfx('deny'); this._shake = 0.25; return; }
     sfx(this.o.sfx);
