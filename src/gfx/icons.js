@@ -43,6 +43,16 @@ const DRAW = {
   close(g, c) { g.moveTo(5.5, 5.5).lineTo(18.5, 18.5); g.moveTo(18.5, 5.5).lineTo(5.5, 18.5); S(g, c, 2.6); },
   settings(g, c) { for (const [y, x] of [[6, 8], [12, 16], [18, 10]]) { g.moveTo(3.5, y).lineTo(20.5, y); S(g, c, 1.8); g.circle(x, y, 2.7).fill(P.panel).stroke({ width: 1.9, color: c }); } },
   sound(g, c) { g.poly([3.5, 9.5, 8, 9.5, 13, 5, 13, 19, 8, 14.5, 3.5, 14.5]).stroke({ width: 1.9, color: c, join: 'round' }); g.moveTo(16, 9).quadraticCurveTo(18.5, 12, 16, 15); S(g, c, 1.8); g.moveTo(18.5, 6).quadraticCurveTo(23, 12, 18.5, 18); S(g, c, 1.8); },
+  undock(g, c) { g.moveTo(10, 7).lineTo(3, 7).lineTo(3, 17).lineTo(10, 17); S(g, c, 2); g.moveTo(14, 7).lineTo(21, 7).lineTo(21, 17).lineTo(14, 17); S(g, c, 2); g.moveTo(9, 12).lineTo(15, 12); S(g, c, 1.8); g.moveTo(12.5, 9.5).lineTo(15.5, 12).lineTo(12.5, 14.5); S(g, c, 1.8); },
+  orbit(g, c) { g.circle(12, 12, 3.4).fill(c); g.ellipse(12, 12, 10, 5).stroke({ width: 1.7, color: c }); g.circle(21.5, 11, 1.6).fill(c); },
+  market(g, c) { g.moveTo(3, 9).lineTo(5, 4).lineTo(19, 4).lineTo(21, 9).closePath(); S(g, c, 1.8); g.moveTo(5, 9).lineTo(5, 20).lineTo(19, 20).lineTo(19, 9); S(g, c, 1.8); g.moveTo(10, 20).lineTo(10, 14).lineTo(14, 14).lineTo(14, 20); S(g, c, 1.6); },
+  repair(g, c) { g.moveTo(5, 19).lineTo(14, 10); S(g, c, 2.6); g.moveTo(14, 10).bezierCurveTo(12, 6, 16, 2.5, 20, 4.5).lineTo(17, 7.5).lineTo(17.5, 9).lineTo(19.5, 9.5).lineTo(21.5, 7); S(g, c, 1.8); },
+  info(g, c) { g.circle(12, 12, 9).stroke({ width: 2, color: c }); g.moveTo(12, 11).lineTo(12, 17); S(g, c, 2.2); g.circle(12, 7.6, 1.2).fill(c); },
+  help(g, c) { g.circle(12, 12, 9).stroke({ width: 2, color: c }); g.moveTo(9.5, 9.5).quadraticCurveTo(12, 6, 14.5, 9.5).quadraticCurveTo(14.5, 12, 12, 13).lineTo(12, 14.5); S(g, c, 1.8); g.circle(12, 17.6, 1).fill(c); },
+  plus(g, c) { g.moveTo(12, 5).lineTo(12, 19); g.moveTo(5, 12).lineTo(19, 12); S(g, c, 2.4); },
+  minus(g, c) { g.moveTo(5, 12).lineTo(19, 12); S(g, c, 2.4); },
+  save(g, c) { g.roundRect(4, 4, 16, 16, 2).stroke({ width: 2, color: c, join: 'round' }); g.rect(8, 4, 8, 5).stroke({ width: 1.6, color: c }); g.rect(8, 13, 8, 7).stroke({ width: 1.6, color: c }); },
+  heart(g, c) { g.moveTo(12, 20).bezierCurveTo(2, 13, 4, 4, 12, 9).bezierCurveTo(20, 4, 22, 13, 12, 20).closePath(); S(g, c, 2); },
   mute(g, c) { g.poly([3.5, 9.5, 8, 9.5, 13, 5, 13, 19, 8, 14.5, 3.5, 14.5]).stroke({ width: 1.9, color: c, join: 'round' }); g.moveTo(16.5, 9).lineTo(22, 15); g.moveTo(22, 9).lineTo(16.5, 15); S(g, c, 2); },
 };
 

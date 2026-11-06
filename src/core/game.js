@@ -562,12 +562,10 @@ export class Game {
         if (evalCondsRaw(this, gate, {}, { noRandom: true }).ok) {
           applyEffects(this, ch.onStart || [{ flag: ch.flag }], {});
           st.flags[ch.flag] = st.flags[ch.flag] || true;
-          if (ch.n > 1) {
-            this.toast(`Chapter ${ch.n}: ${ch.title}`, 'info'); this.log('event', `Chapter ${ch.n}: ${ch.title}`);
-            // the next Lantern shows up on the chart so the arc is always legible
-            const ls = ch.lantern && st.galaxy.systems.find((x) => x.story === ch.lantern);
-            if (ls && ls.status === 'unknown') { ls.status = 'detected'; this.log('discovery', `A new Lantern signal bears toward ${ls.name}.`); this.toast(`A Lantern signal: ${ls.name}`, 'good'); }
-          }
+          if (ch.n > 1) { this.toast(`Chapter ${ch.n}: ${ch.title}`, 'info'); this.log('event', `Chapter ${ch.n}: ${ch.title}`); }
+          // the chapter's Lantern shows up on the chart so the arc is always legible
+          const ls = ch.lantern && st.galaxy.systems.find((x) => x.story === ch.lantern);
+          if (ls && ls.status === 'unknown') { ls.status = 'detected'; if (ch.n > 1) { this.log('discovery', `A new Lantern signal bears toward ${ls.name}.`); this.toast(`A Lantern signal: ${ls.name}`, 'good'); } }
         }
       } else if (!st.flags[`${ch.flag}_done`] && evalCondsRaw(this, ch.completeWhen || [{ flag: 'never_set' }], {}, { noRandom: true }).ok) {
         applyEffects(this, ch.onComplete || [{ flag: `${ch.flag}_done` }], {});

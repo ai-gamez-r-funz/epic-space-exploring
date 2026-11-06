@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { palette, FACTION_COLOURS } from './palette.js';
 import { createStarfield, createNebula, createStar, nebulaTexture, STAR_COL } from './space.js';
-import { createPlanet, bakePlanet } from './planets.js';
+import { createPlanet, bakePlanet, prebakePlanet } from './planets.js';
 import { createPhenomenon } from './phenomena.js';
 import { createShip } from './ships.js';
 import { createPortrait } from './portraits.js';
@@ -62,6 +62,8 @@ export const gfx = {
   factionColours: FACTION_COLOURS,
   starColours: STAR_COL,
   prebake(type, seed, life) { return bakePlanet(type, seed, life); },
+  /** non-blocking (8ms slices) bake; returns a Promise */
+  prebakeAsync(type, seed, life) { return prebakePlanet(type, seed, life); },
   nebulaTexture,
 };
 

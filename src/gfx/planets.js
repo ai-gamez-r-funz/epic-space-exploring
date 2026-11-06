@@ -191,9 +191,9 @@ function makeSurface(type, seed, life) {
       };
     }
     case 'crystal': {
-      const cols = [C(0x6a4ab8), C(0xa8509a), C(0x3f9ec0), C(0x8a78d8), C(0xc8b8f0), C(0x4a5ab8)];
+      const cols = [C(0x5a3f9a), C(0x7a4a9a), C(0x3a7aa8), C(0x6a5ab8), C(0x8a78c8), C(0x4a5aa8)];
       const hs = (a, b, c) => { let h = (a * 374761393 + b * 668265263 + c * 2147483647) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
-      const SC = 3.2;
+      const SC = 2.3;
       return (x, y, z, lat, lon, o) => {
         const px = x * SC + off[0], py = y * SC + off[1], pz = z * SC + off[2];
         const ix = Math.floor(px), iy = Math.floor(py), iz = Math.floor(pz);
@@ -204,12 +204,12 @@ function makeSurface(type, seed, life) {
           const d = (px - fx) ** 2 + (py - fy) ** 2 + (pz - fz) ** 2;
           if (d < f1) { f2 = f1; f1 = d; id = hs(cx + 11, cy + 13, cz + 17); } else if (d < f2) f2 = d;
         }
-        const col = cols[(id * cols.length) | 0], br = 0.6 + 0.5 * hs(Math.floor(id * 977), 5, 9);
+        const col = cols[(id * cols.length) | 0], br = 0.62 + 0.22 * hs(Math.floor(id * 977), 5, 9);
         const gx = N.fbm(x * 3, y * 3, z * 3, 3);
         o.rgb[0] = col[0] * br * (0.8 + gx * 0.4); o.rgb[1] = col[1] * br * (0.8 + gx * 0.4); o.rgb[2] = col[2] * br * (0.8 + gx * 0.4);
-        const edge = sstep(0.1, 0.0, Math.sqrt(f2) - Math.sqrt(f1));
-        mixc(o.rgb, C(0xe8d8ff), edge * 0.4);
-        o.emis = edge * 0.35 + br * 0.08; o.spec = 0.8; o.cloud = 0;
+        const edge = sstep(0.07, 0.0, Math.sqrt(f2) - Math.sqrt(f1));
+        mixc(o.rgb, C(0xb8a8e8), edge * 0.22);
+        o.emis = edge * 0.12 + 0.04; o.spec = 0.7; o.cloud = 0;
         cityLayer(x, y, z, edge < 0.2 && Math.abs(y) < 0.8, o);
       };
     }
@@ -231,34 +231,65 @@ function makeSurface(type, seed, life) {
 }
 
 // ---------------------------------------------------------------- baking + cache
-const W = 512, H = 256;
-const bakeCache = new LRU(40, (v) => { try { v.surf.destroy(true); v.data.destroy(true); } catch (e) { /* noop */ } });
-export function bakePlanet(type, seed, life) {
-  const key = `${type}|${seed}|${life === 'civilized' ? 1 : 0}`;
-  return bakeCache.memo(key, () => {
-    const fn = makeSurface(type, seed, life);
-    const c1 = makeCanvas(W, H), c2 = makeCanvas(W, H);
-    const g1 = c1.getContext('2d'), g2 = c2.getContext('2d');
-    const i1 = g1.createImageData(W, H), i2 = g2.createImageData(W, H);
-    const o = { rgb: [0, 0, 0], cloud: 0, emis: 0, spec: 0 };
-    const jr = rng(77);
-    for (let py = 0; py < H; py++) {
-      const lat = (0.5 - (py + 0.5) / H) * Math.PI, cl = Math.cos(lat), y = Math.sin(lat);
-      for (let px = 0; px < W; px++) {
-        const lon = ((px + 0.5) / W - 0.5) * TAU;
-        const x = cl * Math.sin(lon), z = cl * Math.cos(lon);
-        o.cloud = 0; o.emis = 0; o.spec = 0;
-        fn(x, y, z, lat, lon, o);
-        const k = (py * W + px) * 4, grain = (jr() - 0.5) * 7;
-        i1.data[k] = clamp(o.rgb[0] + grain, 0, 255); i1.data[k + 1] = clamp(o.rgb[1] + grain, 0, 255); i1.data[k + 2] = clamp(o.rgb[2] + grain, 0, 255); i1.data[k + 3] = 255;
-        i2.data[k] = clamp(o.cloud * 255, 0, 255); i2.data[k + 1] = clamp(o.emis * 255, 0, 255); i2.data[k + 2] = clamp(o.spec * 255, 0, 255); i2.data[k + 3] = 255;
+// NOTE: evicted entries are intentionally NOT destroyed: a displayed planet may still be sampling them.
+const W = 384, H = 192;
+const bakeCache = new LRU(96);
+function makeBaker(type, seed, life) {
+  const fn = makeSurface(type, seed, life);
+  const c1 = makeCanvas(W, H), c2 = makeCanvas(W, H);
+  const g1 = c1.getContext('2d'), g2 = c2.getContext('2d');
+  const i1 = g1.createImageData(W, H), i2 = g2.createImageData(W, H);
+  const o = { rgb: [0, 0, 0], cloud: 0, emis: 0, spec: 0 };
+  const jr = rng(77);
+  let py = 0;
+  return {
+    /** bake rows for up to ms milliseconds; returns true when finished */
+    step(ms) {
+      const t0 = performance.now();
+      while (py < H) {
+        const lat = (0.5 - (py + 0.5) / H) * Math.PI, cl = Math.cos(lat), y = Math.sin(lat);
+        for (let px = 0; px < W; px++) {
+          const lon = ((px + 0.5) / W - 0.5) * TAU;
+          const x = cl * Math.sin(lon), z = cl * Math.cos(lon);
+          o.cloud = 0; o.emis = 0; o.spec = 0;
+          fn(x, y, z, lat, lon, o);
+          const k = (py * W + px) * 4, grain = (jr() - 0.5) * 7;
+          i1.data[k] = clamp(o.rgb[0] + grain, 0, 255); i1.data[k + 1] = clamp(o.rgb[1] + grain, 0, 255); i1.data[k + 2] = clamp(o.rgb[2] + grain, 0, 255); i1.data[k + 3] = 255;
+          i2.data[k] = clamp(o.cloud * 255, 0, 255); i2.data[k + 1] = clamp(o.emis * 255, 0, 255); i2.data[k + 2] = clamp(o.spec * 255, 0, 255); i2.data[k + 3] = 255;
+        }
+        py++;
+        if (performance.now() - t0 > ms) break;
       }
-    }
-    g1.putImageData(i1, 0, 0); g2.putImageData(i2, 0, 0);
-    const surf = Texture.from(c1), data = Texture.from(c2);
-    for (const t of [surf, data]) { t.source.style.addressModeU = 'repeat'; t.source.style.addressModeV = 'clamp-to-edge'; t.source.style.scaleMode = 'linear'; }
-    return { surf, data };
+      return py >= H;
+    },
+    finish() {
+      g1.putImageData(i1, 0, 0); g2.putImageData(i2, 0, 0);
+      const surf = Texture.from(c1), data = Texture.from(c2);
+      for (const t of [surf, data]) { t.source.style.addressModeU = 'repeat'; t.source.style.addressModeV = 'clamp-to-edge'; t.source.style.scaleMode = 'linear'; }
+      return { surf, data };
+    },
+  };
+}
+const pending = new Map();
+const keyOf = (type, seed, life) => `${type}|${seed}|${life === 'civilized' ? 1 : 0}`;
+export function bakePlanet(type, seed, life) {
+  const key = keyOf(type, seed, life);
+  return bakeCache.memo(key, () => { const b = makeBaker(type, seed, life); b.step(Infinity); return b.finish(); });
+}
+/** Non-blocking bake in ~8ms slices (call during idle / loading). Returns a Promise. */
+export function prebakePlanet(type, seed, life) {
+  const key = keyOf(type, seed, life);
+  if (bakeCache.get(key)) return Promise.resolve(true);
+  if (pending.has(key)) return pending.get(key);
+  const pr = new Promise((resolve) => {
+    const b = makeBaker(type, seed, life);
+    const tick = () => {
+      if (bakeCache.get(key)) { pending.delete(key); return resolve(true); }
+      if (b.step(8)) { if (!bakeCache.get(key)) bakeCache.set(key, b.finish()); pending.delete(key); resolve(true); } else setTimeout(tick, 0);
+    };
+    setTimeout(tick, 0);
   });
+  pending.set(key, pr); return pr;
 }
 
 // ---------------------------------------------------------------- planet shader
