@@ -17,6 +17,7 @@ export class Intro extends Scene {
     this.paras = S.content.INTRO_TEXT || ['...']; this.i = 0; this.t = 0;
     const tint = new Graphics().rect(0, 0, W, H).fill({ color: 0x05060f, alpha: 0.35 }); v.addChild(tint);
     this.box = new Container(); this.box.x = 240; this.box.y = 150; v.addChild(this.box);
+    this.ship = S.gfx.ship({ kind: 'halcyon', scale: 0.8, thrust: 0.6 }); this.ship.alpha = 0.85; v.addChildAt(this.ship, 2);
     this.counter = new Label({ text: '', preset: 'tiny', color: C.textDim }); this.counter.x = 240; this.counter.y = 640; v.addChild(this.counter);
     this.skipBtn = new Button({ label: 'Skip', w: 120, h: 40, variant: 'ghost', hotkey: 'Escape', onClick: () => this.finish() }); this.skipBtn.x = W - 150; this.skipBtn.y = H - 66; v.addChild(this.skipBtn);
     this.nextBtn = new Button({ label: 'Continue', icon: 'arrow', w: 200, h: 46, variant: 'primary', hotkey: ['Enter', 'Space'], onClick: () => this.next() }); this.nextBtn.x = W - 380; this.nextBtn.y = H - 69; v.addChild(this.nextBtn);
@@ -29,11 +30,11 @@ export class Intro extends Scene {
     const head = new Label({ text: first ? 'STARDATE 2461' : '', preset: 'head', size: 14, color: C.mustard }); this.box.addChild(head);
     this.tw = new Typewriter({ w: 800, text, preset: 'body', size: 28, lineHeight: 42, color: C.cream, cps: 42, tick: true }); this.tw.y = 40; this.box.addChild(this.tw);
     this.box.alpha = 0; Anim.to(this.box, { alpha: 1 }, 400);
-    this.counter.setText(`${this.i + 1} / ${this.paras.length}`);
+    this.counter.setText('●'.repeat(this.i + 1) + '○'.repeat(this.paras.length - this.i - 1) + '   Space or click to continue');
     this.nextBtn.setLabel(this.i === this.paras.length - 1 ? 'Take the helm' : 'Continue');
   }
   next() { if (this.tw && !this.tw.done) { this.tw.skip(); return; } if (this.i >= this.paras.length - 1) return this.finish(); this.i++; this.show(); }
   finish() { if (this._done) return; this._done = true; this.ui.goto('Bridge', {}, { kind: 'wipe', dir: 'left', ms: 500 }); }
   onEscape() { this.finish(); }
-  update(dt) { this.t += dt; this.bg.update(dt, this.t * 10, 0); }
+  update(dt) { this.t += dt; this.bg.update(dt, this.t * 10, 0); this.ship?.update?.(dt); if (this.ship) { this.ship.x = ((this.t * 24) % 1700) - 200; this.ship.y = 600 + Math.sin(this.t * 0.7) * 14; } }
 }

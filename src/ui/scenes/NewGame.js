@@ -35,6 +35,9 @@ export class NewGame extends Scene {
     // difficulty
     lab('Difficulty', 0, 92);
     this.cards = DIFFS.map((d, i) => { const k = new Card({ w: 308, h: 210, title: d.title, body: d.body, icon: d.icon, tone: 'indigo', iconColor: d.color, selected: d.id === this.diff, hotkey: String(i + 1), onClick: () => this.pickDiff(d.id) }); k.x = i * 338; k.y = 118; c.addChild(k); return k; });
+    // starting resources per difficulty
+    const SR = S.content.STARTING_RESOURCES || {};
+    DIFFS.forEach((d, i) => { const r = SR[d.id]; if (!r) return; const t = new Label({ text: `Fuel ${r.fuel ?? '?'}  ·  Supplies ${r.supplies ?? '?'}  ·  ${r.credits ?? '?'} scrip`, preset: 'numSm', size: 12, color: d.color, w: 288, align: 'center' }); t.x = i * 338 + 10; t.y = 118 + 176; c.addChild(t); });
     // seed
     lab('Seed (optional)', 0, 350);
     this.seedIn = new TextInput({ w: 260, placeholder: 'random', numeric: true, maxLength: 9 }); this.seedIn.y = 374; c.addChild(this.seedIn);

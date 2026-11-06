@@ -24,3 +24,9 @@ Marginalia / Heart Vault investigation or landing event (or the m_ch3_ledger onC
 - pendingView() extras: `eventId, tags, summary[] (fx summary strings), outcome ('pass'|'fail'|null), choices[].skill`. In a result phase `resultText` holds the outcome and `text` the node text; show resultText.
 - Lantern chain events (`lantern_N_*`) are only eligible once flag `chapter_N` is set (CHAPTERS survey gates), so the main arc is paced by survey %.
 - Marketplace: `g.market()` also returns `services {fuel,supplies,repair}` unit prices, `cargoUsed`, `cargoMax`; goods have `buy:null` when out of stock.
+
+[UI-2B] Delivered: CrewScreen, MissionLog, Codex, Help, Settings, Pause (src/ui/overlays/*.js + parts2/), tutorial hints (parts2/tutorial.js, localStorage 'halcyon.tutorial'), prefs (parts2/prefs.js, 'halcyon.prefs'), src/ui/responsive.js (letterbox, rotate overlay, fullscreen, touch hit-slop, modal boost, no-zoom/scroll). Notes for others:
+- Prefs.js globally patches Typewriter pacing (text speed) and Anim.to (animations off => instant). `window.__halcyonPrefs.shake` / `.anim` can be read by Bridge/GalaxyMap to skip screen shake / flourishes (not wired in their files).
+- `ui.showOnMap(systemIds, title)` (app.js) opens the Chart, selects/centres the first target and pulses rings; GalaxyMap needs no change (uses its select()/centerOn()/world).
+- KIT request: Button/ScrollList hit areas could be padded to >=40 css px on touch; currently handled generically by responsive.js hit-slop (touch pointers snap to the nearest pointer-cursor object within 20 css px).
+- KIT request: Modal could honour Display.scale itself; currently responsive.js scales Modal containers (pivot at stage centre) via layers.overlay 'childAdded'.
