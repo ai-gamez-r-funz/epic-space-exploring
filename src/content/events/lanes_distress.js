@@ -11,7 +11,8 @@ const k = (label, tag, skill, diff, pt, pfx, ft, ffx, goto) => ({ label, tag, ch
 const CLEAR = [{ clearFlag: 'hl_a' }, { clearFlag: 'hl_b' }, { clearFlag: 'hl_c' }];
 
 // A hot lane: stage nodes a, b, c then payout d. st = [{text, safe, check:[skill,diff, passText, failText, failFx], speak}]
-function hot(id, title, scene, when, st, pay) {
+function hot(id, title, scene, when, st) {
+  const pay = st[3];
   const stage = (i, nextNode) => {
     const s = st[i], flag = ['hl_a', 'hl_b', 'hl_c'][i];
     return {
@@ -53,7 +54,7 @@ export const HOT_LANES = [
       safe: ['Punch through on engines alone', 'Brute force wins eventually. The reactor sulks for an hour afterwards.', [{ fuel: -2 }, { hull: -2 }]] },
     { text: 'Out the far side, the Halcyon coasts into clear space, battered and smelling of ozone. The Meridian relay pings: the bounty notice is live, and a clerk with a rubber stamp awaits your claim.',
       full: ['Claim the full Gauntlet bounty', 'Two clean crossings earn the full stamp, a purse of scrip and a storm glass from the weather office. The crew are insufferable about it all evening.', [{ credits: 120 }, { item: { storm_glass: 1 } }, { morale: 6 }]],
-      some: ['Claim the consolation chit', 'The clerk looks at the damage, sighs, and stamps a small "SURVIVOR\'S ALLOWANCE".', [{ credits: 25 }, { morale: 1 }]] }),
+      some: ['Claim the consolation chit', 'The clerk looks at the damage, sighs, and stamps a small "SURVIVOR\'S ALLOWANCE".', [{ credits: 25 }, { morale: 1 }]] }]),
 
   hot('lane_hot_asteroid_slalom', 'The Rock Slalom', 'asteroids', [{ system: { phenomenon: 'asteroids' } }, { system: { danger: 2 } }], [
     { text: 'Stage one. The lane threads a tumbling field of rocks, each the size of a barn and none of them in the same place twice. A sign on a nav-buoy reads: "SLALOM. TIMES POSTED AT THE DOCK. NO PRIZES, BUT GLORY."',
@@ -67,7 +68,7 @@ export const HOT_LANES = [
       safe: ['Wave it by and hold course', 'It tumbles off the lane harmlessly. Not your problem.', []] },
     { text: 'At the end of the field, the buoy chirps and a small drone hands you a slip: "TIME: RESPECTABLE." A slip beneath it carries the Foreman\'s signature and a purse of scrip, if you have earned it.',
       full: ['Collect the slalom purse', 'The Foreman\'s purse, a crate of spare parts, and a stamp in the guild book. You are, in a minor sense, a local legend.', [{ credits: 90 }, { cargo: { machine_parts: 2 } }, { rep: { drifters: 3 } }, { morale: 5 }]],
-      some: ['Take a polite pat on the back', 'The Foreman offers a handshake and half a sandwich. You accept both.', [{ supplies: 1 }, { rep: { drifters: 1 } }]] }),
+      some: ['Take a polite pat on the back', 'The Foreman offers a handshake and half a sandwich. You accept both.', [{ supplies: 1 }, { rep: { drifters: 1 } }]] }]),
 
   hot('lane_hot_rift_run', 'The Rift Run', 'rift', [{ system: { phenomenon: 'rift' } }, { system: { danger: 2 } }], [
     { text: 'Stage one. A first crease of the rift lies across the lane. Stars double on either side of the fold and the helm reports that left is, for the moment, also right. It is a very bad moment to be indecisive.',
@@ -81,7 +82,7 @@ export const HOT_LANES = [
       safe: ['Listen silently until it passes', 'The chord rises, falls, and fades. The crew stand quiet on the bridge.', [{ morale: 2 }]] },
     { text: 'Clear of the rift, the stars are singular once more. The Meridian relay logs the crossing and a clerk reads out the survey bounty with the faintest flutter of excitement. "No one has run it clean before."',
       full: ['Claim the Rift Run bounty', 'A purse, a plotted lane and a chime of rift-glass sent by the Archive in thanks. The helm\'s name goes on the plaque.', [{ credits: 100 }, { item: { rift_chime: 1 } }, { reveal: { radius: 2 } }, { morale: 6 }]],
-      some: ['Take the courtesy stamp', 'The clerk marks a star next to your name and wishes you a restful week.', [{ credits: 20 }, { morale: 2 }]] }),
+      some: ['Take the courtesy stamp', 'The clerk marks a star next to your name and wishes you a restful week.', [{ credits: 20 }, { morale: 2 }]] }]),
 
   hot('lane_hot_nebula_brownout', 'The Nebula Brownout', 'nebula', [{ system: { phenomenon: 'nebula' } }, { system: { danger: 2 } }], [
     { text: 'Stage one. The nebula thickens until the sensors give up and the running lights shine back at you from the glass. "Brownout," says the helm. "We are flying by memory, Captain, and mine is poor."',
@@ -95,7 +96,7 @@ export const HOT_LANES = [
       safe: ['Press on and hope', 'The crew grit their teeth and suffer through. Not a bad crossing, just a bad few hours.', [{ morale: -2 }]] },
     { text: 'At the clear edge of the Veil the sensors blink back on, one by one. The Society\'s Veil Pilots\' Office has left a standing bounty for clean nebula crossings and a pilot with a clipboard is waving a pen.',
       full: ['Claim the pilots\' bounty', 'A purse, a stamp, and a hand-lit lantern from the fog-wardens that glows with a soft green light.', [{ credits: 100 }, { item: { kelp_lantern: 1 } }, { rep: { vesperine: 2 } }, { morale: 5 }]],
-      some: ['Take the mug of tea and the thanks', 'You are given tea and a pat on the shoulder. A good mug, as it happens.', [{ credits: 20 }, { supplies: 1 }]] }),
+      some: ['Take the mug of tea and the thanks', 'You are given tea and a pat on the shoulder. A good mug, as it happens.', [{ credits: 20 }, { supplies: 1 }]] }]),
 ];
 
 // ---------------------------------------------------------------- DISTRESS VARIANTS (ctx 'distress')
