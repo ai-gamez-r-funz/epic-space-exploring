@@ -3,9 +3,9 @@ import { C, IDX, SKILLS } from './content.js';
 
 /** Difficulty tuning table (single source of truth). */
 export const DIFF = {
-  cozy:     { fuel: 0.85, upkeep: 0.7,  damage: 0.5,  odds: 0.07,  reward: 1.2,  price: 0.9,  deadline: 1.6,  hazard: 0.6,  tow: 0.6,  floors: true },
-  standard: { fuel: 1.0,  upkeep: 1.0,  damage: 1.0,  odds: 0,     reward: 1.0,  price: 1.0,  deadline: 1.0,  hazard: 1.0,  tow: 1.0,  floors: false },
-  rigorous: { fuel: 1.15, upkeep: 1.2,  damage: 1.3,  odds: -0.05, reward: 0.9,  price: 1.08, deadline: 0.85, hazard: 1.3,  tow: 1.3,  floors: false },
+  cozy:     { fuel: 0.85, upkeep: 0.75, damage: 0.5,  odds: 0.07,  reward: 1.2,  price: 0.95, deadline: 1.6,  hazard: 0.6,  tow: 0.6,  floors: true },
+  standard: { fuel: 1.1,  upkeep: 1.15, damage: 1.2,  odds: 0,     reward: 1.0,  price: 1.1,  deadline: 1.0,  hazard: 1.25, tow: 1.0,  floors: false },
+  rigorous: { fuel: 1.3,  upkeep: 1.35, damage: 1.6,  odds: -0.07, reward: 0.85, price: 1.2,  deadline: 0.8,  hazard: 1.7,  tow: 1.4,  floors: false },
 };
 export const diffOf = (state) => DIFF[state.difficulty] || DIFF.standard;
 

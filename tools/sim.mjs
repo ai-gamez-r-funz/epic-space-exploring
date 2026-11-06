@@ -93,7 +93,7 @@ function manage(g, policy, mem, rnd) {
     }
   }
   if (svc('repair')) {
-    const frac = careful ? 0.8 : reckless ? 0.3 : 0.6;
+    const frac = careful ? 0.8 : reckless ? 0.15 : 0.6;
     if (st.ship.hull < st.ship.hullMax * frac) g.repair('max');
     if (st.ship.fuel < st.ship.fuelMax * (careful ? 0.9 : reckless ? 0.45 : 0.7)) g.refuel('max');
     if (st.ship.supplies < st.ship.suppliesMax * (careful ? 0.8 : reckless ? 0.35 : 0.6)) g.restock('max');
@@ -196,7 +196,7 @@ function actCareful(g, policy, mem, rnd) {
   }
   if (sys.station) { manage(g, policy, mem, rnd); if (st.pending || st.phase === 'ended') return; }
   // social time: chat with the crew now and then, rest occasionally (keeps morale up, exercises idle/crew events)
-  if (!st.pending && st.docked && (st.day - (mem.lastChat || 0)) > 9) {
+  if (policy !== 'reckless' && !st.pending && st.docked && (st.day - (mem.lastChat || 0)) > 9) {
     mem.lastChat = st.day;
     const c = rnd.pick(st.crew); if (c) g.crewTalk(c.id);
     if (st.pending) return;
