@@ -77,6 +77,11 @@ export class Game {
       stats: { jumps: 0, planetsScanned: 0, systemsCharted: 0, creditsEarned: 0, eventsSeen: 0, missionsDone: 0 },
       ending: null,
     };
+    { // the start crew always has someone who can fly (best piloting >= 2)
+      let best = state.crew[0];
+      for (const c of state.crew) if ((c.skills.piloting || 0) > (best.skills.piloting || 0)) best = c;
+      if (best && (best.skills.piloting || 0) < 2) best.skills.piloting = 2;
+    }
     for (const e of C.CODEX) if (e.unlockedBy === null || e.unlockedBy === undefined) state.codex.push(e.id);
     const g = new Game(state, { autosave: opts.autosave !== false });
     g._enterSystem(galaxy.gate, { first: true });
@@ -180,9 +185,30 @@ export class Game {
     if (!m) return null;
     m.services = this.servicePrices(sysId);
     m.tips = Ship.hasSpecial(this.state, 'market_ear') ? this._marketTips(s, m) : [];
+    m.bestSell = this._bestSell(s, m);
     m.cargoUsed = this.cargoUsed();
     m.cargoMax = this.state.ship.cargoMax;
     return m;
+  }
+  /** Top-3 known destinations (visited trade stations) per held/buyable good: [{goodId, systemId, systemName, price, jumps, pct}] */
+  _bestSell(sys, m) {
+    const st = this.state;
+    const hops = bfs(st.galaxy, sys.id);
+    const dests = st.galaxy.systems.filter((o) => o.id !== sys.id && (o.status === 'visited' || o.status === 'charted') && o.station && o.station.services.includes('trade'));
+    const out = [];
+    for (const gd of m.goods) {
+      if (!gd.held && !gd.buy) continue;
+      const ref = gd.held ? gd.sell : gd.buy;
+      if (!ref) continue;
+      const rows = [];
+      for (const o of dests) {
+        const price = Econ.quoteSell(st, o, gd.id, 1);
+        if (price && price > ref * 1.05) rows.push({ goodId: gd.id, systemId: o.id, systemName: o.name, price, jumps: hops[o.id] ?? null, pct: Math.round((price / ref - 1) * 100) });
+      }
+      rows.sort((a, b) => b.price - a.price);
+      out.push(...rows.slice(0, 3));
+    }
+    return out;
   }
   _marketTips(sys, m) {
     const st = this.state;
@@ -219,9 +245,13 @@ export class Game {
     const aboard = new Set(this.state.crew.map((c) => c.id));
     const pool = C.CREW_POOL.filter((t) => !aboard.has(t.id));
     const picks = pool.filter((t) => hashFloat(this.state.seed, s.id, t.id, win) < 0.4);
-    return picks.slice(0, 5).map((t) => {
+    // a cheap Meridian-trained pilot is always on the Gate station's notice board
+    const pilot = s.id === this.state.galaxy.gate ? pool.find((t) => t.id === 'ensign_fennimore') || pool.filter((t) => t.role === 'piloting').sort((a, b) => a.hireCost - b.hireCost)[0] : null;
+    const list = pilot ? [pilot, ...picks.filter((t) => t.id !== pilot.id)] : picks;
+    return list.slice(0, 5).map((t) => {
+      const free = pilot && t.id === pilot.id;
       let reason = null;
-      if (t.minRep && (this.state.rep[t.minRep.faction] || 0) < t.minRep.n) reason = `Needs standing ${t.minRep.n} with ${factionName(t.minRep.faction)}`;
+      if (!free && t.minRep && (this.state.rep[t.minRep.faction] || 0) < t.minRep.n) reason = `Needs standing ${t.minRep.n} with ${factionName(t.minRep.faction)}`;
       else if (this.state.credits < t.hireCost) reason = `Needs ${t.hireCost} scrip`;
       else if (this.state.crew.length >= MAX_CREW) reason = 'Crew quarters full';
       return { id: t.id, name: t.name, species: t.species, role: t.role, skills: t.skills, trait: t.trait, bio: t.bio, hireCost: t.hireCost, portrait: { species: t.species, seed: t.portraitSeed }, available: !reason, reason };
@@ -441,8 +471,74 @@ export class Game {
     }
     return out;
   }
+  /** Hop/fuel/day estimate to any system along lanes (fog is ignored for the count, `known` says whether the target is on the chart). */
+  routeInfo(toId) {
+    const st = this.state;
+    const target = this.system(toId);
+    if (!target) return null;
+    if (toId === st.pos) return { jumps: 0, fuel: 0, days: 0, known: true, path: [] };
+    const adj = adjacency(st.galaxy);
+    const prev = { [st.pos]: null };
+    const q = [st.pos];
+    while (q.length && !(toId in prev)) { const u = q.shift(); for (const v of adj[u] || []) if (!(v in prev)) { prev[v] = u; q.push(v); } }
+    if (!(toId in prev)) return null;
+    const path = []; for (let c = toId; c !== st.pos; c = prev[c]) path.unshift(c);
+    let fuel = 0; let days = 0; let cur = st.pos;
+    for (const id of path) { const dd = this._dist(cur, id); fuel += this.fuelCostFor(dd); days += this.daysFor(dd); cur = id; }
+    return { jumps: path.length, fuel, days, known: target.status !== 'unknown', path };
+  }
+  /** Markers + legend for the chart: distress beacons, the rival, the current objective and market news. */
+  mapMarkers() {
+    const st = this.state;
+    const markers = [];
+    for (const d of this.distressSignals()) markers.push({ kind: 'distress', systemId: d.systemId, label: `${d.title} - ${d.daysLeft} days left` });
+    const r = this.rivalInfo();
+    if (r && r.systemId) markers.push({ kind: 'rival', systemId: r.systemId, label: `${r.name} (${r.goodName})` });
+    const no = this.nextObjective();
+    if (no && no.systemId) markers.push({ kind: no.kind === 'lantern' ? 'lantern' : 'objective', systemId: no.systemId, label: no.text });
+    for (const n of this.newsFeed()) if (n.kind !== 'glut' || n.daysLeft > 3) markers.push({ kind: 'news', subtype: n.kind, systemId: n.systemId, label: `${n.systemName}: ${n.title}` });
+    const legend = [
+      { kind: 'distress', label: 'Distress beacon', desc: 'A ship needs help before the signal fades.' },
+      { kind: 'rival', label: 'Rival trader', desc: "Captain Tamsin Vell's freighter." },
+      { kind: 'lantern', label: 'Lantern', desc: 'The next Lantern of the main story.' },
+      { kind: 'objective', label: 'Objective', desc: 'Where your current job points.' },
+      { kind: 'news', label: 'Market news', desc: 'Festival, glut or shortage: prices are moving.' },
+    ];
+    return { markers, legend };
+  }
+  /** The ending "Retire the commission" would give right now (conditions only, no location rule). */
+  retirePreview() {
+    const e = this._retireEnding();
+    return e ? { id: e.id, title: e.title, blurb: e.blurb || null } : null;
+  }
+  _retireEnding() {
+    const st = this.state;
+    const sv = Survey.progress(st);
+    let best = null;
+    for (const e of Object.values(C.ENDINGS)) {
+      if (e.trigger !== 'retire') continue;
+      if (!evalCondsRaw(this, e.conditions || [], {}, { noRandom: true }).ok) continue;
+      const rank = (x) => (x.priority || 0) * 100 + (x.conditions || []).length; // ties: the more specific ending wins
+      if (!best || rank(e) > rank(best)) best = e;
+    }
+    return best || (sv.pct >= 75 ? C.ENDINGS.cartographer : C.ENDINGS.wanderer) || null;
+  }
   /** What should the player do next? {kind, text, systemId?, title?} or null. */
   nextObjective() {
+    const o = this._nextObjectiveRaw();
+    if (!o) return o;
+    const st = this.state;
+    if (o.systemId === undefined || o.systemId === null) {
+      // target not on the chart yet: still tease distance for Lantern targets
+      return { ...o, jumps: null, fuel: null, rangeNote: 'Not yet on your chart: explore toward the unknown.' };
+    }
+    const r = this.routeInfo(o.systemId);
+    if (!r) return { ...o, jumps: null, fuel: null, rangeNote: '' };
+    const have = Math.floor(st.ship.fuel);
+    const note = r.jumps === 0 ? 'You are already here.' : `${r.jumps} jump${r.jumps === 1 ? '' : 's'}, about ${r.fuel} fuel and ${r.days} day${r.days === 1 ? '' : 's'} (tank ${have}/${st.ship.fuelMax})${r.fuel > have ? ' - refuel on the way' : ''}`;
+    return { ...o, jumps: r.jumps, fuel: r.fuel, days: r.days, rangeNote: note };
+  }
+  _nextObjectiveRaw() {
     const st = this.state;
     if (st.phase === 'ended') return null;
     const known = (id) => { const s = id && this.system(id); return s && s.status !== 'unknown' ? id : null; };
@@ -699,14 +795,8 @@ export class Game {
     const sv = Survey.progress(st);
     if (opts.anywhere) { if (sv.pct < 50) return { ok: false, reason: 'Survey at least 50% of the Reach first' }; }
     else { const c = this.canRetire(); if (!c.ok) return c; }
-    let best = null;
-    for (const e of Object.values(C.ENDINGS)) {
-      if (e.trigger !== 'retire') continue;
-      if (!evalCondsRaw(this, e.conditions || [], {}, { noRandom: true }).ok) continue;
-      if (!best || (e.priority || 0) > (best.priority || 0)) best = e;
-    }
-    const id = best ? best.id : sv.pct >= 75 ? 'cartographer' : 'wanderer';
-    return this.endGame(id);
+    const e = this._retireEnding();
+    return this.endGame(e ? e.id : sv.pct >= 75 ? 'cartographer' : 'wanderer');
   }
 
   // =================================================================== actions: travel

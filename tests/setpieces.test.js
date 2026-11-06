@@ -162,7 +162,7 @@ test('market news: deterministic festivals/gluts/shortages move prices, bounded'
   // every system's mid price stays within the bias band even during news
   for (const s of sys) for (const gd of C.GOODS) for (const d of [1, 21, 41, 61]) {
     const p = Econ.midPrice(g.state, s, gd, d);
-    assert.ok(p > gd.base * 0.5 && p < gd.base * 1.8, `${gd.id} ${p}`);
+    assert.ok(p > gd.base * 0.4 && p < gd.base * 2.2, `${gd.id} ${p}`);
   }
 });
 

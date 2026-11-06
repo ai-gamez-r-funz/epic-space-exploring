@@ -73,6 +73,9 @@ export const SPECIAL_IDS = [
   'distress_transponder', 'market_ear', 'rival_handshake', 'long_range_hails', 'prize_cartography',
   'field_hospital', 'brittle_array', 'thrifty_galley', 'false_floor', 'ice_scoop',
   'survey_hull', 'ambassadors_hull', 'salvage_boom', 'quiet_running',
+  // --- fix round 2: sidegrade unlock-only specials ---
+  'side_scan', 'grapple_cradle', 'receiving_hall', 'herb_cupboard', 'drafting_alcove', 'tow_hook',
+  'lamp_mast', 'signal_flags', 'chime_array', 'chess_set', 'ledger_locker',
 ];
 
 /** New specials whose behaviour the ENGINE must implement (exact specs in SPECIALS). */
@@ -81,7 +84,11 @@ export const ENGINE_SPECIALS_TODO = [
   'field_hospital', 'brittle_array', 'thrifty_galley', 'false_floor', 'ice_scoop',
 ];
 /** Specials that exist only so events/missions can test {upgrade:id}; no engine behaviour. */
-export const UNLOCK_ONLY_SPECIALS = ['survey_hull', 'ambassadors_hull', 'salvage_boom', 'quiet_running'];
+export const UNLOCK_ONLY_SPECIALS = [
+  'survey_hull', 'ambassadors_hull', 'salvage_boom', 'quiet_running',
+  'side_scan', 'grapple_cradle', 'receiving_hall', 'herb_cupboard', 'drafting_alcove', 'tow_hook',
+  'lamp_mast', 'signal_flags', 'chime_array', 'chess_set', 'ledger_locker',
+];
 
 export const SPECIALS = {
   tea_service: 'Resting and docked days restore 50% more morale; crew mood +1 after each rest.',
@@ -117,6 +124,18 @@ export const SPECIALS = {
   ambassadors_hull: 'Unlocks "ambassador" options in hail and station events (a hull fit for formal receptions).',
   salvage_boom: 'Unlocks "salvage" options in derelict, asteroid and wreck events (grapple arm, cargo cradle).',
   quiet_running: 'Unlocks "quiet approach" options in Vesperine, nebula and rift events (muffled engines).',
+  // fix round 2 sidegrades (all unlock-only: events gate options with {upgrade:id})
+  side_scan: 'Unlocks "side-scan" options at planets, derelicts and rifts (a boom that looks sideways).',
+  grapple_cradle: 'Unlocks "lift it aboard" options with floating cargo, small wrecks and stranded crates.',
+  receiving_hall: 'Unlocks "invite them aboard" options in hail, station and visitor events.',
+  herb_cupboard: 'Unlocks "folk remedy" options in sickness, relief and Drifter events.',
+  drafting_alcove: 'Unlocks "redraw the chart" options in survey, archive and mystery events.',
+  tow_hook: 'Unlocks "take them in tow" options in stranded-ship and distress events.',
+  lamp_mast: 'Unlocks "signal by lamp" options in nebula, ionstorm and silent-hail events.',
+  signal_flags: 'Unlocks "run up the flags" options with Drifters, Archivists and other formal signallers.',
+  chime_array: 'Unlocks "answer in chords" options in Vesperine, aurora and pulsar events.',
+  chess_set: 'Unlocks "a quiet game" options in crew-talk and low-morale events.',
+  ledger_locker: 'Unlocks "show the books" options in trade, toll and customs events.',
 };
 
 /**
@@ -129,6 +148,17 @@ export const TEASERS = {
   ambassadors_hull: 'an ambassador\'s hull fit for formal receptions',
   salvage_boom: 'a salvage boom and cargo cradle',
   quiet_running: 'quiet-running engine mufflers',
+  side_scan: 'a side-scan boom',
+  grapple_cradle: 'a grapple cradle',
+  receiving_hall: 'a proper receiving hall',
+  herb_cupboard: 'a folk-remedy herb cupboard',
+  drafting_alcove: 'a drafting alcove',
+  tow_hook: 'a heavy tow hook',
+  lamp_mast: 'a signal-lamp mast',
+  signal_flags: 'a locker of signal flags',
+  chime_array: 'a chime array',
+  chess_set: 'a ship\'s chess set',
+  ledger_locker: 'a locked ledger locker',
   hospital_hull: 'a hospital-ship hull with a proper ward',
   distress_transponder: 'a distress transponder tuned to the relief bands',
   market_ear: 'a market-ear listening post',
@@ -217,7 +247,7 @@ export const UPGRADES = [
   }),
 
   // ===================================================================== SENSORS
-  U('brass_spyglass', 'Brass Spyglass Array', 'sensors', 1, 140, {
+  U('brass_spyglass', 'Brass Spyglass Array', 'sensors', 1, 150, {
     build: 'explorer',
     desc: 'Polished lenses and a sturdy tripod. Reaches farther than you would think.',
     flavor: 'Yes, it is literally a very large telescope. It works.',
@@ -255,7 +285,7 @@ export const UPGRADES = [
   }),
 
   // ===================================================================== HULL
-  U('riveted_plating', 'Riveted Plating', 'hull', 1, 130, {
+  U('riveted_plating', 'Riveted Plating', 'hull', 1, 150, {
     build: 'daredevil',
     desc: 'Extra plates, a lot of rivets, and the comforting clang of hard work.',
     flavor: 'Each rivet was hammered in by someone who said a small prayer.',
@@ -443,7 +473,7 @@ export const UPGRADES = [
   }),
 
   // ===================================================================== LOUNGE
-  U('cushioned_benches', 'Cushioned Benches', 'lounge', 1, 120, {
+  U('cushioned_benches', 'Cushioned Benches', 'lounge', 1, 150, {
     build: 'caretaker',
     desc: 'Plush seats, soft lamps, and a bowl of toffees.',
     flavor: 'Nobody sits there out of duty. They sit there out of love.',
@@ -686,6 +716,73 @@ export const UPGRADES = [
     desc: 'A printing press that engraves prize-quality charts. Every first scan of a world pays a Meridian bounty.',
     flavor: 'The ink is still wet. So are the bounties.',
     bonus: { skills: { science: 1 } },
+  }),
+  // ===================================================================== FIX ROUND 2: SIDEGRADES (unlock options, small trade-offs)
+  U('side_scan_boom', 'Side-Scan Boom', 'sensors', 1, 230, {
+    build: 'explorer', special: 'side_scan',
+    desc: 'A telescoping boom that peers sideways. Longer sight, a slightly bruised hull from boom-bumping.',
+    flavor: 'It has a little flag on the end. The flag is load-bearing.',
+    bonus: { scanRange: 0.08, hullMax: -3 },
+  }),
+  U('grapple_cradle', 'Grapple Cradle', 'cargo', 1, 260, {
+    build: 'trader', special: 'grapple_cradle',
+    desc: 'A cradle and winch for lifting things aboard. Handy for floating crates; a touch more drag.',
+    flavor: 'Finders keepers is, technically, Society policy.',
+    bonus: { cargoMax: 3, efficiency: 1.02 },
+  }),
+  U('receiving_hall', 'Receiving Hall', 'lounge', 1, 250, {
+    build: 'diplomat', special: 'receiving_hall',
+    desc: 'A small formal hall behind the airlock for welcoming visitors. Costs a cargo crate of space.',
+    flavor: 'There is a hat-stand. Nobody has ever owned a hat.',
+    bonus: { moraleRegen: 0.2, cargoMax: -1 },
+  }),
+  U('herb_cupboard', 'Herb Cupboard', 'lab', 1, 240, {
+    build: 'caretaker', special: 'herb_cupboard',
+    desc: 'Drifter-style dried herbs and tinctures, labelled in three scripts. Eases sickness; eats some pantry space.',
+    flavor: 'Smells of thyme, sage and mild reproach.',
+    bonus: { skills: { medicine: 1 }, suppliesMax: -2 },
+  }),
+  U('drafting_alcove', 'Drafting Alcove', 'lab', 1, 250, {
+    build: 'explorer', special: 'drafting_alcove',
+    desc: 'A tilted table and a rack of felt-tips for redrawing charts mid-voyage. A cosy nook, but cramped.',
+    flavor: 'The ruler has a name. It is Gerald.',
+    bonus: { skills: { science: 1 }, cargoMax: -1 },
+  }),
+  U('tow_hook', 'Heavy Tow Hook', 'engine', 1, 280, {
+    build: 'caretaker', special: 'tow_hook',
+    desc: 'A stout hook and braced keel for towing stranded ships. Adds hull strength; costs a little fuel economy.',
+    flavor: 'Somebody has to pull. It might as well be you.',
+    bonus: { hullMax: 5, efficiency: 1.02 },
+  }),
+  U('lamp_mast', 'Signal-Lamp Mast', 'comms', 1, 240, {
+    build: 'daredevil', special: 'lamp_mast',
+    desc: 'A brass lamp and shutter for signalling when radios fail. Gives pilots a clear way to talk to harbours.',
+    flavor: 'Dot, dot, dash, a polite cough.',
+    bonus: { skills: { piloting: 1 }, hullMax: -2 },
+  }),
+  U('signal_flags', 'Signal-Flag Locker', 'special', 1, 200, {
+    build: 'diplomat', special: 'signal_flags',
+    desc: 'A locker of folded flags, from "Good morning" to "Please accept this soup".',
+    flavor: 'The soup flag is much used.',
+    bonus: { skills: { diplomacy: 1 } },
+  }),
+  U('chime_array', 'Chime Array', 'comms', 2, 520, {
+    build: 'diplomat', special: 'chime_array', requires: ['teletype_relay'],
+    desc: 'A rack of tuned chimes that answers Vesperine harmonics in kind. Shorter reach on the standard bands.',
+    flavor: 'It sounds like a cathedral drinking tea.',
+    bonus: { skills: { diplomacy: 1, science: 1 }, scanRange: -0.05 },
+  }),
+  U('chess_set', "Ship's Chess Set", 'special', 1, 160, {
+    build: 'caretaker', special: 'chess_set',
+    desc: 'A weighted chess set in the lounge. Crew play, argue and make up. Morale ticks up.',
+    flavor: 'Three pieces are salt-cellars. Nobody minds.',
+    bonus: { moraleRegen: 0.3 },
+  }),
+  U('ledger_locker', 'Ledger Locker', 'cargo', 2, 480, {
+    build: 'trader', special: 'ledger_locker', requires: ['folding_crates'],
+    desc: 'A locked locker of freight ledgers: proof of honest dealing for toll-keepers and customs. A little less hold space.',
+    flavor: 'Clerks cry with joy when they see it.',
+    bonus: { buyDiscount: 0.03, cargoMax: 2 },
   }),
 ];
 

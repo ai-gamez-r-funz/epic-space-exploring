@@ -27,7 +27,7 @@ for (const [w, h] of SIZES) {
     if (!hit) return null; const b = hit.getBounds(); const cv = H.canvas.getBoundingClientRect();
     return { x: cv.left + (b.x + b.width / 2) * cv.width / 1280, y: cv.top + (b.y + b.height / 2) * cv.height / 720, enabled: hit.enabled };
   }, label);
-  const overlays = () => page.evaluate(() => window.__halcyon.app.overlays.map((o) => o.constructor.name).join(','));
+  const overlays = () => page.evaluate(() => window.__halcyon.app.overlays.map((o) => (o.title || o.modal?.o?.title || '?').toUpperCase()).join(','));
   const click = async (label, expectFn, desc) => {
     total++; let p = null; for (let i = 0; i < 10 && !p; i++) { p = await where(label); if (!p) await page.waitForTimeout(150); }
     if (!p) { fails++; console.log(`FAIL [${w}x${h}] ${desc}: button "${label}" not found`); return; }
@@ -36,28 +36,28 @@ for (const [w, h] of SIZES) {
     if (!ok) { fails++; console.log(`FAIL [${w}x${h}] ${desc}`); } else console.log(`ok   [${w}x${h}] ${desc}`);
   };
   const closeTop = async () => { await page.keyboard.press('Escape'); await page.waitForTimeout(500); };
-  const has = (name) => async () => (await overlays()).includes(name);
+  const has = (name) => async () => (await overlays()).includes(name); // overlays are matched by title (class names are minified in production)
   const none = async () => (await overlays()) === '';
 
   // 1-12: open/close Crew six times via command button + the modal close icon (key Esc closes between rounds as a reset)
-  for (let i = 0; i < 6; i++) { await click('Crew', has('CrewScreen'), `Crew command #${i + 1}`); await closeTop(); await page.waitForTimeout(200); }
+  for (let i = 0; i < 6; i++) { await click('Crew', has('CREW'), `Crew command #${i + 1}`); await closeTop(); await page.waitForTimeout(200); }
   // Ship / Log command buttons
-  await click('Ship', has('Shipyard'), 'Ship command'); await closeTop();
-  await click('Log', has('MissionLog'), 'Log command'); await closeTop();
+  await click('Ship', has('SHIP'), 'Ship command'); await closeTop();
+  await click('Log', has('LOG'), 'Log command'); await closeTop();
   // Pause -> Settings -> Done (x3)
   for (let i = 0; i < 3; i++) {
     await page.keyboard.press('Escape'); await page.waitForTimeout(500);
-    await click('Settings', has('Settings'), `Pause > Settings #${i + 1}`);
+    await click('Settings', has('SETTINGS'), `Pause > Settings #${i + 1}`);
     await click('Done', none, `Settings > Done #${i + 1}`);
   }
   // Settings > Retire confirm dialog (button is disabled below 50% survey; click still must register -> no crash; we just try the Keep-sailing path)
   await page.keyboard.press('Escape'); await page.waitForTimeout(500);
-  await click('Settings', has('Settings'), 'Pause > Settings (for retire)');
+  await click('Settings', has('SETTINGS'), 'Pause > Settings (for retire)');
   const r = await where('Retire the commission');
   if (r && r.enabled) { await click('Retire the commission', async () => page.evaluate(() => !!document.querySelector('canvas')), 'Retire click'); await click('Keep sailing', async () => true, 'Retire confirm: keep sailing'); }
   await closeTop(); await closeTop();
   // Crew > Hire tab
-  await click('Crew', has('CrewScreen'), 'Crew command (for tabs)');
+  await click('Crew', has('CREW'), 'Crew command (for tabs)');
   await click('Hire', async () => page.evaluate(() => { const H = window.__halcyon.app; let f = null; const walk = (o) => { if (f || !o || o.destroyed) return; if (o.o?.label === 'Hire') f = o; for (const c of o.children || []) walk(c); }; walk(H.layers.overlay); return !!f && (f.selected || f.o.variant === 'brass'); }), 'Crew > Hire tab');
   await closeTop();
   // Map: open via command, select a neighbour by clicking its node, plan jump button visible

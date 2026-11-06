@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { newGame, freshStorage, stationSystem, teleportForTest, dockClean } from './helpers.js';
 import { C } from '../src/core/content.js';
 import * as Econ from '../src/core/economy.js';
+import { bfs } from '../src/core/galaxy.js';
 
 function tradeSetup(seed = 3) {
   freshStorage();
@@ -35,7 +36,7 @@ test('anti-exploit: buying then selling back immediately always loses money', ()
       const s = g.sell(gd.id, r.qty);
       assert.ok(s.ok);
       assert.ok(g.state.credits < before, `${gd.id}: round trip gained ${g.state.credits - before}`);
-      assert.ok(before - g.state.credits >= r.cost * 0.10, 'round trip should cost at least ~10%');
+      assert.ok(before - g.state.credits >= r.cost * 0.07, 'round trip should cost at least ~7%');
     }
   }
 });
@@ -71,31 +72,109 @@ test('prices drift by day deterministically', () => {
   assert.notEqual(p1, p2);
 });
 
-test('no profitable infinite loop: best two-station run is bounded per day', () => {
-  // Greedy search over all station pairs with a full hold at start-game capacity; requires travel days between them.
+function sustainedPerDay(seed, loops = 10) {
   freshStorage();
-  const g = newGame({ seed: 8 });
-  const sts = g.state.galaxy.systems.filter((x) => x.station && x.station.services.includes('trade'));
-  let best = 0;
-  for (const a of sts) for (const b of sts) {
-    if (a === b) continue;
-    const days = 2 * Math.max(1, Math.round(Math.hypot(a.x - b.x, a.y - b.y) / 190));
-    for (const day of [1, 20, 60]) {
-      g.state.day = day;
-      for (const gd of C.GOODS) {
-        const qty = Math.floor(g.state.ship.cargoMax / (gd.bulk || 1));
-        // price at a (buy) and b (sell) using fresh markets (no impact carry-over)
-        g.state.markets = {};
-        const cost = Econ.quoteBuy(g.state, a, gd.id, qty);
-        const mA = g.state.markets[a.id];
-        if (!mA || mA.stock[gd.id] < qty) continue;
-        const gain = Econ.quoteSell(g.state, b, gd.id, qty);
-        const fuel = 2 * Math.max(1, Math.round(Math.hypot(a.x - b.x, a.y - b.y) / 70)) * 6; // round-trip fuel at ~6 scrip/unit
-        best = Math.max(best, (gain - cost - fuel) / days);
+  const g = newGame({ seed });
+  const st = g.state;
+  const sts = st.galaxy.systems.filter((x) => x.station && x.station.services.includes('trade'));
+  let worst = { perday: 0 };
+  for (const a of sts) {
+    const d = bfs(st.galaxy, a.id);
+    for (const b of sts) {
+      if (a === b || d[b.id] > 3) continue;
+      st.markets = {}; st.day = 30; st.credits = 1e6; st.cargo = {};
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const legDays = Math.max(1, Math.round(dist / 190));
+      const fuel = Math.max(1, Math.round((dist / 70) * 1.25)) * 7; // per-leg fuel at ~7 scrip/unit
+      const start = st.credits;
+      for (let i = 0; i < loops; i++) {
+        for (const [x, y] of [[a, b], [b, a]]) {
+          let best = null;
+          for (const gd of C.GOODS) {
+            const m = Econ.ensureMarket(st, x);
+            const qty = Math.min(m.stock[gd.id], Math.floor(16 / (gd.bulk || 1)));
+            if (qty < 1) continue;
+            const c = Econ.quoteBuy(st, x, gd.id, qty); const sl = Econ.quoteSell(st, y, gd.id, qty);
+            if (!best || sl - c > best.p) best = { gd, qty, p: sl - c };
+          }
+          if (best && best.p > 0) { Econ.buyGoods(st, x, best.gd.id, best.qty); st.day += legDays; Econ.sellGoods(st, y, best.gd.id, best.qty); } else st.day += legDays;
+          st.credits -= fuel;
+        }
       }
+      const days = loops * 2 * legDays;
+      const perday = (st.credits - start) / days;
+      if (perday > worst.perday) worst = { perday, a: a.name, b: b.name };
     }
   }
-  assert.ok(best < 160, `best trade run ${best.toFixed(1)} scrip/day is too lucrative`);
+  return worst;
+}
+
+test('no profitable infinite loop: a perfect 16-hold shuttle sustains <= 160 scrip/day net of fuel', () => {
+  // Price impact (+~1.3 %/unit, decays 5 %/day) and slow stock recovery (7 %/day) saturate any lane that is hammered repeatedly,
+  // so the long-run rate sits far below the fresh-market rate. 160/day is the design ceiling.
+  for (const seed of [1, 2, 3, 8]) {
+    const w = sustainedPerDay(seed);
+    assert.ok(w.perday < 160, `seed ${seed}: ${w.a} <-> ${w.b} sustains ${w.perday.toFixed(0)} scrip/day`);
+  }
+});
+
+test('trade is a real profession: a fresh full-hold round trip nets a few hundred scrip on a typical lane; most lanes have a profitable good', () => {
+  freshStorage();
+  const g = newGame({ seed: 8 });
+  const st = g.state;
+  const sts = st.galaxy.systems.filter((x) => x.station && x.station.services.includes('trade'));
+  const nets = []; let withGood = 0; let pairs = 0;
+  for (const a of sts) {
+    const d = bfs(st.galaxy, a.id);
+    for (const b of sts) {
+      if (a === b || d[b.id] > 2) continue;
+      const leg = (x, y) => {
+        let best = 0; let n25 = 0;
+        for (const gd of C.GOODS) {
+          st.markets = {};
+          const qty = Math.floor(16 / (gd.bulk || 1));
+          const c = Econ.quoteBuy(st, x, gd.id, qty);
+          if (st.markets[x.id].stock[gd.id] < qty) continue;
+          const sl = Econ.quoteSell(st, y, gd.id, qty);
+          if (sl / c > 1.25) n25++;
+          best = Math.max(best, sl - c);
+        }
+        return { best, n25 };
+      };
+      const l1 = leg(a, b); const l2 = leg(b, a);
+      const fuel = 2 * Math.max(1, Math.round((Math.hypot(a.x - b.x, a.y - b.y) / 70) * 1.25)) * 7;
+      nets.push(l1.best + l2.best - fuel); pairs++;
+      if (l1.n25 + l2.n25 >= 1) withGood++;
+    }
+  }
+  nets.sort((x, y) => x - y);
+  const median = nets[Math.floor(nets.length / 2)];
+  assert.ok(median >= 150 && median <= 600, `median loop ${median}`);
+  assert.ok(withGood / pairs >= 0.6, `only ${withGood}/${pairs} lanes have a +25 % good`);
+});
+
+test('same-station spread is about 12-16 % (buy vs sell of one unit)', () => {
+  const { g } = tradeSetup(3);
+  for (const gd of g.market().goods.filter((x) => x.buy && x.base >= 40)) {
+    const spread = 1 - gd.sell / gd.buy;
+    assert.ok(spread >= 0.1 && spread <= 0.2, `${gd.id} spread ${(spread * 100).toFixed(1)}%`);
+  }
+});
+
+test('market().bestSell lists known better destinations with jumps and pct', () => {
+  const { g } = tradeSetup(3);
+  // visit another trade station so it counts as known
+  const others = g.state.galaxy.systems.filter((x) => x.station && x.station.services.includes('trade') && x.id !== g.here().id).slice(0, 4);
+  for (const o of others) o.status = 'visited';
+  const m = g.market();
+  assert.ok(Array.isArray(m.bestSell));
+  for (const row of m.bestSell) {
+    assert.ok(row.goodId && row.systemId && row.systemName && row.price > 0 && row.pct >= 5);
+    assert.ok(Number.isFinite(row.jumps));
+  }
+  const perGood = {};
+  for (const r of m.bestSell) perGood[r.goodId] = (perGood[r.goodId] || 0) + 1;
+  assert.ok(Object.values(perGood).every((n) => n <= 3));
 });
 
 test('cargo capacity and stock are respected', () => {

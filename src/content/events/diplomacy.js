@@ -907,7 +907,7 @@ export default [
     title: 'The Other Shore Answers',
     tags: ['wonder', 'diplomacy', 'mystery'],
     ctx: 'hail',
-    weight: 45,
+    weight: 80,
     when: [{ system: { faction: 'vesperine' } }, { flag: 'choir_message' }, { day: [8, 999] }],
     cooldown: 10,
     art: { scene: 'aurora', species: 'vesperine', palette: 'cool' },
