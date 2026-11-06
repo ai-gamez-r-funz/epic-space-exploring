@@ -252,7 +252,7 @@ export function createStar({ type = 'yellow', radius = 40 } = {}) {
   if (type === 'neutron') {
     const jets = [];
     for (const dir of [-1, 1]) {
-      const j = new Sprite(streakTex(0xcfe6ff, 1, 1.1)); j.anchor.set(0, 0.5); j.rotation = dir * Math.PI / 2; j.width = radius * 3.6; j.height = radius * 0.7; j.blendMode = 'add'; jets.push(j);
+      const j = new Sprite(streakTex(0xcfe6ff, 1, 1.1)); j.anchor.set(0, 0.5); j.rotation = dir * Math.PI / 2; j.width = radius * 3.0; j.height = radius * 1.3; j.blendMode = 'add'; jets.push(j);
     }
     const holder = new Container(); holder.addChild(...jets); holder.rotation = 0.5;
     const s = singleStar('neutron', radius * 0.32, true);
