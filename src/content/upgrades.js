@@ -76,6 +76,7 @@ export const SPECIAL_IDS = [
   // --- fix round 2: sidegrade unlock-only specials ---
   'side_scan', 'grapple_cradle', 'receiving_hall', 'herb_cupboard', 'drafting_alcove', 'tow_hook',
   'lamp_mast', 'signal_flags', 'chime_array', 'chess_set', 'ledger_locker',
+  'grand_orrery', 'promenade',
 ];
 
 /** New specials whose behaviour the ENGINE must implement (exact specs in SPECIALS). */
@@ -88,6 +89,7 @@ export const UNLOCK_ONLY_SPECIALS = [
   'survey_hull', 'ambassadors_hull', 'salvage_boom', 'quiet_running',
   'side_scan', 'grapple_cradle', 'receiving_hall', 'herb_cupboard', 'drafting_alcove', 'tow_hook',
   'lamp_mast', 'signal_flags', 'chime_array', 'chess_set', 'ledger_locker',
+  'grand_orrery', 'promenade',
 ];
 
 export const SPECIALS = {
@@ -136,6 +138,8 @@ export const SPECIALS = {
   chime_array: 'Unlocks "answer in chords" options in Vesperine, aurora and pulsar events.',
   chess_set: 'Unlocks "a quiet game" options in crew-talk and low-morale events.',
   ledger_locker: 'Unlocks "show the books" options in trade, toll and customs events.',
+  grand_orrery: 'Unlocks "consult the orrery" options in mystery, Lantern and Archive events.',
+  promenade: 'Unlocks "stroll the promenade" options in crew-talk and festival events.',
 };
 
 /**
@@ -159,6 +163,8 @@ export const TEASERS = {
   chime_array: 'a chime array',
   chess_set: 'a ship\'s chess set',
   ledger_locker: 'a locked ledger locker',
+  grand_orrery: 'a grand orrery',
+  promenade: 'a sunlit promenade deck',
   hospital_hull: 'a hospital-ship hull with a proper ward',
   distress_transponder: 'a distress transponder tuned to the relief bands',
   market_ear: 'a market-ear listening post',
@@ -193,6 +199,8 @@ function U(id, name, slot, tier, cost, o) {
     requires: o.requires || [],
     ...(o.repGate ? { repGate: o.repGate } : {}),
     ...(o.reward ? { reward: true } : {}),
+    ...(o.commission ? { commission: o.commission } : {}),
+    ...(o.masterwork ? { masterwork: true } : {}),
     build: o.build || 'general',
     desc: o.desc,
     flavor: o.flavor,
@@ -784,6 +792,149 @@ export const UPGRADES = [
     flavor: 'Clerks cry with joy when they see it.',
     bonus: { buyDiscount: 0.03, cargoMax: 2 },
   }),
+  // ===================================================================== FIX ROUND 3: COMMISSIONS (scrip sinks that take days)
+  // `commission:{days}` = bespoke work. ENGINE: buyUpgrade() of an item with .commission advances time by `days`
+  // (supplies/morale upkeep as for rest) before the item is installed; the UI should warn "Takes N days".
+  // Without engine support they simply behave as ordinary upgrades.
+  U('bespoke_manifold', 'Bespoke Manifold', 'engine', 2, 900, {
+    build: 'explorer', requires: ['ion_trimmer'], commission: { days: 4 },
+    desc: 'Hand-wound by a master engineer to your ship\'s quirks. Thrifty and nimble; four days on the slip.',
+    flavor: 'Signed, numbered, and slightly smug.',
+    bonus: { efficiency: 0.82, jumpRange: 0.12, skills: { piloting: 1 } },
+  }),
+  U('bespoke_chart_room', 'Bespoke Chart Room', 'sensors', 2, 1000, {
+    build: 'explorer', requires: ['brass_spyglass'], commission: { days: 5 },
+    desc: 'A joined-oak chart room with a built-in sensor trunk. Sees much farther; five days on the slip.',
+    flavor: 'The map table has a tiny drawer for the good pencils.',
+    bonus: { scanRange: 0.3, skills: { science: 1 } },
+  }),
+  U('commissioned_keel', 'Commissioned Keel', 'hull', 2, 1200, {
+    build: 'daredevil', requires: ['riveted_plating'], commission: { days: 6 },
+    desc: 'A new keel-and-rib set, riveted by hand. Tough and self-mending; six days in dock.',
+    flavor: 'The yard-master pats it twice. This is the signature.',
+    bonus: { hullMax: 60, repairPerDay: 1 },
+  }),
+  U('master_joiners_hold', "Master Joiner's Hold", 'cargo', 2, 800, {
+    build: 'trader', requires: ['folding_crates'], commission: { days: 3 },
+    desc: 'A tailor-made hold with sliding bulkheads and a hidden shelf for everything. Three days in dock.',
+    flavor: 'There is always one more drawer.',
+    bonus: { cargoMax: 12 },
+  }),
+  U('hand_tuned_array', 'Hand-Tuned Array', 'comms', 2, 900, {
+    build: 'diplomat', requires: ['teletype_relay'], commission: { days: 4 },
+    desc: 'A comms array tuned by ear, at four in the morning, by a person who cares. Four days in dock.',
+    flavor: 'Even the static sounds polite.',
+    bonus: { skills: { diplomacy: 2 }, buyDiscount: 0.03 },
+  }),
+  U('shipwrights_salon', "Shipwright's Salon", 'lounge', 2, 1100, {
+    build: 'caretaker', requires: ['cushioned_benches'], commission: { days: 5 },
+    desc: 'A fully fitted salon: window seats, piano nook, hanging plants. Five days in dock; the crew will talk about it for years.',
+    flavor: 'The plants have names. The piano has a schedule.',
+    bonus: { moraleRegen: 1.2, suppliesMax: 8 },
+  }),
+  U('heirloom_cabinet', 'Heirloom Cabinet', 'special', 2, 1500, {
+    build: 'caretaker', special: 'chess_set', commission: { days: 6 },
+    desc: 'A carved cabinet of games, books and keepsakes from every port. Six days to build; gives the crew something to fight over politely.',
+    flavor: 'Open on rainy days. There are no rainy days in space. Open anyway.',
+    bonus: { moraleRegen: 0.7, skills: { diplomacy: 1 } },
+  }),
+
+  // ===================================================================== FIX ROUND 3: MASTERWORKS (late-game T3 sinks, 2400-3800)
+  // Tier 3, require the matching T3 chain item installed. `masterwork:true` = late-game badge for the UI.
+  U('meridian_deep_drive', 'Meridian Deep Drive', 'engine', 3, 2600, {
+    build: 'explorer', requires: ['deep_reach_engine'], masterwork: true,
+    desc: 'The drive the Society gives its legends. Astonishingly frugal and far-reaching; the oversized core eats hold space.',
+    flavor: 'It makes a noise like a cathedral deciding to move.',
+    bonus: { efficiency: 0.62, jumpRange: 0.35, fuelMax: 12, cargoMax: -4 },
+  }),
+  U('gilded_counting_vault', 'Gilded Counting-Vault', 'cargo', 3, 2800, {
+    build: 'trader', requires: ['merchant_prince_vault'], masterwork: true,
+    desc: 'A vault of gilt and ledgers. The best prices in the Reach, at the price of thirstier engines under the weight.',
+    flavor: 'Even the doorbell haggles.',
+    bonus: { priceSell: 0.16, buyDiscount: 0.14, cargoMax: 6, efficiency: 1.06 },
+  }),
+  U('nautilus_hull', 'Nautilus Hull', 'hull', 3, 3000, {
+    build: 'caretaker', requires: ['living_hull_lattice'], masterwork: true,
+    desc: 'A grown, spiralled hull that heals in hours and shrugs off weather. It is rather large and rather proud.',
+    flavor: 'It hums when it is happy, which is distressingly often.',
+    bonus: { hullMax: 90, repairPerDay: 3, skills: { engineering: 1 }, efficiency: 1.04 },
+  }),
+  U('vesperine_cathedral_array', 'Cathedral Array', 'comms', 3, 3200, {
+    build: 'diplomat', requires: ['choral_translator_bank'], masterwork: true,
+    desc: 'A choir of crystal reeds taller than the bridge. No conversation is beyond it; the dish itself is rather short-sighted.',
+    flavor: 'The Third Choir sent a note. The note is a chord.',
+    bonus: { skills: { diplomacy: 4 }, scanRange: -0.1 },
+  }),
+  U('concordance_engine', 'Concordance Engine', 'lab', 3, 3400, {
+    build: 'explorer', requires: ['quantum_slide_lab'], masterwork: true,
+    desc: 'An Archive-built reasoning engine the size of a piano. Science at a level the Society can only gasp at; it needs feeding.',
+    flavor: 'It asked politely for a footnote. We gave it three.',
+    bonus: { skills: { science: 4 }, scanRange: 0.1, suppliesMax: -4 },
+  }),
+  U('sunlit_promenade', 'Sunlit Promenade', 'lounge', 3, 2600, {
+    build: 'caretaker', requires: ['orchard_deck'], special: 'promenade', masterwork: true,
+    desc: 'A long glazed promenade with fountains, benches and a bandstand. Nobody has been unhappy here, which the doctor finds suspicious.',
+    flavor: 'Tea is served on the hour, and on request, and sometimes on principle.',
+    bonus: { moraleRegen: 2.2, suppliesMax: 24 },
+  }),
+  U('grand_orrery', 'Grand Orrery', 'special', 3, 2400, {
+    build: 'general', special: 'grand_orrery', masterwork: true,
+    desc: 'A brass orrery that models the Lantern Reach down to the gaps in the chart. All skills a little keener; no single one dominant.',
+    flavor: 'It ticks. It ticks like something that knows.',
+    bonus: { skills: { science: 1, engineering: 1, medicine: 1, diplomacy: 1, piloting: 1 } },
+  }),
 ];
 
 export const UPGRADES_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]));
+
+// ---------------------------------------------------------------------------------------------
+// FIX ROUND 3: SHIPYARD ROTATIONS & REFITS (data for the ENGINE/UI; see docs/REQUESTS.md [WORLD-A] round 3)
+// ---------------------------------------------------------------------------------------------
+// SHIPYARD_ROTATIONS: engine picks entry index = hash(seed, systemId, floor((day-1)/ROTATION_DAYS)) % length.
+//   While active at a shipyard: every id in `discount.ids` costs (1 - discount.pct) (applied after rep discounts),
+//   and ids in `exclusive` may be bought there even if the yard does not normally stock them (still obey requires
+//   and repGate). `title`/`text` go in a banner on the Shipyard panel. `commissionBonus` = commissions there take
+//   that many days LESS (min 1).
+export const ROTATION_DAYS = 12;
+export const SHIPYARD_ROTATIONS = [
+  { id: 'explorers_fortnight', title: "Explorer's Fortnight", text: 'The yard-master has taken down the chart-room dust sheets. Survey fittings are cut-price while the stock lasts.',
+    discount: { pct: 0.2, ids: ['brass_spyglass', 'sweep_array', 'phase_sniffer', 'spectral_comb', 'field_lab_bench', 'drafting_alcove', 'side_scan_boom', 'ice_scoop', 'solar_sails'] }, exclusive: ['survey_hull', 'bespoke_chart_room'] },
+  { id: 'haulers_special', title: "Hauler's Special", text: 'A freight clan left a pallet of cargo rigging behind. Everything for the hold is marked down.',
+    discount: { pct: 0.2, ids: ['folding_crates', 'modular_bay', 'grand_hold', 'cold_locker', 'cargo_net', 'ledger_locker', 'grapple_cradle'] }, exclusive: ['hauler_spine', 'master_joiners_hold'] },
+  { id: 'salon_season', title: 'Salon Season', text: 'The yard is clearing its velvet and brass. Lounges and little luxuries go for a song.',
+    discount: { pct: 0.25, ids: ['cushioned_benches', 'brass_and_velvet_lounge', 'galley_garden', 'hydroponic_galley', 'tea_service', 'chess_set', 'receiving_hall'] }, exclusive: ['shipwrights_salon', 'heirloom_cabinet'] },
+  { id: 'hull_week', title: 'Hull Week', text: 'Riveters from three habitats are in town. Plating, seams and frames are half-price bonhomie.',
+    discount: { pct: 0.2, ids: ['riveted_plating', 'dust_shield_lattice', 'self_sealing_seams', 'tinker_bay_plating', 'tow_hook'] }, exclusive: ['salvage_boom_hull', 'commissioned_keel'] },
+  { id: 'envoys_open_house', title: "Envoys' Open House", text: 'The embassy wing is hosting a gala; the comms bench is open to all, with ribbons.',
+    discount: { pct: 0.2, ids: ['teletype_relay', 'wideband_array', 'gossip_switchboard', 'lamp_mast', 'signal_flags', 'diplomatic_pouch', 'translator_parrot'] }, exclusive: ['ambassadors_hull', 'hand_tuned_array'] },
+  { id: 'masters_showcase', title: "Masters' Showcase", text: 'The old masters are in. The best work in the Reach, on the bench, at a discount nobody believes.',
+    discount: { pct: 0.12, ids: ['meridian_deep_drive', 'gilded_counting_vault', 'nautilus_hull', 'vesperine_cathedral_array', 'concordance_engine', 'sunlit_promenade', 'grand_orrery'] }, exclusive: [], commissionBonus: 1 },
+];
+
+// REFITS: crew-quarters, lounge and wellness spending. Bought at any station with services including 'shipyard' or
+// 'trade' (see `where`), repeatable unless `once`. ENGINE: g.buyRefit(id) -> spend `cost`, pass `days` (as rest), apply
+// `fx` (existing effect grammar) and, for `once` refits, record id in state.refits (array) and add `bonus` (same keys as
+// upgrade bonus: moraleRegen, suppliesMax, ...) to derive() as a permanent extra; set flag `refit_<id>`.
+export const REFITS = [
+  { id: 'quarters_repaint', name: 'Repaint the Crew Quarters', cost: 220, days: 1, once: true, where: ['trade', 'shipyard', 'outpost'],
+    desc: 'Cheerful teal, brass numbering, and a new rug in the mess.', flavor: 'The fresh paint smells of optimism and solvent.',
+    fx: [{ morale: 12 }, { mood: { all: 8 } }], bonus: { moraleRegen: 0.15 } },
+  { id: 'private_bunks', name: 'Fit Private Bunks', cost: 650, days: 3, once: true, where: ['shipyard'],
+    desc: 'Curtained bunks with reading lamps. Sleep gets better and tempers get shorter in a good way.', flavor: 'A door that closes! Revolution!',
+    fx: [{ mood: { all: 15 } }], bonus: { moraleRegen: 0.4 } },
+  { id: 'galley_range', name: 'Install a Proper Galley Range', cost: 520, days: 2, once: true, where: ['shipyard', 'trade'],
+    desc: 'A real brass range. The cook weeps; the supplies stretch.', flavor: 'It has a name: Gertrude.',
+    fx: [{ morale: 10 }], bonus: { suppliesMax: 6, moraleRegen: 0.2 } },
+  { id: 'observation_nook', name: 'Add an Observation Nook', cost: 900, days: 3, once: true, where: ['shipyard'],
+    desc: 'A glass alcove with cushions and a rail. Wonder events land softer.', flavor: 'Best seat on the ship, as agreed by all, repeatedly.',
+    fx: [{ morale: 8 }, { flag: 'refit_observation_nook' }], bonus: { moraleRegen: 0.35 } },
+  { id: 'hot_baths', name: 'Plumb Hot Baths', cost: 1200, days: 4, once: true, where: ['shipyard'],
+    desc: 'A proper bath-house in the stern. The engineer writes sonnets about the pressure.', flavor: 'Nobody has shouted in weeks.',
+    fx: [{ morale: 15 }, { mood: { all: 12 } }], bonus: { moraleRegen: 0.6 } },
+  { id: 'shore_leave_feast', name: 'Host a Shore-Leave Feast', cost: 300, days: 1, once: false, where: ['trade', 'habitat', 'embassy', 'outpost'],
+    desc: 'A long table, a lot of soup and the whole crew at once. A reliable pick-me-up.', flavor: 'Repeat as needed. The accountant sighs.',
+    fx: [{ morale: 25 }, { mood: { all: 10 } }] },
+  { id: 'wellness_retreat', name: 'Book a Wellness Retreat', cost: 700, days: 3, once: false, where: ['habitat', 'embassy', 'archive'],
+    desc: 'Three days of tea, walking and quiet. Everyone returns mended.', flavor: 'The brochure promised "restful vistas". It delivered.',
+    fx: [{ morale: 40 }, { mood: { all: 20 } }] },
+];

@@ -163,6 +163,28 @@ export const GOODS = [
     desc: 'Archival ink for the Meridian survey pens. Cheap at the Gate, dear anywhere a map is being made for the first time.',
     flavor: 'Smells of fresh ambition and mild solvent.',
   },
+
+  // ---- fix round 3: luxury goods (high-end buyers, and fodder for celebrations) ----------------
+  {
+    id: 'moonlit_champagne', name: 'Moonlit Champagne', category: 'luxury', base: 190, volatility: 0.35, bulk: 2,
+    desc: 'Pale sparkling wine bottled under three moons. Opened at weddings, treaties and the occasional Tuesday.',
+    flavor: 'The bubbles rise in a spiral. The cork is a small hovercraft.',
+  },
+  {
+    id: 'clockwork_music_boxes', name: 'Clockwork Music Boxes', category: 'luxury', base: 105, volatility: 0.3, bulk: 1,
+    desc: 'Brass boxes that play lullabies from long-lost worlds. Wind them gently.',
+    flavor: 'The tune is different every time and always the one you needed.',
+  },
+  {
+    id: 'aurora_chocolates', name: 'Aurora Chocolates', category: 'luxury', base: 62, volatility: 0.4, bulk: 1,
+    desc: 'Box of truffles dusted with edible aurora-glitter. Habitat children hide them; so do admirals.',
+    flavor: 'Calories do not count in the Lantern Reach. This is a rumour.',
+  },
+  {
+    id: 'gilt_astrolabes', name: 'Gilt Astrolabes', category: 'curio', base: 160, volatility: 0.4, bulk: 1,
+    desc: 'Display astrolabes for collectors with taste and no plans to navigate. Gold-leaf rete, ivory-white plate.',
+    flavor: 'Guaranteed to point somewhere impressive.',
+  },
 ];
 
 export const GOODS_BY_ID = Object.fromEntries(GOODS.map((g) => [g.id, g]));
@@ -229,26 +251,32 @@ export const ECONOMY_BIAS = {
   //   archive exports: vellum_sheets, slide_rule_blanks
   //   rim     exports: hand_looms, tamsin_marmalade (+ salvage_lace, rimlight_lanterns)
   'region:gate': {
+    moonlit_champagne: 1.15, clockwork_music_boxes: 1.1, aurora_chocolates: 0.9,
     felt_tip_cartridges: 0.62, ration_bars: 0.7, star_charts: 0.88, teletype_ribbon: 0.85, fuel_cells: 0.85,
     glass_brandy: 1.2, tuning_crystals: 1.16, hand_looms: 1.35, nebula_tea: 1.15, vellum_sheets: 1.16, comet_ice: 1.3, shoal_glass_beads: 1.25, curios: 1.08, rimlight_lanterns: 1.1,
   },
   'region:shoals': {
+    moonlit_champagne: 0.82, aurora_chocolates: 1.15,
     glass_brandy: 0.74, shoal_glass_beads: 0.62, nebula_tea: 1.15, fuel_cells: 1.05, medical_kits: 1.1,
     tuning_crystals: 1.2, vellum_sheets: 1.2, felt_tip_cartridges: 1.4, comet_ice: 1.35, slide_rule_blanks: 1.3, hand_looms: 1.3, tamsin_marmalade: 1.3, rimlight_lanterns: 1.25, aurora_silk: 1.11,
   },
   'region:veil': {
+    clockwork_music_boxes: 1.25, gilt_astrolabes: 1.15,
     nebula_tea: 0.58, tuning_crystals: 0.77, aurora_silk: 0.88,
     glass_brandy: 1.18, vellum_sheets: 1.2, ration_bars: 1.3, machine_parts: 1.25, hand_looms: 1.3, felt_tip_cartridges: 1.3, fuel_cells: 1.2, rimlight_lanterns: 1.15, slide_rule_blanks: 1.2,
   },
   'region:choir': {
+    aurora_chocolates: 1.25, clockwork_music_boxes: 0.85,
     comet_ice: 0.58, aurora_silk: 0.68, lantern_glass: 0.94, curios: 0.94,
     fuel_cells: 1.4, ration_bars: 1.35, glass_brandy: 1.2, hand_looms: 1.35, nebula_tea: 1.2, felt_tip_cartridges: 1.3, medical_kits: 1.3, antiserum_vials: 1.11, tamsin_marmalade: 1.25,
   },
   'region:archive': {
+    gilt_astrolabes: 0.8, moonlit_champagne: 1.2,
     vellum_sheets: 0.74, slide_rule_blanks: 0.62, curios: 0.91,
     tuning_crystals: 1.2, glass_brandy: 1.13, felt_tip_cartridges: 1.4, ration_bars: 1.2, machine_parts: 1.2, comet_ice: 1.3, aurora_silk: 1.11, nebula_tea: 1.15,
   },
   'region:rim': {
+    aurora_chocolates: 0.85, clockwork_music_boxes: 0.9, gilt_astrolabes: 1.2, moonlit_champagne: 1.25,
     hand_looms: 0.58, tamsin_marmalade: 0.62, salvage_lace: 0.7, rimlight_lanterns: 0.7, smuggler_spice: 0.88,
     glass_brandy: 1.2, felt_tip_cartridges: 1.35, fuel_cells: 1.4, medical_kits: 1.35, ration_bars: 1.3, tuning_crystals: 1.13, slide_rule_blanks: 1.3, comet_ice: 1.3, vellum_sheets: 1.13, star_charts: 1.05,
   },

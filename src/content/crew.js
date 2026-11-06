@@ -453,3 +453,25 @@ export function makeCrew(t, idSuffix = '') {
     portrait: { species: t.species, seed: t.portraitSeed },
   };
 }
+
+// ---------------------------------------------------------------------------------------------
+// TRAINING PROGRAMS (scrip sink; fix round 3). ENGINE: g.trainCrew(crewId, programId) at a station whose services
+// include one of `where` (station kinds: trade|outpost|shipyard|embassy|archive|habitat); price = cost * (1 + 0.5 * current
+// skill level); passes `days`; effect: crew.skills[skill] += 1 (max `max`, default 4; max 5 only if minRep met); morale/mood
+// fx via existing grammar. A crew member can train a given skill at most once per 20 days.
+// ---------------------------------------------------------------------------------------------
+export const TRAINING = [
+  { id: 'helm_academy', name: 'Helm Drills at the Academy Berth', skill: 'piloting', cost: 220, days: 2, max: 4, where: ['shipyard', 'embassy', 'trade'],
+    desc: 'Two days of lane drills with a fearsome instructor and a very patient kettle.', fx: [{ mood: { random: 5 } }] },
+  { id: 'guild_night_school', name: 'Slide-rule Guild Night School', skill: 'engineering', cost: 240, days: 2, max: 4, where: ['shipyard', 'outpost', 'habitat'],
+    desc: 'Evening classes in brass, bolts and the poetry of tolerances.', fx: [{ mood: { random: 5 } }] },
+  { id: 'clinic_correspondence', name: 'Pemberton-Okafor Correspondence Course', skill: 'medicine', cost: 240, days: 2, max: 4, where: ['trade', 'embassy', 'habitat'],
+    desc: 'Lectures, case studies and a very supportive biscuit allowance.', fx: [{ mood: { random: 5 } }] },
+  { id: 'protocol_finishing', name: 'Protocol Finishing School', skill: 'diplomacy', cost: 260, days: 2, max: 4, where: ['embassy', 'trade'],
+    desc: 'How to bow in nine ways and apologise in fourteen.', fx: [{ mood: { random: 5 } }] },
+  { id: 'reading_room_residency', name: 'Reading-Room Residency', skill: 'science', cost: 260, days: 3, max: 4, where: ['archive', 'embassy'],
+    desc: 'A quiet desk, a polite librarian and the key to three cabinets.', fx: [{ mood: { random: 5 } }] },
+  { id: 'masterclass', name: 'Masterclass with a Legend', skill: null /* chosen crew specialty */, cost: 700, days: 4, max: 5, where: ['archive', 'embassy', 'shipyard'],
+    minRep: { faction: 'concord', n: 20 },
+    desc: 'A retired legend, a small seminar room and one very long afternoon. Raises the crew member\'s specialty to as high as 5.', fx: [{ morale: 6 }] },
+];

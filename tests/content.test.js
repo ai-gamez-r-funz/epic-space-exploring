@@ -22,7 +22,7 @@ const BONUS_KEYS = new Set(['fuelMax', 'suppliesMax', 'hullMax', 'cargoMax', 'sc
 const SPECIAL_IMPLEMENTED = new Set(['tea_service', 'slide_rule_array', 'translator_parrot', 'solar_sails', 'cargo_net', 'observation_dome', 'emergency_beacon', 'cartographers_table', 'diplomatic_pouch', 'barrel_roll_gyro', 'bulk_contracts', 'rest_cure', 'trade_licence_quillari', 'steady_hand', 'lantern_attunement',
   // WORLD-A fix round 1: engine hooks pending (see docs/REQUESTS.md [WORLD-A]); unlock-only ids need no engine code
   'distress_transponder', 'market_ear', 'rival_handshake', 'long_range_hails', 'prize_cartography', 'field_hospital', 'brittle_array', 'thrifty_galley', 'false_floor', 'ice_scoop', 'survey_hull', 'ambassadors_hull', 'salvage_boom', 'quiet_running',
-  'side_scan', 'grapple_cradle', 'receiving_hall', 'herb_cupboard', 'drafting_alcove', 'tow_hook', 'lamp_mast', 'signal_flags', 'chime_array', 'chess_set', 'ledger_locker']);
+  'side_scan', 'grapple_cradle', 'receiving_hall', 'herb_cupboard', 'drafting_alcove', 'tow_hook', 'lamp_mast', 'signal_flags', 'chime_array', 'chess_set', 'ledger_locker', 'grand_orrery', 'promenade']);
 const TEMPLATE_TOKENS = new Set(['captain', 'ship', 'system', 'planet', 'faction', 'crew:science', 'crew:engineering', 'crew:medicine', 'crew:diplomacy', 'crew:piloting', 'crew:random']);
 
 // combat-flavoured words are banned; benign uses are whitelisted by exact phrase (lower-case)
