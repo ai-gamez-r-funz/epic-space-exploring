@@ -20,9 +20,9 @@ export class CrewScreen extends Overlay {
   build(modal, params = {}) {
     this.sel = params.crewId || this.game.state.crew[0]?.id; this.msgs = {};
     const g = this.game; this.canHire = !!g.here()?.station?.services?.includes('crew');
-    const tabs = [{ id: 'roster', label: 'Roster', icon: 'crew' }, { id: 'cover', label: 'Skill coverage', icon: 'science' }];
+    const tabs = [{ id: 'roster', label: 'Roster', icon: 'crew' }, { id: 'cover', label: 'Coverage', icon: 'science' }];
     if (this.canHire) tabs.push({ id: 'hire', label: 'Hire', icon: 'star' });
-    this.tabs = new Tabs({ w: modal.bodyW, tabs, selected: params.tab || 'roster', cycleKeys: true, tabW: 190, onChange: () => this._sfxTab() });
+    this.tabs = new Tabs({ w: modal.bodyW, tabs, selected: params.tab || 'roster', cycleKeys: true, tabW: 170, onChange: () => this._sfxTab() });
     modal.body.addChild(this.tabs);
     this.paneH = modal.bodyH - 42 - 56;
     this._buildRoster(this.tabs.panes.roster, modal.bodyW); this._buildCover(this.tabs.panes.cover, modal.bodyW);
@@ -59,10 +59,11 @@ export class CrewScreen extends Overlay {
         return k;
       } });
     pane.addChild(this.list);
-    this.dpane = new ScrollPane({ w: bw - lw - 16, h: this.paneH }); this.dpane.x = lw + 16; pane.addChild(this.dpane);
+    this.dpane = new ScrollPane({ w: bw - lw - 16, h: this.paneH - 62 }); this.dpane.x = lw + 16; pane.addChild(this.dpane);
+    this.actions = new Container(); this.actions.x = lw + 16; this.actions.y = this.paneH - 50; pane.addChild(this.actions);
   }
   _detail() {
-    const root = this.dpane.content; root.removeChildren().forEach((c) => c.destroy({ children: true }));
+    const root = this.dpane.content; root.removeChildren().forEach((c) => c.destroy({ children: true })); this.actions.removeChildren().forEach((c) => c.destroy({ children: true }));
     const g = this.game, st = g.state, c = st.crew.find((x) => x.id === this.sel); if (!c) { this.dpane.refresh(); return; }
     const W = this.dpane.w - 14; const bon = g.shipStats?.().bonuses || {};
     const p = crewPortrait(c, 120); root.addChild(p);
@@ -98,17 +99,17 @@ export class CrewScreen extends Overlay {
     y = addText(root, y, tr.desc, { w: W, color: C.cream, size: 15, preset: 'small' });
     if (tr.effect) { const e = chip(tr.effect, { color: C.tealLight, h: 24, size: 12 }); e.y = y; root.addChild(e); y += 32; }
     y += 6; const h3 = heading('About'); h3.y = y; root.addChild(h3); y += 22;
-    y = addText(root, y, c.bio || '—', { w: W, color: C.cream, size: 15, lineHeight: 21, gap: 14 });
+    y = addText(root, y, c.bio || '—', { w: W, color: C.cream, size: 15, lineHeight: 21, gap: 6 });
     // actions
     const cd = this._talkCooldown(c); const pend = !!st.pending;
     const talk = new Button({ label: 'Talk', icon: 'hail', w: 170, h: 46, variant: 'teal', onClick: () => this._talk(c), disabled: pend || cd > 0, disabledReason: pend ? 'Resolve the current event first.' : `${c.name.split(' ')[0]} could use some quiet first (${cd} more day${cd === 1 ? '' : 's'}).`,
       tooltip: { title: 'Have a chat', body: 'A quiet word lifts their mood and sometimes starts a little story. Once every 5 days per person.' } });
-    talk.y = y; root.addChild(talk);
+    this.actions.addChild(talk);
     const small = st.crew.length <= 2;
     const dis = new Button({ label: 'Dismiss', icon: 'close', w: 150, h: 46, variant: 'dark', disabled: small || pend, disabledReason: small ? 'You need at least two crew to run the ship.' : 'Resolve the current event first.', onClick: () => this._dismiss(c),
       tooltip: { title: 'Dismiss from crew', body: 'They leave with warm wishes. The others will miss them a little (-4 mood).' } });
-    dis.x = 184; dis.y = y; root.addChild(dis);
-    const m = this.msgs[c.id]; if (m) { const t = new Label({ text: m.text, preset: 'small', size: 15, color: m.ok ? C.good : C.coral, w: W - 350, lineHeight: 20 }); t.x = 350; t.y = y + 4; root.addChild(t); }
+    dis.x = 184; this.actions.addChild(dis);
+    const m = this.msgs[c.id]; if (m) { const t = new Label({ text: m.text, preset: 'small', size: 15, color: m.ok ? C.good : C.coral, w: W - 350, lineHeight: 20 }); t.x = 350; t.y = 4; this.actions.addChild(t); }
     this.dpane.refresh();
   }
   _talkCooldown(c) { const t = this.game.state.counters?.['talk_' + c.id]; return t ? Math.max(0, 5 - (this.game.state.day - t)) : 0; }
@@ -127,7 +128,7 @@ export class CrewScreen extends Overlay {
   _buildCover(pane, bw) { this.cpane = new ScrollPane({ w: bw, h: this.paneH }); pane.addChild(this.cpane); }
   _cover() {
     const root = this.cpane.content; root.removeChildren().forEach((c) => c.destroy({ children: true }));
-    const g = this.game, st = g.state; const colX = (i) => 270 + i * 158; const bon = g.shipStats?.().bonuses || {};
+    const g = this.game, st = g.state; const colX = (i) => 236 + i * 168; const bon = g.shipStats?.().bonuses || {};
     SKILLS.forEach((sk, i) => {
       const ic = S.gfx.icon(sk, { size: 24, color: C.tealLight }); ic.x = colX(i); ic.y = 0; root.addChild(ic);
       const l = new Label({ text: cap(sk), preset: 'headSm', size: 11, color: C.brassLight, upper: true }); l.x = colX(i) + 32; l.y = 6; root.addChild(l);
@@ -149,7 +150,7 @@ export class CrewScreen extends Overlay {
     root.addChild(new Graphics().rect(0, y + 2, 1040, 2).fill({ color: C.brassDark, alpha: 0.8 })); y += 14;
     const rowOf = (label, fn, col) => { const l = new Label({ text: label, preset: 'headSm', size: 11, color: C.brassLight }); l.x = 8; l.y = y + 6; root.addChild(l); SKILLS.forEach((sk, i) => { const t = fn(sk); if (t instanceof Container) { t.x = colX(i); t.y = y + 4; root.addChild(t); } }); y += 34; };
     rowOf('SHIP BONUS', (sk) => { const b = bon[sk] || 0; return b ? pips(0, b, { max: 0, size: 6, gap: 3 }) : new Label({ text: '—', preset: 'small', color: C.textDim }); });
-    rowOf('BEST CREW', (sk) => { const bc = st.crew.reduce((a, x) => ((x.skills?.[sk] || 0) > (a?.skills?.[sk] || 0) ? x : a), null); return new Label({ text: bc && (bc.skills?.[sk] || 0) > 0 ? bc.name.split(' ')[0] : 'nobody', preset: 'small', size: 14, color: C.cream, w: 140, fit: true, h: 20 }); });
+    rowOf('BEST CREW', (sk) => { const bc = st.crew.reduce((a, x) => ((x.skills?.[sk] || 0) > (a?.skills?.[sk] || 0) ? x : a), null); return new Label({ text: bc && (bc.skills?.[sk] || 0) > 0 ? (bc.name.split(' ').find((w) => !/\.$/.test(w)) || bc.name) : 'nobody', preset: 'small', size: 14, color: C.cream, w: 140, fit: true, h: 20 }); });
     rowOf('TOTAL', (sk) => { let t = 0; try { t = g.skillTotal(sk); } catch (e) { /* */ } return new Label({ text: String(t), preset: 'num', size: 22, color: t >= 5 ? C.good : t >= 3 ? C.mustard : C.coral }); });
     y += 8;
     const note = new Label({ text: 'Total = your best crew member in the skill + the ship\'s upgrade bonus. Checks in events use this total, so a well-rounded crew beats a crowd of specialists. Gaps (red) are good reasons to hire.', preset: 'small', size: 14, color: C.textDim, w: 1000, lineHeight: 19 }); note.y = y; root.addChild(note);

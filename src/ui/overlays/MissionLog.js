@@ -109,9 +109,9 @@ export class MissionLog extends Overlay {
     const pend = !!st.pending;
     if (it.mode === 'active') {
       const targets = [...new Set((m.objectives || []).filter((o) => !o.done && o.target).map((o) => o.target))].filter((id) => g.system(id) && g.system(id).status !== 'unknown');
-      const map = new Button({ label: 'Show on map', icon: 'star', w: 190, h: 46, variant: 'teal', disabled: !targets.length, disabledReason: 'The destination is not on your charts yet.', onClick: () => { this.close(); this.ui.showOnMap?.(targets, m.title); } }); map.y = y; root.addChild(map);
-      const ab = new Button({ label: 'Abandon', icon: 'close', w: 160, h: 46, variant: 'dark', disabled: pend, disabledReason: 'Resolve the current event first.', onClick: () => this._abandon(m) }); ab.x = 204; ab.y = y; root.addChild(ab);
-      if (m.arc === 'main') { const n = new Label({ text: 'Main story missions cannot be lost, only delayed.', preset: 'tiny', size: 12, color: C.textDim }); n.x = 380; n.y = y + 16; root.addChild(n); }
+      const map = new Button({ label: 'Show on map', icon: 'star', w: 230, h: 46, variant: 'teal', disabled: !targets.length, disabledReason: 'The destination is not on your charts yet.', onClick: () => { this.close(); this.ui.showOnMap?.(targets, m.title); } }); map.y = y; root.addChild(map);
+      const ab = new Button({ label: 'Abandon', icon: 'close', w: 160, h: 46, variant: 'dark', disabled: pend, disabledReason: 'Resolve the current event first.', onClick: () => this._abandon(m) }); ab.x = 244; ab.y = y; root.addChild(ab);
+      if (m.arc === 'main') { const n = new Label({ text: 'Main story missions cannot be lost, only delayed.', preset: 'tiny', size: 12, color: C.textDim }); n.x = 420; n.y = y + 16; root.addChild(n); }
     } else if (it.mode === 'board') {
       const full = st.missions.active.length >= 6; const reason = !st.docked ? 'Dock at the station to accept jobs.' : full ? 'Your mission log is full (6). Finish or abandon one.' : pend ? 'Resolve the current event first.' : '';
       const ac = new Button({ label: 'Accept mission', icon: 'mission', w: 220, h: 48, variant: 'primary', disabled: !!reason, disabledReason: reason, onClick: () => this._accept(m) }); ac.y = y; root.addChild(ac);

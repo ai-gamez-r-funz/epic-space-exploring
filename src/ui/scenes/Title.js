@@ -10,6 +10,9 @@ import { Tooltip } from '../kit/Tooltip.js';
 import { S } from '../services.js';
 import { makeBackdrop } from '../widgets/Backdrop.js';
 import { Modal } from '../kit/Modal.js';
+import { slimBar } from '../overlays/parts2/common.js';
+import { slotCard, slotInfo } from '../overlays/parts2/slots.js';
+import { openCredits } from '../overlays/parts2/Credits.js';
 
 function readLegacy() {
   try { const o = JSON.parse(localStorage.getItem('halcyon.legacy') || 'null'); if (o) return { runs: o.runs | 0, best: o.best | 0, bonus: o.bonus | 0 }; } catch (e) { /* */ }
@@ -35,26 +38,32 @@ export class Title extends Scene {
     tb.addChild(l1, l2, line, sub);
     tb.alpha = 0; tb.y += 14; Anim.to(tb, { alpha: 1, y: 90 }, 900, { delay: 200 });
     // menu panel
-    const hasSave = this.ui.hasSave('auto');
-    const mk = (label, icon, variant, fn, hotkey, o = {}) => new Button({ label, icon, variant, w: 320, h: 54, fontSize: 18, onClick: fn, hotkey, ...o });
+    const hasSave = this.ui.hasSave('auto'); const info = hasSave ? slotInfo('auto') : null;
+    const mk = (label, icon, variant, fn, hotkey, o = {}) => new Button({ label, icon, variant, w: 320, h: 48, fontSize: 17, onClick: fn, hotkey, ...o });
     this.btnContinue = mk('Continue', 'jump', 'teal', () => this.cont(), 'c', { disabled: !hasSave, disabledReason: 'No autosave found yet — start a new voyage.' });
+    const anySave = ['1', '2'].some((k) => this.ui.hasSave(k)) || hasSave;
     const btns = [
       mk('New Voyage', 'star', 'primary', () => this.ui.goto('NewGame', {}, { kind: 'wipe', dir: 'left' }), 'n'),
       this.btnContinue,
+      mk('Load game', 'log', 'brass', () => this.loadMenu(), 'l', { disabled: !anySave, disabledReason: 'No saved voyages yet.' }),
       mk('Settings', 'settings', 'brass', () => this.ui.openOverlay('Settings'), 's'),
-      mk('Credits', 'log', 'brass', () => this.credits(), 'r'),
+      mk('How to play', 'codex', 'brass', () => this.ui.openOverlay('Help'), 'h'),
+      mk('Credits', 'crew', 'brass', () => this.credits(), 'r'),
     ];
-    vstack(btns, { gap: 14 });
-    const menu = new Container(); menu.x = 90; menu.y = 330; btns.forEach((b, i) => { menu.addChild(b); b.alpha = 0; b.x = -30; Anim.to(b, { alpha: 1, x: 0 }, 500, { delay: 500 + i * 110 }); }); v.addChild(menu);
-    // legacy panel
+    vstack(btns, { gap: 9 });
+    const menu = new Container(); menu.x = 90; menu.y = 326; btns.forEach((b, i) => { menu.addChild(b); b.alpha = 0; b.x = -30; Anim.to(b, { alpha: 1, x: 0 }, 500, { delay: 500 + i * 90 }); }); v.addChild(menu);
+    if (info?.exists && !info.corrupt) { const sub = new Label({ text: `${info.ship || 'ISV'} · day ${info.day} · ${info.charted ?? 0}/${info.total ?? '?'} charted`, preset: 'tiny', size: 11, color: C.tealLight, w: 250, fit: true, h: 14 }); sub.x = 334; sub.y = this.btnContinue.y + 17; sub.alpha = 0; menu.addChild(sub); Anim.to(sub, { alpha: 0.9 }, 400, { delay: 900 }); this.contSub = sub; }
+    // legacy panel (top right)
     const lg = readLegacy();
+    const lp = new Panel({ w: 300, h: lg.runs > 0 ? 150 : 96, title: 'LEGACY OF THE SOCIETY', tone: 'deep', pad: 16 }); lp.x = W - 330; lp.y = 44; v.addChild(lp);
     if (lg.runs > 0) {
-      const p = new Panel({ w: 300, h: 110, title: 'LEGACY OF THE SOCIETY', tone: 'deep', pad: 16 }); p.x = 90; p.y = 580; v.addChild(p);
-      const t = new Label({ text: `Voyages completed ${lg.runs}\nBest score ${lg.best}\nStarting bonus +${lg.bonus} scrip`, preset: 'small', size: 15, color: C.cream, lineHeight: 20 }); p.content.addChild(t);
-    }
+      const rows = [['Voyages completed', lg.runs], ['Best score', lg.best], ['Starting bonus', `+${lg.bonus} scrip`]];
+      rows.forEach(([k, val], i) => { const kl = new Label({ text: k, preset: 'small', size: 14, color: C.textDim }); kl.y = i * 28; const vl = new Label({ text: String(val), preset: 'num', size: 16, color: i === 2 ? C.mustard : C.cream }); vl.x = 268 - vl.textWidth; vl.y = i * 28 - 1; lp.content.addChild(kl, vl); });
+      const bar = slimBar(268, Math.min(1, lg.bonus / 500), C.mustard, 8); bar.y = 90; lp.content.addChild(bar);
+    } else lp.content.addChild(new Label({ text: 'Finish a voyage and the Society\nremembers you with a head start.', preset: 'small', size: 14, color: C.textDim, lineHeight: 19 }));
+    Tooltip.attach(lp, { title: 'Legacy bonus', body: 'Each completed voyage adds starting scrip to every future one (up to +500).' });
     // footer
     const f = new Label({ text: 'No combat. Ever.  ·  v1.0', preset: 'tiny', color: C.textDim }); f.x = W - f.textWidth - 18; f.y = H - 26; v.addChild(f);
-    const lights = new Lights({ count: 5, r: 4 }); lights.x = 94; lights.y = 648; v.addChild(lights);
     if (!S.real.game || !S.real.gfx) { const m = new Label({ text: `dev mocks: ${['game', 'gfx', 'audio'].filter((k) => !S.real[k]).join(', ')}`, preset: 'tiny', color: C.coral }); m.x = 12; m.y = H - 22; v.addChild(m); }
     this.t = 0;
   }
@@ -62,10 +71,11 @@ export class Title extends Scene {
     const g = this.ui.loadSlot('auto'); if (!g) { this.ui.toast('The autosave could not be loaded.', 'bad'); return; }
     this.ui.goto('Bridge', {}, { kind: 'iris', ms: 500 });
   }
-  credits() {
-    const m = new Modal({ w: 640, h: 440, title: 'CREDITS' });
-    m.body.addChild(new Label({ text: 'HALCYON REACH\nA cozy, no-combat space survey.\n\nBuilt with PixiJS 8 and a great deal of tea.\nFonts: Josefin Sans, Syncopate, Space Mono (SIL OFL).\nAll art and sound are generated procedurally in your browser.\n\nWith thanks to the Meridian Society for Open Skies, who would like you to bring the ship back with the paint intact.', preset: 'body', w: m.bodyW, color: C.cream, lineHeight: 26 }));
-    m.addButtons([{ label: 'Lovely', variant: 'primary', onClick: () => m.close(), hotkey: 'Enter' }]); m.open();
+  credits() { openCredits(this.ui); }
+  loadMenu() {
+    const m = new Modal({ w: 560, h: 450, title: 'LOAD A VOYAGE' }); let y = 0;
+    for (const slot of ['auto', '1', '2']) { const c = slotCard(this.ui, slot, { w: m.bodyW, hasGame: false, onLoad: (sl) => { const g = this.ui.loadSlot(sl); if (!g) { this.ui.toast('That save could not be read.', 'bad'); return; } m.close(); this.ui.goto('Bridge', {}, { kind: 'iris', ms: 500 }); } }); c.y = y; m.body.addChild(c); y += 100; }
+    m.addButtons([{ label: 'Back', variant: 'brass', onClick: () => m.close(), hotkey: 'Enter' }]); m.open();
   }
   update(dt) {
     this.t += dt; this.bg.update(dt, this.t * 14, this.t * 2);

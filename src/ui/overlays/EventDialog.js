@@ -126,7 +126,7 @@ export class EventDialog extends Overlay {
         const cell = new Container(); cell.x = 12 + i * cw; cell.y = 30; this.slot.addChild(cell);
         const hl = new Graphics(); cell.addChild(hl); cell.hl = hl;
         try { const p = S.gfx.portrait({ species: c.portrait?.species || c.species, seed: c.portrait?.seed ?? i, size: 54, mood: c.mood }); live(p); p.x = 3; p.y = 3; cell.addChild(p); } catch (e) { /* */ }
-        const n = new Label({ text: c.name.split(' ')[0], preset: 'tiny', size: 11, color: C.cream, w: cw - 4, fit: true, h: 14, align: 'center' }); n.x = 0; n.y = 62; cell.addChild(n);
+        const n = new Label({ text: c.name.split(' ').slice(-1)[0], preset: 'tiny', size: 11, color: C.cream, w: cw - 4, fit: true, h: 14, align: 'center' }); n.x = 0; n.y = 62; cell.addChild(n);
         cell.crew = c; this.crewIcons[c.id] = cell;
         cell.eventMode = 'static'; Tooltip.attach(cell, { title: c.name, body: `${cap(c.role)} specialist`, rows: [['Mood', Math.round(c.mood) + '%']] });
       });
@@ -260,7 +260,7 @@ export class EventDialog extends Overlay {
   _resolve(index) {
     const g = this.game; const before = snapshot(g); this._resolving = true; let r;
     try { r = g.resolveChoice(index); } catch (e) { r = { ok: false, reason: 'Something went wrong aboard.' }; }
-    this._resolving = false;
+    this._resolving = false; this._updateBars();
     return { r, diff: r && r.ok !== false ? diffChips(g, before, snapshot(g)) : [] };
   }
   _choose(i, ch) {
