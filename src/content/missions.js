@@ -126,7 +126,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'chart', target: { region: 'gate', count: 3 }, text: 'Chart three systems near the Gate (jump, then Scan each planet)' },
     ],
-    reward: { credits: 250, rep: { concord: 6 }, item: { tea_tin: 2 } },
+    reward: { credits: 300, rep: { concord: 6 }, item: { tea_tin: 2 } },
     onComplete: [{ flag: 'first_light_done' }],
     completeText: 'Calloway reads the charts twice, then once more for pleasure. "Splendid. Now, there\'s a lamp."',
   },
@@ -140,7 +140,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'lantern_wick', optional: true, text: 'Travel to Wickhaven, two hops from the Gate' },
       { id: 'o2', type: 'flag', flag: 'lantern_1', text: 'Investigate the beacon and answer the Lantern\'s greeting' },
     ],
-    reward: { credits: 400, rep: { concord: 8 }, item: { lantern_shard: 1 }, codex: 'the_lanterns' },
+    reward: { credits: 480, rep: { concord: 8 }, item: { lantern_shard: 1 }, codex: 'the_lanterns' },
     onComplete: [{ flag: 'chapter_1_done' }],
     completeText: 'The shard in your pocket is warm. The Lantern blinks twice, which you decide to take as a thank-you.',
   },
@@ -154,7 +154,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'lantern_brightwater', optional: true, text: 'Travel to Brightwater Light, beyond Pennywhistle Exchange' },
       { id: 'o2', type: 'flag', flag: 'lantern_2', text: 'Investigate the second Lantern' },
     ],
-    reward: { credits: 500, rep: { quillari: 6, concord: 4 }, item: { lantern_shard: 1 } },
+    reward: { credits: 600, rep: { quillari: 6, concord: 4 }, item: { lantern_shard: 1 } },
     onComplete: [{ flag: 'chapter_2_done' }],
   },
   {
@@ -167,7 +167,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'hollow_archive', docked: true, text: 'Dock at the Central Catalogue (the Hollow Archive)' },
       { id: 'o2', type: 'have', item: 'tea_tin', qty: 1, deliverTo: 'hollow_archive', consume: true, optional: true, text: 'Present a tin of tea with your question (librarians appreciate a gift)' },
     ],
-    reward: { credits: 300, rep: { archivists: 10 }, item: { archive_reader_card: 1 }, codex: 'hollow_archive' },
+    reward: { credits: 360, rep: { archivists: 10 }, item: { archive_reader_card: 1 }, codex: 'hollow_archive' },
     onComplete: [{ flag: 'archive_key' }],
     completeText: 'The card has a due date. The due date is, you notice, in a very long time.',
   },
@@ -181,7 +181,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'lantern_veilglass', optional: true, text: 'Cross the Vesper Veil to Veilglass' },
       { id: 'o2', type: 'flag', flag: 'lantern_3', text: 'Investigate the third Lantern (hum back)' },
     ],
-    reward: { credits: 600, rep: { vesperine: 10 }, item: { lantern_shard: 1 } },
+    reward: { credits: 720, rep: { vesperine: 10 }, item: { lantern_shard: 1 } },
     onComplete: [{ flag: 'chapter_3_lantern' }],
   },
   {
@@ -195,7 +195,7 @@ export const MISSIONS = [
       { id: 'o2', type: 'scan', target: 'archive_heart', what: 'planets', text: 'Scan every world at Marginalia, including the Heart Vault' },
       { id: 'o3', type: 'flag', flag: 'fellowship_known', optional: true, text: 'Read the Fellowship Ledger (any Marginalia event may open it)' },
     ],
-    reward: { credits: 700, rep: { archivists: 12 }, item: { fellowship_token: 1 }, codex: 'open_sky_fellowship' },
+    reward: { credits: 840, rep: { archivists: 12 }, item: { fellowship_token: 1 }, codex: 'open_sky_fellowship' },
     onComplete: [{ flag: 'fellowship_known' }, { flag: 'chapter_3_done' }],
     completeText: 'The Ledger opens at last. The first page says, in a very old hand, "Please make yourself at home."',
   },
@@ -209,7 +209,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'tessitura', optional: true, text: 'Fly to Tessitura, in the Pulsar Choir' },
       { id: 'o2', type: 'flag', flag: 'lantern_4', text: 'Investigate the fourth Lantern and listen to the whole letter' },
     ],
-    reward: { credits: 800, rep: { vesperine: 6, drifters: 6 }, item: { lantern_shard: 1 } },
+    reward: { credits: 960, rep: { vesperine: 6, drifters: 6 }, item: { lantern_shard: 1 } },
     onComplete: [{ flag: 'chapter_4_done' }],
   },
   {
@@ -222,7 +222,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'lantern_taper', optional: true, text: 'Sail to Last Taper on the far Quiet Rim' },
       { id: 'o2', type: 'flag', flag: 'lantern_5', text: 'Investigate the fifth Lantern and answer its question' },
     ],
-    reward: { credits: 1500, rep: { concord: 4, quillari: 4, vesperine: 4, archivists: 4, drifters: 8 }, upgrade: 'lantern_attunement', codex: 'welcome_mat' },
+    reward: { credits: 1800, rep: { concord: 4, quillari: 4, vesperine: 4, archivists: 4, drifters: 8 }, upgrade: 'lantern_attunement', codex: 'welcome_mat' },
     onComplete: [{ flag: 'chapter_5_done' }],
   },
 
@@ -240,7 +240,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'scan', target: { region: 'gate' }, what: 'planets', count: 4, text: 'Scan four planets in the Gate Shallows' },
       { id: 'o2', type: 'goto', target: 'lyra_landing', docked: true, text: 'Return the census to Lyra Landing' },
     ],
-    reward: { credits: 220, rep: { concord: 8 } },
+    reward: { credits: 350, rep: { concord: 8 } },
   },
   {
     id: 'm_concord_2_form_27b', title: 'Form 27-B (Pre-Approved)', kind: 'delivery', arc: 'concord',
@@ -251,7 +251,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'goto', target: 'pennywhistle', docked: true, text: 'Deliver the forms to Pennywhistle Exchange' },
     ],
-    reward: { credits: 360, rep: { concord: 8, quillari: 3 }, item: { concord_charter_seal: 1 } },
+    reward: { credits: 580, rep: { concord: 8, quillari: 3 }, item: { concord_charter_seal: 1 } },
     deadlineDays: 40,
   },
   {
@@ -265,7 +265,7 @@ export const MISSIONS = [
       { id: 'o2', type: 'goto', target: { faction: 'vesperine', station: true }, docked: true, text: 'Collect the Vesperine harmonic' },
       { id: 'o3', type: 'goto', target: 'lyra_landing', docked: true, text: 'Bring the Charter home' },
     ],
-    reward: { credits: 700, rep: { concord: 12 }, upgrade: 'concord_grant_lab', codex: 'charter_open_skies' },
+    reward: { credits: 1120, rep: { concord: 12 }, upgrade: 'concord_grant_lab', codex: 'charter_open_skies' },
   },
   // ---- QUILLARI CLANS ------------------------------------------------------
   {
@@ -277,7 +277,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'vellum_sheets', qty: 3, deliverTo: { faction: 'quillari', station: true }, consume: true, text: 'Deliver 3 vellum-sheets' },
     ],
-    reward: { credits: 200, rep: { quillari: 10 }, item: { quillari_guest_feather: 1 } },
+    reward: { credits: 320, rep: { quillari: 10 }, item: { quillari_guest_feather: 1 } },
   },
   {
     id: 'm_quillari_2_wedding', title: 'Brandy for the Wedding', kind: 'delivery', arc: 'quillari',
@@ -289,7 +289,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'have', good: 'glass_brandy', qty: 6, text: 'Obtain 6 casks of glass brandy' },
       { id: 'o2', type: 'goto', target: { faction: 'quillari', station: 'trade', notHere: true }, docked: true, text: 'Deliver the brandy to the wedding hall' },
     ],
-    reward: { credits: 500, rep: { quillari: 10 }, item: { festival_ribbon: 1 } },
+    reward: { credits: 800, rep: { quillari: 10 }, item: { festival_ribbon: 1 } },
     deadlineDays: 30,
     failFx: [{ rep: { quillari: -3 } }, { morale: -3 }],
   },
@@ -303,7 +303,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'lantern_brightwater', docked: true, text: 'Meet the western clan at Brightwater' },
       { id: 'o2', type: 'have', good: 'ration_bars', qty: 4, deliverTo: 'lantern_brightwater', consume: true, text: 'Bring 4 ration bars for the Soup Accord and broker the peace' },
     ],
-    reward: { credits: 650, rep: { quillari: 12 }, upgrade: 'quillari_trade_licence' },
+    reward: { credits: 1040, rep: { quillari: 12 }, upgrade: 'quillari_trade_licence' },
   },
   // ---- VESPERINE CHOIRS ----------------------------------------------------
   {
@@ -315,7 +315,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'chart', target: { region: 'veil', count: 3 }, text: 'Chart three systems in the Veil, gently' },
     ],
-    reward: { credits: 280, rep: { vesperine: 10 }, item: { vesperine_tuning_fork: 1 } },
+    reward: { credits: 450, rep: { vesperine: 10 }, item: { vesperine_tuning_fork: 1 } },
   },
   {
     id: 'm_vesperine_2_missing_chord', title: 'The Missing Chord', kind: 'fetch', arc: 'vesperine',
@@ -326,7 +326,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'tuning_crystals', qty: 3, deliverTo: 'cantabile', consume: true, text: 'Deliver 3 tuning crystals to Cantabile' },
     ],
-    reward: { credits: 380, rep: { vesperine: 10 } },
+    reward: { credits: 610, rep: { vesperine: 10 } },
     deadlineDays: 45,
   },
   {
@@ -338,7 +338,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', item: 'vesperine_tuning_fork', qty: 1, deliverTo: 'cantabile', text: 'Bring the silver tuning fork to Cantabile and hold the rest at the Grand Harmonic' },
     ],
-    reward: { credits: 600, rep: { vesperine: 12 }, upgrade: 'vesperine_harmonic_resonator', codex: 'grand_harmonic' },
+    reward: { credits: 960, rep: { vesperine: 12 }, upgrade: 'vesperine_harmonic_resonator', codex: 'grand_harmonic' },
   },
   // ---- ARCHIVISTS ----------------------------------------------------------
   {
@@ -351,7 +351,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'scan', target: { planetType: 'desert' }, what: 'planets', count: 1, text: 'Find the lost volume on a desert world' },
       { id: 'o2', type: 'goto', target: { faction: 'archivists', station: true }, docked: true, text: 'Return the volume' },
     ],
-    reward: { credits: 240, rep: { archivists: 10 } },
+    reward: { credits: 380, rep: { archivists: 10 } },
   },
   {
     id: 'm_archivist_2_question_stacks', title: 'A Question for the Stacks', kind: 'investigate', arc: 'archivists',
@@ -363,7 +363,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'scan', target: { phenomenon: 'rift' }, what: 'phenomenon', phenomenon: 'rift', text: 'Investigate a singing rift' },
       { id: 'o2', type: 'goto', target: { faction: 'archivists', station: true }, docked: true, text: 'Present your answer to the Archive' },
     ],
-    reward: { credits: 400, rep: { archivists: 10 }, codex: 'codex_singing_rifts' },
+    reward: { credits: 640, rep: { archivists: 10 }, codex: 'codex_singing_rifts' },
   },
   {
     id: 'm_archivist_3_index', title: 'The Index of Everything Else', kind: 'story', arc: 'archivists',
@@ -375,7 +375,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'chart', target: { region: 'archive', count: 2 }, text: 'Chart two systems in the Archive' },
       { id: 'o2', type: 'goto', target: 'hollow_archive', docked: true, text: 'Return the index to Central Catalogue' },
     ],
-    reward: { credits: 650, rep: { archivists: 12 }, upgrade: 'archive_index_lens', item: { scholars_pin: 1 } },
+    reward: { credits: 1040, rep: { archivists: 12 }, upgrade: 'archive_index_lens', item: { scholars_pin: 1 } },
     onComplete: [{ flag: 'archive_scholar' }],
   },
   // ---- DRIFTER FLEETS ------------------------------------------------------
@@ -389,7 +389,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'scan', target: { nearest: 'unvisited' }, what: 'planets', count: 1, text: 'Have something happen on a new world' },
       { id: 'o2', type: 'goto', target: 'long_table', docked: true, text: 'Tell the tale at the Long Table' },
     ],
-    reward: { credits: 200, rep: { drifters: 10 }, item: { drifter_story_knot: 1 } },
+    reward: { credits: 320, rep: { drifters: 10 }, item: { drifter_story_knot: 1 } },
   },
   {
     id: 'm_drifter_2_loom_run', title: 'The Loom Run', kind: 'delivery', arc: 'drifters',
@@ -400,7 +400,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'hand_looms', qty: 6, deliverTo: 'long_table', consume: true, text: 'Deliver 6 hand-looms to the Long Table' },
     ],
-    reward: { credits: 420, rep: { drifters: 10 } },
+    reward: { credits: 670, rep: { drifters: 10 } },
     deadlineDays: 50,
   },
   {
@@ -412,7 +412,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', item: 'drifter_story_knot', qty: 1, deliverTo: 'long_table', text: 'Take your seat at the Long Table and share the story knot' },
     ],
-    reward: { credits: 600, rep: { drifters: 12 }, upgrade: 'drifter_quilt_lounge', item: { drifter_kin_cord: 1 } },
+    reward: { credits: 960, rep: { drifters: 12 }, upgrade: 'drifter_quilt_lounge', item: { drifter_kin_cord: 1 } },
     onComplete: [{ flag: 'drifter_adopted' }],
   },
 
@@ -429,7 +429,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: { faction: 'quillari', station: 'trade' }, docked: true, text: 'Escort Quire-Nine to a Quillari market' },
       { id: 'o2', type: 'goto', target: { faction: 'archivists', station: true }, docked: true, text: 'Bring Quire-Nine home' },
     ],
-    reward: { credits: 340, rep: { archivists: 8, quillari: 4 }, codex: 'quillari_markets' },
+    reward: { credits: 540, rep: { archivists: 8, quillari: 4 }, codex: 'quillari_markets' },
     deadlineDays: 40,
   },
   {
@@ -441,7 +441,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'scan', target: { phenomenon: 'nebula', count: 3 }, what: 'phenomenon', phenomenon: 'nebula', text: 'Sample three nebulae' },
     ],
-    reward: { credits: 450, rep: { concord: 4, vesperine: 4 }, codex: 'nebula_weather' },
+    reward: { credits: 720, rep: { concord: 4, vesperine: 4 }, codex: 'nebula_weather' },
   },
   {
     id: 'm_mediation_1_tariff_teapot', title: 'The Great Tariff Teapot', kind: 'diplomacy', arc: 'mediation',
@@ -453,7 +453,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'pennywhistle', docked: true, text: 'Hear the Quillari side at Pennywhistle' },
       { id: 'o2', type: 'goto', target: { faction: 'concord', station: true }, docked: true, text: 'Return to the Concord with a compromise' },
     ],
-    reward: { credits: 280, rep: { concord: 5, quillari: 5 } },
+    reward: { credits: 450, rep: { concord: 5, quillari: 5 } },
   },
   {
     id: 'm_mediation_2_toll_ladder', title: 'The Toll Ladder', kind: 'diplomacy', arc: 'mediation',
@@ -465,7 +465,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'lyra_landing', docked: true, text: 'Present the ladder at Lyra Landing' },
       { id: 'o2', type: 'goto', target: 'pennywhistle', docked: true, text: 'Return with the Concord counter-offer' },
     ],
-    reward: { credits: 340, rep: { concord: 6, quillari: 6 } },
+    reward: { credits: 540, rep: { concord: 6, quillari: 6 } },
   },
   {
     id: 'm_mediation_3_summit_tea', title: 'The Summit of Tea', kind: 'diplomacy', arc: 'mediation',
@@ -476,7 +476,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', item: 'tea_tin', qty: 1, deliverTo: 'pennywhistle', consume: true, text: 'Host the Summit of Tea at Pennywhistle with a tin of Meridian tea' },
     ],
-    reward: { credits: 520, rep: { concord: 8, quillari: 8 }, item: { mediators_gavel: 1 }, codex: 'tea_summit' },
+    reward: { credits: 830, rep: { concord: 8, quillari: 8 }, item: { mediators_gavel: 1 }, codex: 'tea_summit' },
   },
   {
     id: 'm_relief_sniffles', title: 'Hollin\'s Great Sniffle', kind: 'relief',
@@ -487,7 +487,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'medical_kits', qty: 4, deliverTo: 'hollin_rest', consume: true, text: 'Deliver 4 medical kits to Hollin\'s Rest' },
     ],
-    reward: { credits: 300, rep: { concord: 8 }, codex: 'hollin_sniffle' },
+    reward: { credits: 480, rep: { concord: 8 }, codex: 'hollin_sniffle' },
     deadlineDays: 35,
     failFx: [{ morale: -4 }, { rep: { concord: -2 } }],
   },
@@ -501,7 +501,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'probes_rest', text: 'Follow the faint signal to Probe\'s Rest' },
       { id: 'o2', type: 'scan', target: 'probes_rest', what: 'planets', count: 2, text: 'Scan the system for Probe 7' },
     ],
-    reward: { credits: 460, rep: { concord: 6 }, item: { probe_black_box: 1 }, codex: 'probe_seven' },
+    reward: { credits: 740, rep: { concord: 6 }, item: { probe_black_box: 1 }, codex: 'probe_seven' },
     onComplete: [{ flag: 'probe_found' }],
   },
   {
@@ -514,7 +514,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'weathervane', text: 'Find the choir in the Weathervane storm' },
       { id: 'o2', type: 'goto', target: { faction: 'vesperine', station: true, notHere: true }, docked: true, text: 'Tow the choir to safe harbour' },
     ],
-    reward: { credits: 420, rep: { vesperine: 10 }, codex: 'vesperine_choirs' },
+    reward: { credits: 670, rep: { vesperine: 10 }, codex: 'vesperine_choirs' },
     deadlineDays: 30,
   },
   {
@@ -527,7 +527,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'lantern_brightwater', text: 'Accompany the convoy to Brightwater Light' },
       { id: 'o2', type: 'goto', target: 'pennywhistle', docked: true, text: 'Return to Pennywhistle for the feast' },
     ],
-    reward: { credits: 380, rep: { quillari: 10 }, item: { festival_ribbon: 1 } },
+    reward: { credits: 610, rep: { quillari: 10 }, item: { festival_ribbon: 1 } },
     deadlineDays: 40,
   },
   {
@@ -540,7 +540,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: 'whispering_rift', text: 'Travel to the Whispering Rift' },
       { id: 'o2', type: 'scan', target: 'whispering_rift', what: 'phenomenon', phenomenon: 'rift', text: 'Hum back and listen' },
     ],
-    reward: { credits: 500, rep: { vesperine: 8, archivists: 4 }, upgrade: 'singing_hull_plating', codex: 'rift_lullaby' },
+    reward: { credits: 800, rep: { vesperine: 8, archivists: 4 }, upgrade: 'singing_hull_plating', codex: 'rift_lullaby' },
   },
   {
     id: 'm_secret_fellowship_token', title: 'Return to Sender', kind: 'story', secret: true,
@@ -551,7 +551,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'goto', target: 'lantern_taper', text: 'Carry the Fellowship Token to Last Taper' },
     ],
-    reward: { credits: 400, rep: { drifters: 8 }, upgrade: 'brass_astrolabe', codex: 'fellowship_tokens' },
+    reward: { credits: 640, rep: { drifters: 8 }, upgrade: 'brass_astrolabe', codex: 'fellowship_tokens' },
   },
   {
     id: 'm_fetch_curios_museum', title: 'Curios for the Museum', kind: 'fetch',
@@ -562,7 +562,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'curios', qty: 4, deliverTo: 'lyra_landing', consume: true, text: 'Deliver 4 curios to the Lyra Landing museum' },
     ],
-    reward: { credits: 360, rep: { concord: 6 }, codex: 'lyra_museum' },
+    reward: { credits: 580, rep: { concord: 6 }, codex: 'lyra_museum' },
   },
 
   // ===========================================================================
@@ -577,7 +577,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'ration_bars', qty: 4, deliverTo: { nearest: 'trade', notHere: true, minHops: 2, maxHops: 5 }, consume: true, text: 'Race Vell: deliver 4 ration bars to the nearest trade station 2-5 hops away' },
     ],
-    reward: { credits: 280, rep: { quillari: 3, concord: 3 } },
+    reward: { credits: 450, rep: { quillari: 3, concord: 3 } },
     deadlineDays: 20,
     failFx: [{ morale: -2 }],
     onComplete: [{ flag: 'rival_met' }],
@@ -592,7 +592,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'machine_parts', qty: 5, deliverTo: { nearest: 'station', notHere: true, minHops: 2, maxHops: 6 }, consume: true, text: 'Deliver 5 machine parts to a station 2-6 hops away' },
     ],
-    reward: { credits: 420, rep: { quillari: 4, concord: 2 }, item: { vell_calling_card: 1 } },
+    reward: { credits: 670, rep: { quillari: 4, concord: 2 }, item: { vell_calling_card: 1 } },
     deadlineDays: 28,
     failFx: [{ rep: { quillari: -2 } }],
   },
@@ -606,7 +606,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'goto', target: { faction: 'quillari', station: 'trade' }, docked: true, text: 'Present the partnership to a Quillari clan market' },
       { id: 'o2', type: 'goto', target: 'gate_anchorage', docked: true, text: 'Sign the joint route at Gate Anchorage' },
     ],
-    reward: { credits: 650, rep: { quillari: 8, concord: 6 } },
+    reward: { credits: 1040, rep: { quillari: 8, concord: 6 } },
     deadlineDays: 45,
     onComplete: [{ flag: 'rival_friend' }],
     completeText: 'Vell signs with a flourish that nearly tears the page. "Right. I shall be unbearable about this for years."',
@@ -624,7 +624,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'medical_kits', qty: 3, deliverTo: { nearest: 'station', notHere: true, minHops: 1, maxHops: 4 }, consume: true, text: 'Deliver 3 medical kits to the settlement (nearest station 1-4 hops away)' },
     ],
-    reward: { credits: 320, rep: { concord: 6 }, item: { distress_medal: 1 } },
+    reward: { credits: 510, rep: { concord: 6 }, item: { distress_medal: 1 } },
     deadlineDays: 12,
     failFx: [{ rep: { concord: -2 } }, { morale: -4 }],
   },
@@ -637,7 +637,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'fuel_cells', qty: 4, deliverTo: { nearest: 'outpost', notHere: true, minHops: 1, maxHops: 5 }, consume: true, text: 'Deliver 4 fuel cells to the stranded hauler (nearest outpost)' },
     ],
-    reward: { credits: 300, rep: { quillari: 6 } },
+    reward: { credits: 480, rep: { quillari: 6 } },
     deadlineDays: 10,
     failFx: [{ rep: { quillari: -2 } }],
   },
@@ -650,7 +650,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'ration_bars', qty: 6, deliverTo: { faction: 'drifters', station: true }, consume: true, text: 'Deliver 6 ration bars to the habitat (a drifter station)' },
     ],
-    reward: { credits: 340, rep: { drifters: 8 }, item: { story_knot: 1 } },
+    reward: { credits: 540, rep: { drifters: 8 }, item: { story_knot: 1 } },
     deadlineDays: 16,
     failFx: [{ rep: { drifters: -2 } }, { morale: -3 }],
   },
@@ -664,7 +664,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'machine_parts', qty: 3, deliverTo: { nearest: 'outpost', notHere: true, minHops: 1, maxHops: 5 }, consume: true, text: 'Deliver 3 machine parts to the dark outpost (nearest outpost)' },
     ],
-    reward: { credits: 260, rep: { concord: 5 } },
+    reward: { credits: 420, rep: { concord: 5 } },
     deadlineDays: 14,
     failFx: [{ rep: { concord: -2 } }, { morale: -3 }],
   },
@@ -677,9 +677,89 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'goto', target: { nearest: 'trade', notHere: true, minHops: 1, maxHops: 4 }, docked: true, text: 'Ferry the pilgrims to the nearest trade station' },
     ],
-    reward: { credits: 190, rep: { quillari: 5 }, item: { gossip_pin: 1 } },
+    reward: { credits: 300, rep: { quillari: 5 }, item: { gossip_pin: 1 } },
     deadlineDays: 12,
     failFx: [{ rep: { quillari: -1 } }],
+  },
+
+  // ===========================================================================
+  // RIVAL FINALE (race branch) and SHIPYARD COMMISSIONS (high-value, parts-and-patience jobs)
+  // ===========================================================================
+  {
+    id: 'm_rival_4_regatta', title: 'The Reach Regatta', kind: 'delivery', arc: 'rival',
+    giver: { name: 'Captain Tamsin Vell', species: 'human', faction: 'none' },
+    blurb: 'Vell has entered both of you in the Reach Regatta: a no-weapons, no-nonsense race to deliver eight ration bars to a faraway market. Win, and the prize purse is yours. Lose, and she will be gracious about it for years.',
+    accept: '"Winner buys the tea," says Vell, "and gets to be insufferable."',
+    offerWhen: [{ missionDone: 'm_rival_2_tied_race' }, { notFlag: 'rival_friend' }], offerAt: { station: true },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'ration_bars', qty: 8, deliverTo: { nearest: 'trade', notHere: true, minHops: 3, maxHops: 6 }, consume: true, text: 'Race Vell: deliver 8 ration bars to a trade station 3-6 hops away' },
+    ],
+    reward: { credits: 1100, rep: { quillari: 6, concord: 4 }, item: { vell_calling_card: 1 } },
+    deadlineDays: 24,
+    failFx: [{ morale: -3 }],
+    onComplete: [{ flag: 'rival_beaten' }],
+    completeText: 'You cross first by a feather. Vell pays for the tea, then orders a second round on your tab.',
+  },
+  {
+    id: 'm_comm_hull_plates', title: 'Commission: Hull Plates for the Slipway', kind: 'fetch', arc: 'commission',
+    giver: { name: 'Shipwright Odd Ferrars', species: 'human', faction: 'concord' },
+    blurb: 'A shipyard is behind on its hull-plate order and has run out of machine parts. Six crates will keep forty workers on the clock. Pay is generous, and rises with the delays.',
+    accept: '"Parts," says Ferrars. "Lots of parts. Heavy ones."',
+    offerWhen: [{ survey: 12 }], offerAt: { station: 'shipyard' },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'machine_parts', qty: 6, deliverTo: { nearest: 'shipyard', notHere: true, minHops: 1, maxHops: 6 }, consume: true, text: 'Deliver 6 machine parts to another shipyard' },
+    ],
+    reward: { credits: 950, rep: { concord: 6 } },
+    deadlineDays: 55,
+  },
+  {
+    id: 'm_comm_tuning_array', title: 'Commission: A Tuning Array', kind: 'fetch', arc: 'commission',
+    giver: { name: 'Dock-Singer Calla', species: 'vesperine', faction: 'vesperine' },
+    blurb: 'The Weathervane docks need four tuning crystals to complete a hull-harmonic array. It will ring in the key of calm. They pay in coin and in song.',
+    accept: '"Crystals," sings Calla. "Carefully, please. They are shy."',
+    offerWhen: [{ survey: 15 }], offerAt: { station: 'shipyard' },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'tuning_crystals', qty: 4, deliverTo: { faction: 'vesperine', station: true }, consume: true, text: 'Deliver 4 tuning crystals to a Vesperine station' },
+    ],
+    reward: { credits: 1100, rep: { vesperine: 8 } },
+    deadlineDays: 60,
+  },
+  {
+    id: 'm_comm_vellum_manuals', title: 'Commission: Manuals for the Yard', kind: 'fetch', arc: 'commission',
+    giver: { name: 'Shelver Quire-Five', species: 'archivist', faction: 'archivists' },
+    blurb: 'A shipyard has commissioned the Archive to write a set of repair manuals. The Archive needs five sheets of vellum to start. It promises to include a footnote about you.',
+    accept: '"We shall index everything," says Quire-Five. "Including the indexes."',
+    offerWhen: [{ survey: 15 }], offerAt: { station: 'shipyard' },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'vellum_sheets', qty: 5, deliverTo: { faction: 'archivists', station: true }, consume: true, text: 'Deliver 5 vellum sheets to an Archive station' },
+    ],
+    reward: { credits: 1000, rep: { archivists: 8 } },
+    deadlineDays: 60,
+  },
+  {
+    id: 'm_comm_loom_refit', title: 'Commission: Looms for a Refit', kind: 'fetch', arc: 'commission',
+    giver: { name: 'Weaver Tamsin Quickfold', species: 'drifter', faction: 'drifters' },
+    blurb: 'A drifter habitat is being refitted with new hanging quilts. Five hand-looms will keep the weavers busy for the whole season, and the whole season is in the pay.',
+    accept: '"We pay in stories," says Tamsin. "And, for you, in scrip."',
+    offerWhen: [{ survey: 20 }, { rep: { drifters: 5 } }], offerAt: { station: 'shipyard' },
+    objectives: [
+      { id: 'o1', type: 'have', good: 'hand_looms', qty: 5, deliverTo: { faction: 'drifters', station: true }, consume: true, text: 'Deliver 5 hand-looms to a drifter habitat' },
+    ],
+    reward: { credits: 900, rep: { drifters: 8 }, item: { story_knot: 1 } },
+    deadlineDays: 60,
+  },
+  {
+    id: 'm_comm_lounge_refit', title: 'Commission: The Observation Lounge Refit', kind: 'fetch', arc: 'commission',
+    giver: { name: 'Interior Designer Hester Voss', species: 'human', faction: 'concord' },
+    blurb: 'A prestigious refit needs four casks of glass brandy for the bar and three curios for the shelves. Taste, discretion and punctuality are all required.',
+    accept: '"It must feel lived in," says Voss, "by someone interesting."',
+    offerWhen: [{ survey: 25 }], offerAt: { station: 'shipyard' }, ordered: true,
+    objectives: [
+      { id: 'o1', type: 'have', good: 'glass_brandy', qty: 4, deliverTo: { nearest: 'shipyard', notHere: true, minHops: 1, maxHops: 6 }, consume: true, text: 'Deliver 4 casks of glass brandy to another shipyard' },
+      { id: 'o2', type: 'have', good: 'curios', qty: 3, deliverTo: { nearest: 'shipyard', notHere: true, minHops: 1, maxHops: 6 }, consume: true, text: 'Deliver 3 curios to the same shipyard' },
+    ],
+    reward: { credits: 1300, rep: { concord: 6, quillari: 4 } },
+    deadlineDays: 70,
   },
 
   // ===========================================================================
@@ -694,7 +774,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'chart', target: { region: 'veil', count: 4 }, text: 'Chart four systems in the Vesper Veil' },
     ],
-    reward: { credits: 1100, rep: { concord: 6, vesperine: 6 } },
+    reward: { credits: 1760, rep: { concord: 6, vesperine: 6 } },
     deadlineDays: 70,
     failFx: [{ rep: { concord: -2 } }],
   },
@@ -708,7 +788,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'chart', target: { region: 'choir', count: 3 }, text: 'Chart three systems in the Pulsar Choir' },
       { id: 'o2', type: 'scan', target: { phenomenon: 'pulsar' }, what: 'phenomenon', phenomenon: 'pulsar', text: 'Take a pulsar reading' },
     ],
-    reward: { credits: 1300, rep: { concord: 6, vesperine: 4 }, codex: 'codex_pulsar_radio' },
+    reward: { credits: 2080, rep: { concord: 6, vesperine: 4 }, codex: 'codex_pulsar_radio' },
     deadlineDays: 75,
     failFx: [{ rep: { concord: -2 } }],
   },
@@ -721,7 +801,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'chart', target: { region: 'rim', count: 3 }, text: 'Chart three systems on the Quiet Rim' },
     ],
-    reward: { credits: 1400, rep: { drifters: 8 } },
+    reward: { credits: 2240, rep: { drifters: 8 } },
     deadlineDays: 80,
     failFx: [{ rep: { drifters: -2 } }],
   },
@@ -738,7 +818,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'aurora_silk', qty: 3, deliverTo: { nearest: 'embassy' }, consume: true, text: 'Deliver 3 aurora silk to the nearest embassy' },
     ],
-    reward: { credits: 900, rep: { concord: 5, vesperine: 3 } },
+    reward: { credits: 1440, rep: { concord: 5, vesperine: 3 } },
     deadlineDays: 60,
   },
   {
@@ -750,7 +830,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'lantern_glass', qty: 2, deliverTo: { faction: 'archivists', station: true }, consume: true, text: 'Deliver 2 lantern glass to an Archive station' },
     ],
-    reward: { credits: 800, rep: { archivists: 8 } },
+    reward: { credits: 1280, rep: { archivists: 8 } },
     deadlineDays: 80,
   },
   {
@@ -762,7 +842,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'seed_vault_crates', qty: 4, deliverTo: { faction: 'drifters', station: true }, consume: true, text: 'Deliver 4 seed-vault crates to a drifter habitat' },
     ],
-    reward: { credits: 650, rep: { drifters: 7 } },
+    reward: { credits: 1040, rep: { drifters: 7 } },
     deadlineDays: 60,
   },
   {
@@ -774,7 +854,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'antiserum_vials', qty: 3, deliverTo: { nearest: 'outpost', notHere: true, minHops: 2, maxHops: 6 }, consume: true, text: 'Deliver 3 antiserum vials to a remote outpost (2-6 hops away)' },
     ],
-    reward: { credits: 720, rep: { concord: 6 } },
+    reward: { credits: 1150, rep: { concord: 6 } },
     deadlineDays: 40,
     failFx: [{ rep: { concord: -2 } }],
   },
@@ -791,7 +871,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'goto', target: 'pennywhistle', docked: true, text: 'Hear the Quillari clan at Pennywhistle Exchange' },
     ],
-    reward: { credits: 240, rep: { archivists: 4, quillari: 4 } },
+    reward: { credits: 380, rep: { archivists: 4, quillari: 4 } },
     deadlineDays: 35,
   },
   {
@@ -803,7 +883,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'vellum_sheets', qty: 2, deliverTo: 'hollow_archive', consume: true, text: 'Deliver 2 vellum sheets to the Central Catalogue (the Hollow Archive)' },
     ],
-    reward: { credits: 380, rep: { archivists: 6, quillari: 6 } },
+    reward: { credits: 610, rep: { archivists: 6, quillari: 6 } },
     deadlineDays: 50,
   },
   {
@@ -815,7 +895,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'hand_looms', qty: 2, deliverTo: 'long_table', consume: true, text: 'Deliver 2 hand-looms (for muffling cloth) to the Long Table' },
     ],
-    reward: { credits: 300, rep: { vesperine: 4, drifters: 4 } },
+    reward: { credits: 480, rep: { vesperine: 4, drifters: 4 } },
     deadlineDays: 45,
   },
   {
@@ -827,7 +907,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'tuning_crystals', qty: 2, deliverTo: 'long_table', consume: true, text: 'Deliver 2 tuning crystals to the Long Table' },
     ],
-    reward: { credits: 400, rep: { vesperine: 5, drifters: 5 }, item: { vesperine_tuning_fork: 1 } },
+    reward: { credits: 640, rep: { vesperine: 5, drifters: 5 }, item: { vesperine_tuning_fork: 1 } },
     deadlineDays: 50,
   },
 
@@ -843,7 +923,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'hand_looms', qty: 3, deliverTo: 'pennywhistle', consume: true, text: 'Deliver 3 hand-looms to the Pennywhistle Bazaar' },
     ],
-    reward: { credits: 280, rep: { quillari: 5 }, item: { festival_bunting: 1 } },
+    reward: { credits: 450, rep: { quillari: 5 }, item: { festival_bunting: 1 } },
     deadlineDays: 40,
   },
   {
@@ -855,7 +935,7 @@ export const MISSIONS = [
     objectives: [
       { id: 'o1', type: 'have', good: 'glass_brandy', qty: 3, deliverTo: 'lantern_brightwater', consume: true, text: 'Deliver 3 casks of glass brandy to Brightwater Light' },
     ],
-    reward: { credits: 400, rep: { quillari: 6 } },
+    reward: { credits: 640, rep: { quillari: 6 } },
     deadlineDays: 45,
   },
   {
@@ -869,7 +949,7 @@ export const MISSIONS = [
       { id: 'o2', type: 'goto', target: 'lantern_brightwater', docked: true, text: 'Parade to Brightwater Light' },
       { id: 'o3', type: 'goto', target: 'gate_anchorage', docked: true, text: 'Finish the parade at Gate Anchorage' },
     ],
-    reward: { credits: 500, rep: { quillari: 6, concord: 4 }, item: { festival_ribbon: 1 } },
+    reward: { credits: 800, rep: { quillari: 6, concord: 4 }, item: { festival_ribbon: 1 } },
     deadlineDays: 70,
     onComplete: [{ morale: 15 }, { flag: 'festival_chain_done' }],
     completeText: 'Confetti, pastries, and a flotilla of paper lanterns. Even Gus-7 cries a little, which is very out of character for a galley bot.',
@@ -894,7 +974,7 @@ export const TEMPLATES = [
       { id: 'o1', type: 'have', good: '{goodId}', qty: '{qty}', deliverTo: '{toSystem}', consume: true, text: 'Deliver {qty} {goodName} to {toSystem}' },
     ],
     deadlineBase: 14, deadlinePerJump: 8,
-    reward: { credits: { base: 60, perUnit: 14, perJump: 25 }, rep: { $faction: 2 } },
+    reward: { credits: { base: 95, perUnit: 22, perJump: 40 }, rep: { $faction: 2 } },
     repeatable: true,
   },
   {
@@ -908,7 +988,7 @@ export const TEMPLATES = [
       { id: 'o1', type: 'have', good: '{goodId}', qty: '{qty}', deliverTo: '{toSystem}', consume: true, text: 'Deliver {qty} {goodName} to {toSystem}' },
     ],
     deadlineBase: 20, deadlinePerJump: 8,
-    reward: { credits: { base: 120, perUnit: 40, perJump: 35 }, rep: { $faction: 3 } },
+    reward: { credits: { base: 190, perUnit: 64, perJump: 56 }, rep: { $faction: 3 } },
     repeatable: true,
   },
   {
@@ -922,7 +1002,7 @@ export const TEMPLATES = [
       { id: 'o1', type: 'have', good: '{goodId}', qty: '{qty}', deliverTo: '{toSystem}', consume: true, text: 'Deliver {qty} {goodName} to {toSystem}' },
     ],
     deadlineBase: 8, deadlinePerJump: 5,
-    reward: { credits: { base: 100, perUnit: 18, perJump: 45 }, rep: { $faction: 3 } },
+    reward: { credits: { base: 160, perUnit: 29, perJump: 72 }, rep: { $faction: 3 } },
     failFx: [{ rep: { $faction: -1 } }],
     repeatable: true,
   },
@@ -937,7 +1017,7 @@ export const TEMPLATES = [
       { id: 'o1', type: 'chart', target: '{toSystem}', text: 'Chart {toSystem}' },
     ],
     deadlineBase: 20, deadlinePerJump: 8,
-    reward: { credits: { base: 110, perJump: 30 }, rep: { $faction: 3 } },
+    reward: { credits: { base: 175, perJump: 48 }, rep: { $faction: 3 } },
     repeatable: true,
   },
   {
@@ -952,7 +1032,7 @@ export const TEMPLATES = [
       { id: 'o2', type: 'scan', target: '{toSystem}', what: 'phenomenon', phenomenon: 'nebula', text: 'Sample the nebula' },
     ],
     deadlineBase: 20, deadlinePerJump: 8,
-    reward: { credits: { base: 130, perJump: 32 }, rep: { $faction: 3 } },
+    reward: { credits: { base: 210, perJump: 51 }, rep: { $faction: 3 } },
     repeatable: true,
   },
   {
@@ -966,7 +1046,7 @@ export const TEMPLATES = [
       { id: 'o1', type: 'goto', target: '{toSystem}', docked: true, text: 'Take {giver} to {toSystem}' },
     ],
     deadlineBase: 18, deadlinePerJump: 8,
-    reward: { credits: { base: 90, perJump: 40 }, rep: { $faction: 3 } },
+    reward: { credits: { base: 145, perJump: 64 }, rep: { $faction: 3 } },
     repeatable: true,
   },
   {
@@ -980,7 +1060,7 @@ export const TEMPLATES = [
       { id: 'o1', type: 'have', good: '{goodId}', qty: '{qty}', deliverTo: '{toSystem}', consume: true, text: 'Deliver {qty} {goodName} to {toSystem}' },
     ],
     deadlineBase: 16, deadlinePerJump: 8,
-    reward: { credits: { base: 70, perUnit: 12, perJump: 30 }, rep: { $faction: 5 } },
+    reward: { credits: { base: 110, perUnit: 19, perJump: 48 }, rep: { $faction: 5 } },
     repeatable: true,
   },
   {
@@ -995,7 +1075,7 @@ export const TEMPLATES = [
       { id: 'o2', type: 'scan', target: '{toSystem}', what: 'planets', count: 1, text: 'Scan {planet}' },
     ],
     deadlineBase: 20, deadlinePerJump: 8,
-    reward: { credits: { base: 100, perJump: 28 }, rep: { $faction: 3 }, item: { sector_charts: 1 } },
+    reward: { credits: { base: 160, perJump: 45 }, rep: { $faction: 3 }, item: { sector_charts: 1 } },
     repeatable: true,
   },
   {
@@ -1009,7 +1089,7 @@ export const TEMPLATES = [
       { id: 'o1', type: 'goto', target: '{toSystem}', docked: true, text: 'Deliver the letter to {toSystem}' },
     ],
     deadlineBase: 20, deadlinePerJump: 8,
-    reward: { credits: { base: 50, perJump: 28 }, rep: { $faction: 2 }, item: { tea_tin: 1 } },
+    reward: { credits: { base: 80, perJump: 45 }, rep: { $faction: 2 }, item: { tea_tin: 1 } },
     repeatable: true,
   },
 ];

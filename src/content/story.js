@@ -145,7 +145,7 @@ export const STORY_SYSTEMS = [
       { name: 'Lamplighter', type: 'ocean', size: 1.3, ringed: false, moons: 1, life: 'flora', features: ['aurora_fields'] },
       { name: 'Wake', type: 'gas', size: 1.6, ringed: false, moons: 0, life: 'none', features: [] },
     ],
-    station: { name: 'Brightwater Waystation', kind: 'outpost', faction: 'quillari', services: ['repair', 'trade'] },
+    station: { name: 'Brightwater Slipway', kind: 'shipyard', faction: 'quillari', services: ['shipyard', 'repair', 'trade', 'missions'] },
     hook: 'The second Lantern floats above a drowned moon, throwing slow ribbons of gold across the water. Quillari traders leave small gifts on its dock and swear they never have.',
   },
   {
@@ -189,7 +189,7 @@ export const STORY_SYSTEMS = [
       { name: 'Gust', type: 'gas', size: 1.9, ringed: true, moons: 3, life: 'none', features: [] },
       { name: 'Halfnote', type: 'crystal', size: 0.5, ringed: false, moons: 0, life: 'none', features: ['ore'] },
     ],
-    station: { name: 'Choirmaster Drift Platform', kind: 'outpost', faction: 'vesperine', services: ['repair', 'missions'] },
+    station: { name: 'Weathervane Tuning Dock', kind: 'shipyard', faction: 'vesperine', services: ['shipyard', 'repair', 'missions'] },
     hook: 'A friendly storm that rearranges itself every few hours, which makes the Vesperine choir here very patient and the navigators very tired.',
   },
   {
@@ -222,7 +222,7 @@ export const STORY_SYSTEMS = [
       { name: 'Stacks', type: 'ice', size: 0.8, ringed: true, moons: 0, life: 'none', features: [] },
       { name: 'Errata', type: 'desert', size: 0.5, ringed: false, moons: 0, life: 'none', features: [] },
     ],
-    station: { name: 'Central Catalogue', kind: 'archive', faction: 'archivists', services: ['diplomacy', 'missions', 'trade'] },
+    station: { name: 'Central Catalogue', kind: 'archive', faction: 'archivists', services: ['diplomacy', 'missions', 'trade', 'shipyard', 'repair'] },
     hook: 'Shelves the size of moons turn slowly in perfect order. A very polite machine asks whether you have come with a question, and whether it may keep it.',
   },
   {
@@ -243,7 +243,7 @@ export const STORY_SYSTEMS = [
     planets: [
       { name: 'Spindle', type: 'barren', size: 0.5, ringed: false, moons: 0, life: 'none', features: ['ore'] },
     ],
-    station: { name: 'The Long Table', kind: 'habitat', faction: 'drifters', services: ['trade', 'missions', 'repair', 'crew', 'diplomacy'] },
+    station: { name: 'The Long Table', kind: 'habitat', faction: 'drifters', services: ['trade', 'missions', 'repair', 'crew', 'diplomacy', 'shipyard'] },
     hook: 'Forty habitats lashed together into one enormous dinner party. There is always a chair for you, provided you can tell a story.',
   },
   {
@@ -265,8 +265,8 @@ export const STORY_SYSTEMS = [
       { name: 'Wrinkle', type: 'ice', size: 0.6, ringed: false, moons: 0, life: 'none', features: [] },
       { name: 'Little Dipper', type: 'barren', size: 0.4, ringed: false, moons: 0, life: 'none', features: ['ore'] },
     ],
-    station: null,
-    hook: 'A quiet system with a small, patient robot drifting among the rocks, still dutifully transmitting a weather report nobody has asked for in years.',
+    station: { name: 'Salvage-Rest Yard', kind: 'shipyard', faction: 'drifters', services: ['shipyard', 'repair', 'trade', 'missions'] },
+    hook: 'A quiet system with a small, patient robot drifting among the rocks, still dutifully transmitting a weather report nobody has asked for in years. A drifter salvage yard has set up nearby, mostly to be near the robot.',
   },
   {
     id: 'meridian_docks', region: 'gate', name: 'Dockside Bell', star: 'yellow', faction: 'none',
@@ -286,6 +286,7 @@ export const STORY_SYSTEMS = [
 export const CHAPTERS = [
   {
     n: 1, id: 'a_match_in_the_dark', title: 'A Match in the Dark', flag: 'chapter_1',
+    etaDays: [3, 12], steps: [{ text: 'Chapter open', cond: [{ flag: 'chapter_1' }] }, { text: 'Lantern 1 answered', cond: [{ flag: 'lantern_1' }] }],
     hint: 'about 2 hops from the Gate',
     gate: [], // active from day 1
     onStart: [{ flag: 'chapter_1' }],
@@ -299,6 +300,7 @@ export const CHAPTERS = [
   },
   {
     n: 2, id: 'the_welcome_lamps', title: 'The Welcome Lamps', flag: 'chapter_2',
+    etaDays: [8, 20], steps: [{ text: 'Chapter open', cond: [{ flag: 'chapter_2' }] }, { text: 'Lantern 2 answered', cond: [{ flag: 'lantern_2' }] }],
     hint: 'about 4 hops from the Gate, past Pennywhistle Exchange in the Shoals',
     gate: [{ flag: 'lantern_1' }, { survey: 8 }],
     onStart: [{ flag: 'chapter_2' }],
@@ -312,6 +314,7 @@ export const CHAPTERS = [
   },
   {
     n: 3, id: 'what_the_archive_remembers', title: 'What the Archive Remembers', flag: 'chapter_3',
+    etaDays: [14, 30], steps: [{ text: 'Chapter open', cond: [{ flag: 'chapter_3' }] }, { text: 'Lantern 3 answered', cond: [{ flag: 'lantern_3' }] }],
     hint: 'about 6 hops out, deep in the Veil (or 5-6 hops to the Archive)',
     gate: [{ flag: 'lantern_2' }, { survey: 18 }],
     onStart: [{ flag: 'chapter_3' }],
@@ -325,6 +328,7 @@ export const CHAPTERS = [
   },
   {
     n: 4, id: 'the_fellowships_last_letter', title: "The Fellowship's Last Letter", flag: 'chapter_4',
+    etaDays: [18, 36], steps: [{ text: 'Chapter open', cond: [{ flag: 'chapter_4' }] }, { text: 'Lantern 4 answered', cond: [{ flag: 'lantern_4' }] }],
     hint: 'about 7 hops out, in the Pulsar Choir',
     gate: [{ flag: 'lantern_3' }, { survey: 28 }],
     onStart: [{ flag: 'chapter_4' }],
@@ -338,6 +342,7 @@ export const CHAPTERS = [
   },
   {
     n: 5, id: 'the_welcome_mat', title: 'The Welcome Mat', flag: 'chapter_5',
+    etaDays: [24, 45], steps: [{ text: 'Chapter open', cond: [{ flag: 'chapter_5' }] }, { text: 'Lantern 5 answered', cond: [{ flag: 'lantern_5' }] }],
     hint: 'about 9 hops out, toward the Quiet Rim',
     gate: [{ flag: 'lantern_4' }, { survey: 40 }],
     onStart: [{ flag: 'chapter_5' }],
@@ -409,7 +414,7 @@ export const ENDINGS = {
     conditions: [{ rep: { concord: 35 } }, { rep: { quillari: 35 } }, { rep: { vesperine: 35 } }, { rep: { archivists: 35 } }, { rep: { drifters: 35 } }],
   },
   wanderer: {
-    id: 'wanderer', kind: 'special', trigger: 'retire', priority: 30, scoreBonus: 400,
+    id: 'wanderer', kind: 'special', trigger: 'retire', priority: 20, scoreBonus: 400,
     blurb: "The default retirement: at least 30% surveyed, a full tea tin, and no particular regrets.",
     title: 'The Contented Wanderer',
     text: 'You never did finish the map, and nobody minds. Halcyon spends her best years drifting from harbour to harbour, trading stories for fuel and fuel for sunsets. The charts are a little blotchy, but the tea is always warm.',
@@ -464,6 +469,20 @@ export const ENDINGS = {
     text: 'You retire to a small orbital greenhouse near the Gate, where you grow tomatoes for the festival and tea for the Society. Your old crew visit on holidays, and Gus-7 pointedly corrects your pruning. It is, everybody agrees, exactly the right size of life.',
     conditions: [{ flag: 'festival_chain_done' }, { morale: 70 }],
   },
+  honest_mapmaker: {
+    id: 'honest_mapmaker', kind: 'special', trigger: 'retire', priority: 32, scoreBonus: 450,
+    title: 'The Honest Mapmaker',
+    blurb: 'Earned by retiring with at least half the Reach charted and no grand storyline behind you. A job honestly done.',
+    text: 'You hang up the commission with half the Reach in ink and the rest in good faith. The Society sends a small, sincere certificate and a larger, less sincere cake. Somewhere, a young navigator opens your charts, finds a safe lane through an unfriendly nebula, and silently says thank you.',
+    conditions: [{ survey: 50 }],
+  },
+  comfortable_captain: {
+    id: 'comfortable_captain', kind: 'special', trigger: 'retire', priority: 33, scoreBonus: 500,
+    title: 'A Comfortable Captain',
+    blurb: 'Earned by retiring with 3,000+ scrip in hand and at least half the Reach charted.',
+    text: 'You retire to a small, well-lit house near the Gate with a view of the ring, a pantry of good brandy, and a reputation for fair dealing. The neighbours bring pastries. The charts on your wall are not complete, but they are yours, and every inked line has a story.',
+    conditions: [{ survey: 50 }, { credits: 3000 }],
+  },
   recalled: {
     id: 'recalled', kind: 'loss', trigger: 'loss', priority: 5, scoreBonus: 0,
     blurb: "The ship was disabled and towed home. Nobody minds; the score is simply smaller.",
@@ -482,7 +501,7 @@ export const ENDINGS = {
 
 export const ENDING_ORDER = [
   'lantern_keeper', 'lantern_friend', 'lantern_silent',
-  'beloved_by_all', 'merchant_prince', 'drifter_adoption', 'archive_scholar', 'rival_friend', 'chart_laureate', 'friend_of_the_choir', 'quiet_gardener', 'lantern_pilgrim', 'cartographer', 'wanderer',
+  'beloved_by_all', 'merchant_prince', 'drifter_adoption', 'archive_scholar', 'rival_friend', 'chart_laureate', 'friend_of_the_choir', 'quiet_gardener', 'lantern_pilgrim', 'comfortable_captain', 'honest_mapmaker', 'cartographer', 'wanderer',
   'recalled', 'resignation',
 ];
 
@@ -627,4 +646,21 @@ export const ITEM_DEFS = {
   festival_bunting: { id: 'festival_bunting', name: 'Festival Bunting', kind: 'gift', desc: 'A long string of paper pennants. Brightens any bridge.' },
   rare_chart_fragment: { id: 'rare_chart_fragment', name: 'Old Chart Fragment', kind: 'artifact', desc: 'A torn corner of a chart in the Fellowship\'s hand. The ink is still wet, somehow.' },
   distress_medal: { id: 'distress_medal', name: 'Meridian Rescue Medal', kind: 'artifact', desc: 'A small enamel medal for answering a call. It does not weigh much and means a great deal.' },
+};
+
+// -----------------------------------------------------------------------------
+// RIVAL: Captain Tamsin Vell of the free-trader Marigold. A recurring friendly competitor.
+// ENGINE/UI hooks: `systemHint` -> show "Tamsin Vell is at <system>" on the Bridge strip once flag rival_met is set;
+// `log` lines are written to the ship's log when the matching flag/mission fires.
+export const RIVAL = {
+  id: 'tamsin_vell', name: 'Captain Tamsin Vell', ship: 'Marigold', species: 'human', faction: 'none',
+  codex: ['tamsin_vell', 'vell_marigold'],
+  chain: ['m_rival_1_wager', 'm_rival_2_tied_race', 'm_rival_3_partners', 'm_rival_4_regatta'],
+  flags: { met: 'rival_met', ally: 'rival_friend', beaten: 'rival_beaten' },
+  log: {
+    rival_met: 'Met Captain Tamsin Vell of the Marigold, who bet you a round of tea. She hangs about trade hubs and loves a deadline.',
+    rival_friend: 'Tamsin Vell and you have formed a proper partnership. The Marigold now sails with Halcyon\'s route notes in her chart table.',
+    rival_beaten: 'You beat Tamsin Vell fair and square at the Reach Regatta. She promised to be unbearable about the rematch.',
+  },
+  systemHint: 'Tamsin Vell is usually found at a trade station in the Shoals or the Gate Shallows.',
 };
