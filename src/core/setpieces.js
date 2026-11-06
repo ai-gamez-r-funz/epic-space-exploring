@@ -231,7 +231,7 @@ const HOT_BEATS = [
 ];
 export function hotLaneEvent(dest, mult, bonus, fromName) {
   const d = Math.max(1, dest.danger);
-  const hull = Math.round((3 + 2 * d) * mult);
+  const hull = Math.round((4 + 3 * d) * mult);
   const nodes = {};
   const names = ['a', 'b', 'c'];
   HOT_BEATS.forEach((b, i) => {

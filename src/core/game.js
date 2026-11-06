@@ -74,7 +74,7 @@ export class Game {
       galaxy, pos: galaxy.gate, orbit: null, docked: false,
       missions: { active: [], done: [], failed: [] },
       codex: [], log: [], markets: {}, boards: {}, evt: { seen: {}, recent: [] },
-      pending: null, rival: null, distress: null,
+      pending: null, rival: null, distress: null, refits: [],
       stats: { jumps: 0, planetsScanned: 0, systemsCharted: 0, creditsEarned: 0, eventsSeen: 0, missionsDone: 0 },
       ending: null,
     };
@@ -166,7 +166,7 @@ export class Game {
     const last = st.counters['hot_' + key];
     return last === undefined || st.day - last >= 15;
   }
-  _hotBonus(a, b) { const d = Math.max(this.system(a).danger, this.system(b).danger); return Math.round((90 + 45 * d) * diffOf(this.state).reward / 5) * 5; }
+  _hotBonus(a, b) { const d = Math.max(this.system(a).danger, this.system(b).danger); return Math.round((70 + 35 * d) * diffOf(this.state).reward / 5) * 5; }
   /** Known hot lanes: [{fromId, toId, fromName, toName, bonus, danger}] */
   hotLanes() {
     const out = [];
@@ -954,6 +954,7 @@ export class Game {
     this._teleported = false;
     this.advanceDays(can.days, { deferCheck: true });
     st.stats.jumps = (st.stats.jumps || 0) + 1;
+    st.counters.sinceDock = (st.counters.sinceDock || 0) + 1;
     const firstVisit = this._enterSystem(toId);
     this.emit('sfx', { name: 'jump' });
     this.log('nav', `Jumped to ${dest.name} (${can.days}d, ${can.fuelCost} fuel).`);
@@ -994,7 +995,9 @@ export class Game {
     // everyday wear and tear
     // everyday wear and tear grows with the danger of the space you fly through
     if (diff.damage > 0.6 && this.rng.chance(Math.min(0.9, 0.3 + 0.18 * dest.danger))) {
-      const wear = Math.max(1, Math.round(1.5 * (this.rng.int(1, 2) + dest.danger) * diff.damage * (Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1)));
+      // strain: the longer since the last dock, the harder the lanes bite (an incentive to turn back for repairs)
+      const strain = 1 + 0.2 * Math.min(6, st.counters.sinceDock || 0);
+      const wear = Math.max(1, Math.round(1.8 * strain * (this.rng.int(1, 2) + dest.danger) * diff.damage * (Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1)));
       applyEffects(this, [{ hull: -wear }], { noScale: true });
     }
     let chance = (0.07 + 0.15 * dest.danger) * diff.hazard + (ph ? 0.08 : 0);
@@ -1200,6 +1203,7 @@ export class Game {
     st.docked = true;
     st.orbit = null;
     st.counters.gab_used = 0;
+    st.counters.sinceDock = 0;
     if (Ship.hasSpecial(st, 'false_floor') && (sys.faction === 'concord' || sys.station.faction === 'concord') && this.rng.chance(0.15)) {
       const fine = Math.min(40, st.credits);
       applyEffects(this, [{ credits: -fine }, { rep: { concord: -2 } }], {});

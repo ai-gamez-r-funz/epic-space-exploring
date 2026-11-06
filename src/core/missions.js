@@ -263,7 +263,7 @@ function strandedDraft(g, sys, rng, week) {
   const diff = diffOf(st);
   const jumps = hops[to.id];
   const good = IDX.good[goodId];
-  const credits = Math.round((240 + 70 * jumps) * diff.reward / 5) * 5;
+  const credits = Math.round((200 + 55 * jumps) * diff.reward / 5) * 5;
   const faction = sys.station ? sys.station.faction : sys.faction;
   const rep = faction && faction !== 'none' && faction in st.rep ? { [faction]: 3 } : {};
   const vars = { to: to.name };

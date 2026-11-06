@@ -199,9 +199,9 @@ export function removeUpgrade(state, id) {
 }
 
 // ---- service pricing (refuel / repair / restock) ----------------------------------------------------------
-export const SERVICE_BASE = { fuel: 7, supplies: 5, repair: 3 };
+export const SERVICE_BASE = { fuel: 7, supplies: 5, repair: 4 };
 /** Per-unit ceilings so remote stations are dear but never ruinous (esp. hull repair). */
-export const SERVICE_CAP = { fuel: 11, supplies: 7, repair: 4.5 };
+export const SERVICE_CAP = { fuel: 11, supplies: 7, repair: 6 };
 
 export function repDiscount(rep) {
   if (rep >= 60) return 0.10;
