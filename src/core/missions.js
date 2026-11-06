@@ -9,7 +9,7 @@ import { bfs, adjacency } from './galaxy.js';
 
 const WEEK = 7;
 /** Engine-side scale on authored mission credits (keeps income in step with the tighter fuel/supply economy). */
-const REWARD_SCALE = 0.45;
+const REWARD_SCALE = 0.7;
 const sysById = (st, id) => st.galaxy.systems.find((s) => s.id === id);
 const isKnown = (s) => s.status !== 'unknown';
 

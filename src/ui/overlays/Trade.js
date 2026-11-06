@@ -44,6 +44,9 @@ export class Trade extends Overlay {
     this.tabs = new Tabs({ w: 520, tabs: [{ id: 'market', label: 'Market', icon: 'credits' }, { id: 'services', label: 'Repair & Refuel', icon: 'engineering' }], selected: params.tab || (has('trade') ? 'market' : 'services'), cycleKeys: true, tabH: 36 });
     this.tabs.y = 96; this.root.addChild(this.tabs);
     this.done = new Button({ label: 'Done', icon: 'check', w: 130, h: 36, variant: 'primary', onClick: () => this.close(), fontSize: 14, tooltip: 'Close (Esc)' }); this.done.x = modal.bodyW - 130; this.done.y = 96; this.root.addChild(this.done);
+    try { const act = (this.g.marketNews?.(sys.id) || []).filter((n) => n.active); const room = modal.bodyW - 130 - 548 - 12;
+      if (act.length && room > 140) { const n = act[0]; const p = pill({ text: `${n.title} · ${n.daysLeft}d`, color: n.mult > 1 ? C.good : C.mustard, h: 26, size: 11, padX: 10, preset: 'headSm', tip: { title: n.title, body: n.text, tone: 'info' } }); p.x = 548; p.y = 101; this.root.addChild(p); }
+    } catch (e) { /* news is optional */ }
     this.PH = modal.bodyH - 96 - 46;
     this.marketPane = this.tabs.panes.market; this.svcPane = this.tabs.panes.services;
     this.marketPane.y = this.svcPane.y = 96 + 46;
@@ -144,9 +147,19 @@ export class Trade extends Overlay {
     });
     this.pane.refresh(); this.pane.scrollTo(keep);
   }
+  /** Tolerant read of the engine's "best place to sell" hint ({systemName, price, pct} on the good, or market.bestSell[goodId]). */
+  _bestSell(gd) {
+    const b = gd.bestSell || this.market?.bestSell?.[gd.id]; if (!b || typeof b !== 'object') return null;
+    const name = b.systemName || b.name || b.system?.name || (b.systemId && this.g.system(b.systemId)?.name); const price = b.price ?? b.sell;
+    const pct = b.pct ?? b.gainPct ?? (price && gd.sell ? Math.round((price / gd.sell - 1) * 100) : null);
+    return name ? { name, pct, price } : null;
+  }
+  _news(gd) { try { return (this.g.marketNews?.(this.sys.id) || []).find((n) => n.active && n.goods?.includes(gd.id)) || null; } catch (e) { return null; } }
   _hint(gd) {
     const base = gd.base || 1; const paid = this.g.__paid[gd.id];
     if (gd.held && paid && paid.n) { const avg = paid.cost / paid.n; const p = Math.round(((gd.sell - avg) / avg) * 100); return { text: `${p >= 0 ? 'PROFIT' : 'LOSS'} ${sgn(p)}%`, col: p >= 0 ? C.good : C.coral }; }
+    const nw = this._news(gd); if (nw) return { text: `NEWS ${nw.mult > 1 ? '+' : '−'}${Math.round(Math.abs(nw.mult - 1) * 100)}%`, col: nw.mult > 1 ? C.good : C.mustard };
+    const bs = this._bestSell(gd); if (bs && (bs.pct == null || bs.pct >= 8) && gd.buy != null && gd.buy <= base * 1.1) return { text: `→ ${bs.name.length > 11 ? bs.name.slice(0, 10) + '…' : bs.name}${bs.pct != null ? ' +' + bs.pct + '%' : ''}`, col: C.tealLight };
     if (gd.held && gd.sell > base * 1.08) return { text: `SELL HIGH +${Math.round((gd.sell / base - 1) * 100)}%`, col: C.good };
     if (gd.buy != null && gd.buy < base * 0.92) return { text: `CHEAP −${Math.round((1 - gd.buy / base) * 100)}%`, col: C.good };
     if (gd.buy != null && gd.buy > base * 1.1) return { text: `DEAR +${Math.round((gd.buy / base - 1) * 100)}%`, col: C.coral };
@@ -198,6 +211,9 @@ export class Trade extends Overlay {
     gauge.circle(pos(gd.sell), y + 20, 6).fill(C.good).stroke({ width: 2, color: 0x000000, alpha: 0.5 });
     const gl = new Label({ text: `BUY ${gd.buy ?? '–'}   ·   SELL ${gd.sell}   ·   AVG ${base}`, preset: 'headSm', size: 9, color: C.textDim }); gl.x = gx; gl.y = y; D.addChild(gl);
     y += 36;
+    { const bs = this._bestSell(gd), nw = this._news(gd);
+      if (nw) { const l = new Label({ text: `${nw.title}: ${nw.mult > 1 ? 'prices up' : 'prices down'} here for ${nw.daysLeft} more day${nw.daysLeft === 1 ? '' : 's'}.`, preset: 'tiny', size: 12, color: nw.mult > 1 ? C.good : C.mustard, w: DW - 32 }); l.x = 16; l.y = y - 6; D.addChild(l); y += 18; }
+      if (bs) { const l = new Label({ text: `Sells higher at ${bs.name}${bs.pct != null ? ` (+${bs.pct}%)` : ''}.`, preset: 'small', size: 13, color: C.tealLight, w: DW - 32 }); l.x = 16; l.y = y - 6; D.addChild(l); y += 20; } }
     const fac = factionOf(this.sys.station.faction);
     const like = fac?.likes?.includes(gd.id) ? 1 : fac?.dislikes?.includes(gd.id) ? -1 : 0;
     if (like) { const t = new Label({ text: like > 0 ? `${fac.adjective || fac.name} stations like this — friendlier price.` : `${fac.adjective || fac.name} stations dislike this — pricier to sell.`, preset: 'tiny', size: 11, color: like > 0 ? C.good : C.coral, w: gw }); t.x = gx; t.y = y; D.addChild(t); y += t.textHeight + 4; }

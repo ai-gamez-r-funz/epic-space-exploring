@@ -8,11 +8,11 @@ import { drawPanel } from '../../kit/draw.js';
 import { Tutorial } from './prefs.js';
 
 const STEPS = [
-  { id: 'chart', scene: 'Bridge', text: 'Open the Chart to see the Lantern Reach and plan your first jump.', key: 'C', target: (s) => s.cmds?.chart, done: (g, sc) => sc === 'GalaxyMap' },
-  { id: 'jump', scene: 'GalaxyMap', text: 'Click a nearby system, then plan your jump. Teal lanes are in range; watch the fuel cost.', key: 'Enter', target: (s) => (s.planBtn?.visible ? s.planBtn : s.side || null), done: (g, sc, base) => g.state.stats.jumps > base.jumps },
+  { id: 'chart', scene: 'Bridge', text: 'Open the Chart to plan a jump. Every hop burns fuel (roughly 4-5 of your tank), so check the cost and your range first.', key: 'C', target: (s) => s.cmds?.chart, done: (g, sc) => sc === 'GalaxyMap' },
+  { id: 'jump', scene: 'GalaxyMap', text: 'Click a nearby system: the panel shows distance, fuel cost and days. Teal lanes are in range. Then Plan jump.', key: 'Enter', target: (s) => (s.planBtn?.visible ? s.planBtn : s.side || null), done: (g, sc, base) => g.state.stats.jumps > base.jumps },
   { id: 'scan', scene: 'Bridge', text: 'Pick a planet on the viewscreen, then Scan it to learn what lives there. Scanning every planet charts a system.', key: 'S', target: (s) => s.cmds?.scan, done: (g, sc, base) => g.state.stats.planetsScanned > base.scanned },
   { id: 'hail', scene: 'Bridge', text: 'Somebody lives here. Hail them: courtesy costs nothing and often pays.', key: 'H', target: (s) => (s.cmds?.hail?.enabled ? s.cmds.hail : null), done: () => false },
-  { id: 'dock', scene: 'Bridge', text: 'Dock at the station to trade, repair, refuel and pick up missions.', key: 'D', target: (s) => (s.cmds?.dock?.enabled ? s.cmds.dock : null), done: (g) => !!g.state.docked },
+  { id: 'dock', scene: 'Bridge', text: 'Dock at the station to trade, repair and refuel. Buy goods cheap, then sell where the Trade screen says prices run higher.', key: 'D', target: (s) => (s.cmds?.dock?.enabled ? s.cmds.dock : null), done: (g) => !!g.state.docked },
 ];
 export const TUTORIAL_STEPS = STEPS;
 

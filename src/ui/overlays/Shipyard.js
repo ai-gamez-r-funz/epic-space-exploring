@@ -53,7 +53,7 @@ export class Shipyard extends Overlay {
     const cx = LW / 2, cy = H / 2 - 12; this.cx = cx; this.cy = cy;
     const cap_ = new Label({ text: 'ISV ' + (this.g.state.ship.name || 'HALCYON').replace(/^ISV\s+/i, '').toUpperCase() + ' · SCHEMATIC', preset: 'headSm', size: 10, color: 0x6fc7e8 }); cap_.x = 16; cap_.y = 12; P.addChild(cap_);
     const lines = new Graphics(); P.addChild(lines); this.lines = lines;
-    try { const ship = S.gfx.ship({ kind: 'halcyon', scale: 1.5, thrust: 0.35 }); ship.x = cx + 2; ship.y = cy + 10; live(ship); ship.alpha = 0.95; P.addChild(ship); this.ship = ship; } catch (e) { /* */ }
+    try { const ship = S.gfx.ship({ kind: 'halcyon', scale: 1.2, thrust: 0.35 }); ship.x = cx + 2; ship.y = cy + 10; live(ship); ship.alpha = 0.95; P.addChild(ship); this.ship = ship; } catch (e) { /* */ }
     const mk = new Graphics().roundRect(2, 2, LW - 4, H - 4, 10).fill(0xffffff); P.addChild(mk); P.mask = mk;
     this.sockets = {};
     SLOT_ORDER.forEach((slot, i) => {

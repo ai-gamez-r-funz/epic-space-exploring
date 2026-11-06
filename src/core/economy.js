@@ -34,15 +34,15 @@ function biasFor(system, goodId) {
 // Every market has a personality: 6 goods it produces (cheap) and 6 it craves (dear). Pairs of neighbouring markets therefore
 // almost always share two or three profitable goods in each direction - the engine of the trading loop.
 const TILT_CACHE = new Map();
-export const TILT_CHEAP = 0.76;
-export const TILT_DEAR = 1.3;
+export const TILT_CHEAP = 0.78;
+export const TILT_DEAR = 1.28;
 function tiltOf(state, system, good) {
   const key = `${state.seed}|${system.id}|${C.GOODS.length}`;
   let t = TILT_CACHE.get(key);
   if (!t) {
     const ranked = C.GOODS.map((g) => [hashFloat(state.seed, system.id, g.id, 'tilt'), g.id]).sort((a, b) => a[0] - b[0]);
     t = {};
-    const n = Math.min(6, Math.floor(ranked.length / 4));
+    const n = Math.min(7, Math.floor(ranked.length / 3.3));
     ranked.slice(0, n).forEach(([, id]) => { t[id] = TILT_CHEAP; });
     ranked.slice(-n).forEach(([, id]) => { t[id] = TILT_DEAR; });
     if (TILT_CACHE.size > 400) TILT_CACHE.clear();
@@ -61,7 +61,9 @@ function profile(state, system, good) {
   if (hasQuillariLicence(state) && system.faction === 'quillari') sold = sold || h < 0.85;
   const bias = biasFor(system, good.id) * tiltOf(state, system, good);
   if (bias <= 0.85) sold = true; // locally produced goods are always on the shelf
-  const targetStock = Math.max(4, Math.round(RULES().stockBase * (bias < 0.85 ? 1.5 : bias > 1.15 ? 0.6 : 1) * (0.7 + 0.6 * hashFloat(state.seed, system.id, good.id, 'stk'))
+  // rarer, pricier goods come in smaller lots: stock scales roughly with 1/sqrt(price)
+  const lot = clamp(Math.sqrt(40 / Math.max(8, good.base)), 0.35, 2);
+  const targetStock = Math.max(3, Math.round(RULES().stockBase * lot * (bias < 0.85 ? 1.5 : bias > 1.15 ? 0.6 : 1) * (0.7 + 0.6 * hashFloat(state.seed, system.id, good.id, 'stk'))
     * (stationKind === 'outpost' ? 0.6 : 1)));
   return { sold, prod, bias, targetStock };
 }
@@ -131,9 +133,9 @@ export function ensureMarket(state, system) {
       const p = profile(state, system, g);
       const tgt = p.sold ? p.targetStock : 0;
       const cur = m.stock[g.id] ?? tgt;
-      // regenerate ~18%/day of the gap (also drains over-stocked piles)
-      m.stock[g.id] = Math.round(tgt + (cur - tgt) * Math.pow(0.82, elapsed));
-      m.impact[g.id] = (m.impact[g.id] || 0) * Math.pow(0.9, elapsed);
+      // regenerate ~7%/day of the gap (busy lanes saturate) (also drains over-stocked piles)
+      m.stock[g.id] = Math.round(tgt + (cur - tgt) * Math.pow(0.93, elapsed));
+      m.impact[g.id] = (m.impact[g.id] || 0) * Math.pow(0.95, elapsed);
       if (Math.abs(m.impact[g.id]) < 0.002) m.impact[g.id] = 0;
     }
     m.updatedDay = state.day;
@@ -164,7 +166,7 @@ export function sideMultipliers(state, system, good) {
   return { buy, sell };
 }
 
-function unitImpact(good) { return 0.55 * RULES().tradeImpact * (0.6 + clamp(good.volatility ?? 0.3, 0, 1)); }
+function unitImpact(good) { return 1.3 * RULES().tradeImpact * (0.6 + clamp(good.volatility ?? 0.3, 0, 1)); }
 
 /** Total cost of buying `qty` units now, walking the price up per unit. */
 export function quoteBuy(state, system, goodId, qty) {

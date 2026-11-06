@@ -383,11 +383,16 @@ export class Game {
     const species = (C.FACTIONS[fac] && C.FACTIONS[fac].species) || 'human';
     const nm = (C.NAMES && typeof C.NAMES.crewName === 'function') ? C.NAMES.crewName(species, () => rng.next()) : 'Captain Unknown';
     const window = Math.round((days || (9 + d[sys.id] * 3)) * diffOf(st).deadline);
-    st.distress = { id: `d${st.day}`, systemId: sys.id, kind, captain: nm || 'A Tired Captain', species, faction: fac, startedDay: st.day, deadlineDay: st.day + window, reward: 10 * d[sys.id] };
+    st.distress = { id: `d${st.day}`, systemId: sys.id, kind, captain: nm || 'A Tired Captain', species, faction: fac, startedDay: st.day, deadlineDay: st.day + window, reward: 15 * d[sys.id] };
+    st.flags.distress_active = true;
     this.emit('sfx', { name: 'alert' });
     this.toast(`Distress signal near ${sys.name}! (${window} days)`, 'info');
     this.log('event', `Distress signal detected near ${sys.name}; it will fade in ${window} days.`);
     return true;
+  }
+  _scheduleDistress() {
+    const st = this.state;
+    st.counters.nextDistressDay = st.day + 15 + Math.floor(hashFloat(st.seed, 'distressn', st.day) * 11);
   }
   distressSignals() {
     const dd = this.state.distress;
@@ -400,12 +405,13 @@ export class Game {
     if (st.phase === 'ended') return;
     if (st.distress && st.day > st.distress.deadlineDay) {
       const sys = this.system(st.distress.systemId);
-      st.distress = null; st.counters.distress_missed = (st.counters.distress_missed || 0) + 1; st.counters.lastDistressDay = st.day;
+      st.distress = null; delete st.flags.distress_active; st.counters.distress_missed = (st.counters.distress_missed || 0) + 1; this._scheduleDistress();
       st.ship.morale = clamp(st.ship.morale - 2, 0, 100);
       this.toast(`The distress signal near ${sys.name} has faded.`, 'bad');
       this.log('event', `The distress signal near ${sys.name} faded before we could help.`);
-    } else if (!st.distress && st.day >= 10 && st.day - (st.counters.lastDistressDay || 0) >= 10 && hashFloat(st.seed, 'distress', st.day) < 0.05) {
-      this.spawnDistress();
+    } else if (!st.distress && st.day >= (st.counters.nextDistressDay ?? (st.counters.nextDistressDay = 12 + Math.floor(hashFloat(st.seed, 'distress1') * 9)))) {
+      // first beacon lands on day 12-20, then one every 15-25 days; if nothing is in range yet we try again tomorrow
+      if (this.spawnDistress()) st.counters.nextDistressDay = 1e9;
     }
     this._rivalMove();
   }
@@ -527,6 +533,8 @@ export class Game {
     if (s.status === 'charted') return;
     s.status = 'charted';
     st.stats.systemsCharted = (st.stats.systemsCharted || 0) + 1;
+    applyEffects(this, [{ credits: 25 }], {}); // Meridian Society stipend for every finished chart
+    this.toast('Society stipend: +25 scrip for the chart', 'good');
     this.log('discovery', `${s.name} charted.`);
     this.emit('discovery', { kind: 'chart', text: `${s.name} charted`, id: s.id });
     this.toast(`${s.name} charted`, 'good');
@@ -613,7 +621,7 @@ export class Game {
     const st = this.state;
     if (st.phase === 'ended') return;
     if (cur.setPiece === 'distress' && st.distress) {
-      st.distress = null; st.counters.lastDistressDay = st.day; st.counters.distress_answered = (st.counters.distress_answered || 0) + 1;
+      st.distress = null; delete st.flags.distress_active; this._scheduleDistress(); st.counters.distress_answered = (st.counters.distress_answered || 0) + 1;
     }
     if (this._chain && !this._pendingEnding) {
       const id = this._chain; this._chain = null;
@@ -809,7 +817,7 @@ export class Game {
     }
     st.stats.planetsScanned = (st.stats.planetsScanned || 0) + 1;
     const lifeBonus = { microbial: 8, flora: 12, fauna: 18, civilized: 25 }[p.life] || 0;
-    const bounty = Math.round((12 + lifeBonus + p.features.length * 8) * diffOf(st).reward * 0.7);
+    const bounty = Math.round((12 + lifeBonus + p.features.length * 8) * diffOf(st).reward);
     applyEffects(this, [{ credits: bounty }, { xp: { science: st.crew.some((c) => c.trait === 'compulsive_cataloguer') ? 2 : 1 } }], {});
     this.emit('sfx', { name: 'scan' });
     this.log('discovery', `Scanned ${p.name}: ${prettify(p.type)}, life: ${p.life}${p.features.length ? ', ' + p.features.map(prettify).join('/') : ''} (+${bounty} scrip).`);

@@ -11,6 +11,7 @@ import { centerOn } from '../kit/layout.js';
 import { arcSeg } from '../kit/draw.js';
 import { Hud } from '../widgets/Hud.js';
 import { STAR_NAMES, prebakeSystem } from '../widgets/Viewscreen.js';
+import { rangeNote } from '../widgets/objective.js';
 import { makeBackdrop } from '../widgets/Backdrop.js';
 import { S, sfx } from '../services.js';
 
@@ -38,7 +39,7 @@ export class GalaxyMap extends Scene {
     this.mapLayer = new Container(); this.mapLayer.eventMode = 'static'; this.mapLayer.hitArea = new Rectangle(0, 0, W, H); v.addChild(this.mapLayer);
     this.world = new Container(); this.mapLayer.addChild(this.world);
     this.tint = new Graphics(); this.lanes = new Graphics(); this.regionLabels = new Container(); this.nodeLayer = new Container(); this.fx = new Graphics(); this.shipLayer = new Container();
-    this.world.addChild(this.tint, this.regionLabels, this.lanes, this.nodeLayer, this.fx, this.shipLayer);
+    this.markerLayer = new Container(); this.world.addChild(this.tint, this.regionLabels, this.lanes, this.nodeLayer, this.fx, this.markerLayer, this.shipLayer);
     this.nodes = new Map(); this.sel = null; this.t = 0; this.zoom = 0.8; this.jumping = false;
     // pan / zoom
     this.mapLayer.on('pointerdown', (e) => { if (this.jumping) return; Input.drag(e.nativeEvent, (dx, dy) => { this.world.x += dx; this.world.y += dy; this._clamp(); }, () => {}, 4); });
@@ -137,6 +138,16 @@ export class GalaxyMap extends Scene {
       if (!n || n.status !== s.status || n.missions !== (targets.get(s.id)?.join('|') || '')) { if (n) n.node.destroy({ children: true }); n = this._makeNode(s, targets.get(s.id)); this.nodes.set(s.id, n); this.nodeLayer.addChild(n.node); }
       n.neigh = neigh.get(s.id) || null; n.node.alpha = 1;
     }
+    // distress beacon + rival markers (state.distress / state.rival; only on systems the player knows)
+    this.markerLayer.removeChildren().forEach((c) => c.destroy({ children: true })); this.beacons = [];
+    for (const id of this._flagSystems(st.distress)) { const s = byId.get(id); if (!s || !known(s)) continue; const dd = g.distressSignals?.()[0];
+      const m = new Container(); m.x = s.x; m.y = s.y - 36; const ic = S.gfx.icon('warning', { size: 22, color: C.coral }); centerOn(ic, 0, 0); m.addChild(ic);
+      const l = new Label({ text: dd ? `SOS · ${dd.daysLeft}d` : 'SOS', preset: 'headSm', size: 10, color: C.coral, shadow: true }); l.x = -l.textWidth / 2; l.y = 14; m.addChild(l);
+      m.eventMode = 'static'; Tooltip.attach(m, { title: 'Distress beacon', body: dd ? `${dd.title || 'Someone needs help'} near ${dd.systemName}. ${dd.daysLeft} day(s) left to answer.` : 'Someone needs help here.', tone: 'bad' });
+      this.markerLayer.addChild(m); this.beacons.push(ic); }
+    for (const id of this._flagSystems(st.rival)) { const s = byId.get(id); if (!s || !known(s)) continue; const rv = g.rivalInfo?.();
+      const m = new Container(); m.x = s.x + 24; m.y = s.y - 24; const ic = S.gfx.icon('ship', { size: 18, color: C.mustard }); centerOn(ic, 0, 0); m.addChild(ic);
+      m.eventMode = 'static'; Tooltip.attach(m, { title: rv?.name || 'Rival trader', body: rv?.note || 'A rival free-trader works this lane.' }); this.markerLayer.addChild(m); }
     this._applyLOD(); this.curNode = this.nodes.get(cur);
   }
   _dash(g, A, B, alpha) {
@@ -196,9 +207,9 @@ export class GalaxyMap extends Scene {
     zb('+', 'Zoom in (+)', () => this.zoomAt(W / 2, H / 2, 1.3), 128); zb('\u2212', 'Zoom out (-)', () => this.zoomAt(W / 2, H / 2, 0.77), 178);
     mk('ship', 'Centre on ship (F)', () => this.centerOn(this.game.here().x, this.game.here().y, true), 228);
     // legend
-    const lg = new Panel({ w: 220, h: 128, title: 'LEGEND', tone: 'deep', pad: 12 }); lg.x = 12; lg.y = H - 140; v.addChild(lg);
-    const rows = [['Charted', C.brassLight, 'ring'], ['Visited', C.cream, 'dot'], ['Detected (unexplored)', C.textDim, 'hollow'], ['Mission target', C.mustard, 'diamond']];
-    rows.forEach(([t, col, kind], i) => { const gg = new Graphics(); const y = i * 21 + 8; if (kind === 'ring') { gg.circle(8, y, 6).fill(col).circle(8, y, 8.5).stroke({ width: 2, color: col }); } else if (kind === 'dot') gg.circle(8, y, 5).fill(col); else if (kind === 'hollow') gg.circle(8, y, 5).stroke({ width: 1.8, color: col }); else gg.poly([8, y - 7, 14, y, 8, y + 7, 2, y]).fill(col); const l = new Label({ text: t, preset: 'tiny', size: 13, color: C.cream }); l.x = 26; l.y = y - 8; lg.content.addChild(gg, l); });
+    const lg = new Panel({ w: 220, h: 176, title: 'LEGEND', tone: 'deep', pad: 12 }); lg.x = 12; lg.y = H - 188; v.addChild(lg);
+    const rows = [['Charted', C.brassLight, 'ring'], ['Visited', C.cream, 'dot'], ['Detected (unexplored)', C.textDim, 'hollow'], ['Mission target', C.mustard, 'diamond'], ['Distress beacon', C.coral, 'sos'], ['Rival trader', C.mustard, 'rival']];
+    rows.forEach(([t, col, kind], i) => { const gg = new Graphics(); const y = i * 21 + 8; if (kind === 'ring') { gg.circle(8, y, 6).fill(col).circle(8, y, 8.5).stroke({ width: 2, color: col }); } else if (kind === 'dot') gg.circle(8, y, 5).fill(col); else if (kind === 'hollow') gg.circle(8, y, 5).stroke({ width: 1.8, color: col }); else if (kind === 'sos') { gg.circle(8, y, 7).stroke({ width: 1.5, color: col, alpha: 0.6 }); gg.circle(8, y, 3.5).fill(col); } else if (kind === 'rival') gg.poly([2, y - 5, 14, y, 2, y + 5]).fill(col); else gg.poly([8, y - 7, 14, y, 8, y + 7, 2, y]).fill(col); const l = new Label({ text: t, preset: 'tiny', size: 13, color: C.cream }); l.x = 26; l.y = y - 8; lg.content.addChild(gg, l); });
     const hint = new Label({ text: 'Drag to pan · wheel to zoom · click a system', preset: 'tiny', size: 12, color: C.textDim, shadow: true }); hint.x = W / 2 - 220; hint.y = H - 28; v.addChild(hint);
   }
   select(id, fire = false) {
@@ -217,7 +228,9 @@ export class GalaxyMap extends Scene {
     this.planBtn.visible = !!s;
     if (!s) {
       add('Select a system on the chart to plan a jump.', { color: C.textDim, gap: 12 });
-      const pr = g.surveyProgress?.(); if (pr) { add(`Survey: ${pr.charted}/${pr.total} systems charted (${pr.pct}%)`, { color: C.tealLight }); add(`Fuel on hand: ${Math.floor(st.ship.fuel)}/${st.ship.fuelMax}`, { color: C.cream }); }
+      const pr = g.surveyProgress?.(); if (pr) { add(`Survey: ${pr.charted}/${pr.total} systems charted (${pr.pct}%)`, { color: C.tealLight }); add(rangeNote(g), { color: C.cream, gap: 10 });
+      const dd = g.distressSignals?.()[0]; if (dd) add(`SOS: ${dd.title || 'distress call'} near ${dd.systemName} — ${dd.daysLeft} day${dd.daysLeft === 1 ? '' : 's'} left`, { color: C.coral });
+      const rv = g.rivalInfo?.(); if (rv?.systemName) add(rv.note, { color: C.mustard }); }
       this.planBtn.visible = false; return;
     }
     const full = ['visited', 'charted'].includes(s.status); const cur = s.id === st.pos;
@@ -233,6 +246,7 @@ export class GalaxyMap extends Scene {
     else if (n) {
       const cj = g.canJump(s.id); const left = Math.floor(st.ship.fuel) - n.fuelCost;
       add(`Distance  ${n.dist.toFixed(1)} ly`, { preset: 'mono', size: 14, gap: 2 }); add(`Fuel cost  ${n.fuelCost}   (leaves ${Math.max(0, left)})`, { preset: 'mono', size: 14, color: cj.ok ? C.cream : C.coral, gap: 2 }); add(`Travel     ${n.days} day${n.days > 1 ? 's' : ''}`, { preset: 'mono', size: 14, gap: 8 });
+      add(rangeNote(g), { color: C.textDim, size: 13 });
       if (cj.ok && left < 3) add('Low fuel after this jump. A station near the destination would be wise.', { color: C.mustard, size: 14 });
       this.planBtn.setLabel('Plan jump'); this.planBtn.setEnabled(cj.ok, cj.reason || 'Cannot jump right now.');
     } else {
@@ -311,8 +325,8 @@ export class GalaxyMap extends Scene {
       g.circle(cur.x, cur.y, 20 + pulse * 6).stroke({ width: 2, color: C.tealLight, alpha: 0.9 - pulse * 0.5 });
       g.poly([cur.x, cur.y - 26 - pulse * 3, cur.x - 6, cur.y - 36 - pulse * 3, cur.x + 6, cur.y - 36 - pulse * 3]).fill(C.tealLight);
       for (const [id, n] of this.nodes) if (n.neigh && id !== this.sel) { const ok = this.game.state.ship.fuel >= n.neigh.fuelCost; g.circle(n.sys.x, n.sys.y, 18).stroke({ width: 1.5, color: ok ? C.teal : C.coral, alpha: 0.35 }); }
-      for (const id of this._flagSystems(this.game.state.distress)) { const s = this.game.system(id); if (s && this.nodes.has(id)) { const q = (this.t * 1.2) % 1; g.circle(s.x, s.y, 14 + q * 26).stroke({ width: 2.5, color: C.coral, alpha: 0.9 * (1 - q) }); g.circle(s.x, s.y, 14).stroke({ width: 2, color: C.coral, alpha: 0.8 }); } }
-      for (const id of this._flagSystems(this.game.state.rival)) { const s = this.game.system(id); if (s && this.nodes.has(id)) { g.poly([s.x + 16, s.y - 20, s.x + 28, s.y - 14, s.x + 16, s.y - 8]).fill(C.mustard); g.poly([s.x + 16, s.y - 20, s.x + 28, s.y - 14, s.x + 16, s.y - 8]).stroke({ width: 1.2, color: 0x0b0d1e }); } }
+      for (const id of this._flagSystems(this.game.state.distress)) { const s = this.game.system(id); if (s && this.nodes.has(id)) { const q = (this.t * 1.2) % 1; for (let k = 0; k < 2; k++) { const q2 = (q + k * 0.5) % 1; g.circle(s.x, s.y, 12 + q2 * 34).stroke({ width: 3 - q2 * 2, color: C.coral, alpha: 0.95 * (1 - q2) }); } g.circle(s.x, s.y, 13).stroke({ width: 2.5, color: C.coral, alpha: 0.9 }); } }
+      for (const ic of this.beacons || []) { const k = 1 + 0.18 * Math.sin(this.t * 5); ic.scale.set(k); }
       if (this.sel) { const s = this.game.system(this.sel); if (s) for (let k = 0; k < 6; k++) { const a = this.t + k * Math.PI / 3; arcSeg(g, s.x, s.y, 24, a, a + 0.55).stroke({ width: 2.5, color: C.mustard }); } }
     }
   }

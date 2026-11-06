@@ -44,7 +44,7 @@ export class App {
     const L = this.layers = {};
     for (const n of ['scene', 'hints', 'toast', 'overlay', 'tooltip', 'fader', 'glitch']) { L[n] = new Container(); L[n].label = n; app.stage.addChild(L[n]); }
     this.fader = new Fader(); L.fader.addChild(this.fader);
-    Modal.layer = L.overlay; Toasts.init(L.toast, () => this.overlays.length > 0 || this.busy || this.holdEvents); Tooltip.init(L.tooltip);
+    Modal.layer = L.overlay; Toasts.init(L.toast, () => this.overlays.length > 0 || Modal.stack.length > 0 || this.busy || this.holdEvents); Tooltip.init(L.tooltip);
     Anim.onError = (e) => this.fail(e);
     Input.init(); installPrefs();
     this.tutorial = new TutorialHints(this, L.hints);
@@ -92,12 +92,23 @@ export class App {
         hadPending = pending;
       }),
       g.on('event', () => this.openEvent()),
-      g.on('toast', (t) => Toasts.push(t.text, { tone: t.tone })),
+      g.on('toast', (t) => this._mergeToast(t)),
       g.on('sfx', (s) => sfx(s.name)),
       g.on('arrive', () => this.autosave()),
       g.on('discovery', (d) => { Toasts.push(d.text || 'Discovery logged.', { tone: 'good', icon: 'star', ms: 5000 }); sfx('discovery'); }),
       g.on('ended', (e) => { setTimeout(() => this.openOverlay('EndScreen', { ending: e?.ending || g.state.ending }), 400); }),
     );
+  }
+  /** Engine toasts that arrive within 300 ms (e.g. stipend + discovery + bounty) are merged into one line. */
+  _mergeToast(t) {
+    (this._tbuf ||= []).push(t);
+    if (this._ttimer) return;
+    this._ttimer = setTimeout(() => {
+      const b = this._tbuf; this._tbuf = []; this._ttimer = 0;
+      const money = b.filter((x) => /scrip|stipend|\+\d/i.test(x.text)); const rest = b.filter((x) => !money.includes(x));
+      const list = [...rest, ...(money.length > 1 ? [{ text: money.map((x) => x.text.replace(/\.$/, '')).join(' · '), tone: money[0].tone }] : money)];
+      for (const x of list) Toasts.push(x.text, { tone: x.tone });
+    }, 300);
   }
   onChanged(fn) { this._changedFns.add(fn); return () => this._changedFns.delete(fn); }
   autosave() { try { if (this.game && S.Game.writeSave) S.Game.writeSave(this.game, 'auto'); } catch (e) { console.warn('autosave failed', e); } }

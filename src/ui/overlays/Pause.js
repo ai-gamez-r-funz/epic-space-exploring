@@ -9,7 +9,7 @@ import { slotInfo, writeSlot, fmtWhen } from './parts2/slots.js';
 
 /** Pause — Esc menu: resume / save / settings / help / quit. */
 export class Pause extends Overlay {
-  title = 'PAUSED'; size = { w: 460, h: 500 };
+  title = 'PAUSED'; size = { w: 460, h: 432 };
   build(modal) {
     const bw = modal.bodyW; const g = this.game;
     const sub = new Label({ text: g ? `${g.state.ship.name} · Day ${g.state.day}` : '', preset: 'small', size: 14, color: C.tealLight, w: bw, align: 'center' }); modal.body.addChild(sub);

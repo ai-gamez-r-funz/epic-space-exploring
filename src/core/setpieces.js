@@ -145,8 +145,8 @@ export function pickDistressKind(rng) { return rng.pick(Object.keys(DISTRESS_KIN
 export function distressEvent(g, d) {
   const k = DISTRESS_KINDS[d.kind] || DISTRESS_KINDS.engine;
   const fac = d.faction && d.faction !== 'none' ? d.faction : null;
-  const repFx = fac ? [{ rep: { [fac]: 3 } }] : [];
-  const reward = 90 + d.reward;
+  const repFx = fac ? [{ rep: { [fac]: 4 }, }, { rep: { concord: 1 } }] : [{ rep: { concord: 3 } }];
+  const reward = 150 + d.reward;
   return ev('core_distress', 'distress', `Distress: ${k.title}`, { scene: 'ship_alien', species: d.species }, {
     a: {
       speaker: { name: d.captain, species: d.species },
@@ -154,8 +154,8 @@ export function distressEvent(g, d) {
       choices: [
         { label: `Lend your ${k.skill} officer`, tag: k.skill === 'diplomacy' ? 'diplomacy' : 'science', check: { skill: k.skill, diff: 3 },
           pass: { text: 'It takes patience and a great deal of tea, but the problem yields. Their relief is loud and wet-eyed.', fx: [{ xp: { [k.skill]: 2 } }, { credits: reward }, ...repFx, { morale: 4 }], goto: 'b' },
-          fail: { text: 'You do what you can; it is not quite enough, but they are alive and grateful for the effort.', fx: [{ xp: { [k.skill]: 1 } }, { credits: Math.round(reward / 3) }, { supplies: -2 }], goto: 'b' } },
-        { label: 'Share supplies (6)', tag: 'trade', if: [{ supplies: 6 }], do: { text: 'Crates cross between the ships. Nobody is going hungry tonight.', fx: [{ supplies: -6 }, { credits: Math.round(reward / 2) }, ...repFx, { morale: 2 }], goto: 'b' } },
+          fail: { text: 'You do what you can; it is not quite enough, but they are alive and grateful for the effort.', fx: [{ xp: { [k.skill]: 1 } }, { credits: Math.round(reward * 0.4) }, { supplies: -2 }], goto: 'b' } },
+        { label: 'Share supplies (6)', tag: 'trade', if: [{ supplies: 6 }], do: { text: 'Crates cross between the ships. Nobody is going hungry tonight.', fx: [{ supplies: -6 }, { credits: Math.round(reward * 0.7) }, ...repFx, { morale: 3 }], goto: 'b' } },
         one('Relay their position to Meridian', 'You file the coordinates with Meridian Relief. It is the proper thing, if not the heroic one. Dobbin logs it with a small sigh.', [{ morale: -1 }, { rep: { concord: 1 } }]),
       ],
     },

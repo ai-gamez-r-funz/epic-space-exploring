@@ -191,7 +191,9 @@ export function removeUpgrade(state, id) {
 }
 
 // ---- service pricing (refuel / repair / restock) ----------------------------------------------------------
-export const SERVICE_BASE = { fuel: 7, supplies: 5, repair: 5 };
+export const SERVICE_BASE = { fuel: 7, supplies: 5, repair: 3 };
+/** Per-unit ceilings so remote stations are dear but never ruinous (esp. hull repair). */
+export const SERVICE_CAP = { fuel: 11, supplies: 7, repair: 4.5 };
 
 export function repDiscount(rep) {
   if (rep >= 60) return 0.10;
@@ -212,8 +214,8 @@ export function servicePrices(state, system, hash01, hops = 0) {
   const far = Math.min(1.9, 1 + 0.07 * Math.max(0, hops - 1));
   let mult = regional * remote * far * diffOf(state).price * (1 - repDiscount(rep)) * (1 - Math.min(0.25, d.buyDiscount));
   if (hasSpecial(state, 'bulk_contracts')) mult *= 0.85;
-  const f = (b) => Math.max(1, Math.round(b * mult * 10) / 10);
-  return { fuel: f(SERVICE_BASE.fuel), supplies: f(SERVICE_BASE.supplies), repair: f(SERVICE_BASE.repair) };
+  const f = (b, cap) => Math.min(cap, Math.max(1, Math.round(b * mult * 10) / 10));
+  return { fuel: f(SERVICE_BASE.fuel, SERVICE_CAP.fuel), supplies: f(SERVICE_BASE.supplies, SERVICE_CAP.supplies), repair: f(SERVICE_BASE.repair, SERVICE_CAP.repair) };
 }
 
 export { SKILLS };
