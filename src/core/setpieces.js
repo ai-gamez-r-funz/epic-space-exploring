@@ -67,25 +67,35 @@ export function hazardEvent(dest, mult = 1, day = 1) {
 
 // ------------------------------------------------------------------ scan discoveries
 /** Pick a find for a freshly scanned planet. Returns { text, fx, label } (fx already valid effects). */
+const FIND_ALTS = {
+  ore: ['Metallic glints mark an exposed vein. Okonkwo is already measuring the drill-bay for it, and Ilse bags a respectable crate of salvage.', 'The scanner chimes at a seam of heavy ore under a skin of dust. A drone scrapes a few crates free before anyone can ask permission.'],
+  ice: ['Blue-white ice fields run to the horizon. A cutter drone brings home glittering blocks that smell faintly of rain.', 'Ancient ice, clean as a bell. The cargo crew call dibs on a few blocks and dibs on the first cup of anything chilled with it.'],
+  gas: ['Cloud bands the colour of tea-stains roll below. A hydrogen scoop trails through the top deck and the tank gauge twitches upward.', 'The gas giant breathes slowly; the ship takes a polite sip of it. Fuel gauges approve.'],
+  lava: ['Glowing rivers thread the dark crust. Ilse files a thermal survey with the careful pride of a person who has been warm for once.', 'Basalt plates grind and glow. The geologists would like it noted that they were extremely brave from orbit.'],
+  crystal: ['Crystal spires ring like glasses at a wedding. One tiny shard drops free into the sample net and hums a sustained, approving note.', 'The surface is a forest of singing glass. A sample tray catches a fragment, still faintly chiming.'],
+  hot: ['Steam rises in slow ribbons from mineral pools, and the sensor feed is so soothing that the night watch asks for a copy.', 'Warm springs braid through the stone below. The science station quietly becomes the most popular room on the ship.'],
+  ruins: ['A neat grid of foundations, a cistern, a faded mosaic of a teapot. A drone lifts a curio from the rubble with great delicacy.', 'The sweep catches regular stonework: someone built here, tidily, long ago. A salvage drone returns with a curio and a lens full of dust.'],
+};
 export function scanFind(rng, planet, sys) {
   const f = planet.features || [];
   const pool = [];
-  if (f.includes('ore')) pool.push({ text: 'Rich ore seams run through the crust. Ilse bags a few crates of salvage lace precursors.', fx: [{ cargo: { salvage_lace: 2 } }, { xp: { science: 1 } }] });
-  if (f.includes('hot_springs')) pool.push({ text: 'Mineral hot springs steam below the ridge. The sensor feed is so relaxing that three crew ask for a copy.', fx: [{ morale: 3 }] });
+  if (f.includes('ore')) pool.push({ key: 'ore', text: 'Rich ore seams run through the crust. Ilse bags a few crates of salvage lace precursors.', fx: [{ cargo: { salvage_lace: 2 } }, { xp: { science: 1 } }] });
+  if (f.includes('hot_springs')) pool.push({ key: 'hot', text: 'Mineral hot springs steam below the ridge. The sensor feed is so relaxing that three crew ask for a copy.', fx: [{ morale: 3 }] });
   if (f.includes('aurora_fields')) pool.push({ text: 'Aurora fields ripple across the sky, answering your scanner pulses with slow light. The log entry runs long and dreamy.', fx: [{ credits: 25 }, { codex: 'aurora_life' }, { morale: 2 }] });
-  if (f.includes('ruins')) pool.push({ text: 'Weathered ruins show up in the sweep: tidy foundations, a cistern, one very old teacup. A drone retrieves a curio.', fx: [{ cargo: { curios: 1 } }, { xp: { science: 1 } }] });
+  if (f.includes('ruins')) pool.push({ key: 'ruins', text: 'Weathered ruins show up in the sweep: tidy foundations, a cistern, one very old teacup. A drone retrieves a curio.', fx: [{ cargo: { curios: 1 } }, { xp: { science: 1 } }] });
   if (f.includes('ancient_signal')) pool.push({ text: 'A faint ancient signal repeats under the static. You record it carefully; the Archive will pay for a clean copy.', fx: [{ credits: 40 }, { xp: { science: 2 } }] });
   if (planet.life === 'microbial') pool.push({ text: 'Microbial mats bloom in the shallows. A sample vial is logged for the Meridian biologists.', fx: [{ credits: 15 }, { xp: { science: 1 } }] });
   if (planet.life === 'flora') pool.push({ text: 'Broad-leaved flora nod at the scanner. A viable seed pod drops into the sample net.', fx: [{ cargo: { seed_vault_crates: 1 } }] });
   if (planet.life === 'fauna') pool.push({ text: 'Curious fauna gather beneath the sensor drone and pose, as far as anyone can tell, for the camera.', fx: [{ morale: 3 }, { credits: 10 }] });
   if (planet.life === 'civilized') pool.push({ text: 'City lights wink back at the scan. A polite greeting arrives in three scripts and one cheerful whistle.', fx: [{ morale: 2 }, ...(sys.faction && sys.faction !== 'none' ? [{ rep: { [sys.faction]: 1 } }] : [])] });
-  if (planet.type === 'gas') pool.push({ text: 'The ship skims the upper cloud decks and scoops a little hydrogen before anyone thinks to object.', fx: [{ fuel: 2 }] });
-  if (planet.type === 'ice') pool.push({ text: 'Clean ice sheets glitter below. Okonkwo wonders aloud about cutting a few blocks. The comet-ice market is always hungry.', fx: [{ cargo: { comet_ice: 2 } }] });
-  if (planet.type === 'crystal') pool.push({ text: 'Singing crystal spires ring in the scanner beam. One chip falls free and chimes politely in the sample tray.', fx: [{ cargo: { tuning_crystals: 1 } }] });
-  if (planet.type === 'lava') pool.push({ text: 'Rivers of molten rock paint the terminator line. The thermal data alone is worth a fine report.', fx: [{ credits: 20 }, { xp: { science: 1 } }] });
+  if (planet.type === 'gas') pool.push({ key: 'gas', text: 'The ship skims the upper cloud decks and scoops a little hydrogen before anyone thinks to object.', fx: [{ fuel: 2 }] });
+  if (planet.type === 'ice') pool.push({ key: 'ice', text: 'Clean ice sheets glitter below. Okonkwo wonders aloud about cutting a few blocks. The comet-ice market is always hungry.', fx: [{ cargo: { comet_ice: 2 } }] });
+  if (planet.type === 'crystal') pool.push({ key: 'crystal', text: 'Singing crystal spires ring in the scanner beam. One chip falls free and chimes politely in the sample tray.', fx: [{ cargo: { tuning_crystals: 1 } }] });
+  if (planet.type === 'lava') pool.push({ key: 'lava', text: 'Rivers of molten rock paint the terminator line. The thermal data alone is worth a fine report.', fx: [{ credits: 20 }, { xp: { science: 1 } }] });
   if (!pool.length || rng.next() > 0.7) return null;
   const pick = rng.pick(pool);
-  return { ...pick };
+  const alt = FIND_ALTS[pick.key];
+  return { ...pick, text: alt ? rng.pick([pick.text, ...alt]) : pick.text };
 }
 /** Optional mini-narrative wrapper for a find, so the player can choose to leave it undisturbed. */
 export function findEvent(planet, find) {

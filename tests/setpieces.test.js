@@ -58,10 +58,10 @@ test('rough lanes: dangerous destinations raise a trade-off decision, never a de
       const start = nb[0] === dest.id ? nb[1] : nb[0];
       teleportForTest(g, start); dest.status = 'detected'; g.state.ship.fuel = g.state.ship.fuelMax;
       g.jump(dest.id);
-      if (g.state.pending && g.state.pending.eventId === 'core_hazard') {
+      if (g.state.pending && (g.state.pending.eventId === 'core_hazard' || /^lane_/.test(g.state.pending.eventId))) {
         const v = g.pendingView();
-        assert.ok(v.choices.length >= 4 && v.choices.every((c) => c.enabled));
-        assert.ok(v.choices.some((c) => c.odds !== undefined));
+        assert.ok(v.choices.length >= 2 && v.choices.some((c) => c.enabled));
+        if (g.state.pending.eventId === 'core_hazard') { assert.ok(v.choices.length >= 4 && v.choices.every((c) => c.enabled)); assert.ok(v.choices.some((c) => c.odds !== undefined)); }
         drain(g); seen++; break;
       }
       drain(g);

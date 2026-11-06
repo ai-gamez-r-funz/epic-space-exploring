@@ -327,8 +327,8 @@ export class Game {
         st.ship.supplies = Math.max(0, have - whole);
       }
       // morale
-      let dm = d.moraleRegen - 0.6; // life aboard wears on a crew; lounges, rests and shore leave mend it
-      if (st.docked) dm += 0.6;
+      let dm = d.moraleRegen - 1.1; // life aboard wears on a crew; lounges, rests and shore leave mend it
+      if (st.docked) dm += 0.9;
       if (opts.rest && Ship.hasSpecial(st, 'field_hospital')) { dm += 2; st.ship.hull = clamp(st.ship.hull + 1, 0, st.ship.hullMax); }
       if (opts.rest) { dm += 3; if (Ship.hasSpecial(st, 'tea_service')) dm += 1.5; }
       if (st.docked && Ship.hasSpecial(st, 'tea_service')) dm += 0.5;
@@ -849,7 +849,7 @@ export class Game {
     // everyday wear and tear
     // everyday wear and tear grows with the danger of the space you fly through
     if (diff.damage > 0.6 && this.rng.chance(Math.min(0.9, 0.3 + 0.18 * dest.danger))) {
-      const wear = Math.max(1, Math.round((this.rng.int(1, 2) + dest.danger) * diff.damage * (Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1)));
+      const wear = Math.max(1, Math.round(1.5 * (this.rng.int(1, 2) + dest.danger) * diff.damage * (Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1)));
       applyEffects(this, [{ hull: -wear }], { noScale: true });
     }
     let chance = (0.07 + 0.15 * dest.danger) * diff.hazard + (ph ? 0.08 : 0);
