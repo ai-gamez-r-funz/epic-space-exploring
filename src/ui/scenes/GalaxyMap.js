@@ -10,7 +10,7 @@ import { Anim, Eases } from '../kit/anim.js';
 import { centerOn } from '../kit/layout.js';
 import { arcSeg } from '../kit/draw.js';
 import { Hud } from '../widgets/Hud.js';
-import { STAR_NAMES } from '../widgets/Viewscreen.js';
+import { STAR_NAMES, prebakeSystem } from '../widgets/Viewscreen.js';
 import { makeBackdrop } from '../widgets/Backdrop.js';
 import { S, sfx } from '../services.js';
 
@@ -202,7 +202,7 @@ export class GalaxyMap extends Scene {
     const hint = new Label({ text: 'Drag to pan · wheel to zoom · click a system', preset: 'tiny', size: 12, color: C.textDim, shadow: true }); hint.x = W / 2 - 220; hint.y = H - 28; v.addChild(hint);
   }
   select(id, fire = false) {
-    this.sel = id; if (fire) sfx('click'); this.refreshSide(); this._applyLOD();
+    this.sel = id; if (id) prebakeSystem(this.game.system(id)); if (fire) sfx('click'); this.refreshSide(); this._applyLOD();
   }
   _route(toId) {
     const g = this.game, gal = g.state.galaxy; const known = new Set(gal.systems.filter((s) => s.status !== 'unknown').map((s) => s.id));
@@ -260,7 +260,7 @@ export class GalaxyMap extends Scene {
 
   // ------------------------------------------------------------------ jump animation
   async playJump(to) {
-    const g = this.game; const A = g.here(), B = g.system(to);
+    const g = this.game; const A = g.here(), B = g.system(to); prebakeSystem(B);
     this.jumping = true; this.ui.holdEvents = true; Tooltip.hide(); sfx('powerup');
     const prefs = window.__halcyonPrefs || { shake: true, anim: true };
     Anim.to(this.side, { alpha: 0, x: this.side.x + 40 }, 300); this.planBtn.eventMode = 'none';

@@ -15,6 +15,11 @@ export const PHEN_NAMES = { nebula: 'Nebula', pulsar: 'Pulsar', ionstorm: 'Ion s
 const STAR_R = { yellow: 40, orange: 38, red: 48, white: 36, blue: 32, binary: 40, neutron: 12, blackhole: 22 };
 const hashStr = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
 
+/** Warm the planet texture cache for a system (async, safe to call repeatedly). */
+export function prebakeSystem(sys) {
+  try { for (const p of sys?.planets || []) S.rawGfx?.prebakeAsync?.(p.type, hashStr(p.id), p.scanned ? p.life : 'none'); } catch (e) { /* optional */ }
+}
+
 /**
  * Viewscreen — the bridge's big window: current system as an orbit diagram. Click objects to select.
  *   const vs = new Viewscreen({ w:710, h:470, onSelect(sel|null) })

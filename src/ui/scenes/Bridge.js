@@ -195,7 +195,7 @@ export class Bridge extends Scene {
     set('land', !pend && !docked && p && p.scanned && !p.landed, busy || (docked ? 'Undock first.' : !p ? 'Click a planet first.' : !p.scanned ? `Scan ${p.name} before sending a landing party.` : `${p.name} is already explored.`), { title: 'Landing party (L)', body: 'Send an away team to the surface. Risky and rewarding.' });
     set('inv', !pend && sys.phenomena.length > 0, busy || 'No phenomena to investigate here.', { title: 'Investigate (I)', body: 'Study a phenomenon with the science team.' });
     set('hail', !pend && (sys.faction !== 'none' || !!sys.station), busy || 'Nobody here to hail.', { title: 'Hail (H)', body: 'Open a channel to the locals.' });
-    c.dock.setLabel(docked ? 'Undock' : 'Dock'); c.dock.setIcon('dock');
+    c.dock.setLabel(docked ? 'Undock' : 'Dock'); c.dock.setIcon(docked ? 'undock' : 'dock');
     set('dock', !pend && !!sys.station, busy || 'No station in this system.', { title: 'Dock (D)', body: docked ? 'Cast off from the station.' : 'Dock to trade, repair and refuel.' });
     set('trade', !pend && docked, busy || (sys.station ? 'Dock at the station first.' : 'No station here.'), { title: 'Trade (T)', body: 'Buy and sell goods, repair, refuel.' });
     set('ship', !pend, busy, { title: 'Ship (U)', body: 'Installed systems and upgrades.' });
