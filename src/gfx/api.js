@@ -9,6 +9,7 @@ import { createSceneArt, createStation } from './scenes.js';
 import { createIcon, createGoodIcon, createFactionEmblem, ICON_NAMES } from './icons.js';
 import { createVignette, createScanlines, createPanelBg } from './decor.js';
 import { glowSprite, rng, TAU } from './util.js';
+import { createRewardBadge, rewardBurst, rewardStyle, REWARD_STYLE, createLaneGlow, createMapMarker } from './feedback.js';
 
 let _app = null;
 
@@ -57,6 +58,11 @@ export const gfx = {
   scanlines: createScanlines,
   panelBg: createPanelBg,
   // extras
+  rewardStyle, rewardStyles: REWARD_STYLE,
+  rewardBadge: createRewardBadge,
+  rewardBurst: (kind, x, y, negative) => rewardBurst(burst, kind, x, y, negative),
+  laneGlow: createLaneGlow,
+  mapMarker: createMapMarker,
   station: createStation,
   iconNames: ICON_NAMES,
   factionColours: FACTION_COLOURS,
@@ -69,4 +75,6 @@ export const gfx = {
 
 export { palette, createStarfield as starfield, createNebula as nebula, createPlanet as planet, createStar as star, createPhenomenon as phenomenon, createShip as ship, createPortrait as portrait, createSceneArt as sceneArt, createIcon as icon, createGoodIcon as goodIcon, createFactionEmblem as factionEmblem, createVignette as vignette, createScanlines as scanlines, createPanelBg as panelBg, createStation as station };
 export const init = gfx.init;
+export const rewardBadge = createRewardBadge, laneGlow = createLaneGlow, mapMarker = createMapMarker;
+export { rewardStyle };
 void Graphics;

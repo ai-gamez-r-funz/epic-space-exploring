@@ -59,13 +59,22 @@ sections.scenes = () => {
   const kinds = ['nebula', 'starfield', 'planet', 'derelict', 'station', 'ship_alien', 'pulsar', 'ionstorm', 'wormhole', 'asteroids', 'comet', 'rift', 'aurora', 'beacon', 'bridge', 'landing', 'ruins', 'market', 'lounge', 'engine_room', 'sickbay', 'void'];
   const sp = ['quillari', undefined, 'human', undefined, 'drifter', 'vesperine', undefined, undefined, undefined, undefined, 'archivist'];
   const cw = 410, ch = 220;
-  kinds.forEach((k, i) => { const x = 14 + (i % 3) * (cw + 14), y = Y + 14 + Math.floor(i / 3) * (ch + 28); place(gfx.sceneArt({ scene: k, species: sp[i % sp.length] && (['bridge', 'lounge', 'ship_alien', 'market', 'comet', 'station'].includes(k)) ? sp[i % sp.length] || 'human' : undefined, seed: i + 1 }, cw, ch), x, y); label(k, x + 4, y + ch + 2, 11); });
+  kinds.forEach((k, i) => { const x = 14 + (i % 3) * (cw + 14), y = Y + 14 + Math.floor(i / 3) * (ch + 28); place(gfx.sceneArt({ scene: k, planetType: k === 'planet' ? 'ocean' : k === 'landing' ? 'ocean' : k === 'station' ? 'ice' : undefined, region: ['nebula', 'starfield', 'derelict', 'planet', 'comet', 'rift', 'ship_alien', 'landing', 'beacon'][i % 9] && ['veil', 'choir', 'archive', 'rim', 'shoals', 'gate'][i % 6], species: sp[i % sp.length] && (['bridge', 'lounge', 'ship_alien', 'market', 'comet', 'station'].includes(k)) ? sp[i % sp.length] || 'human' : undefined, seed: i + 1 }, cw, ch), x, y); label(k, x + 4, y + ch + 2, 11); });
   Y += Math.ceil(kinds.length / 3) * (ch + 28) + 20;
 };
 sections.stations = () => {
   place(gfx.starfield({ w: W, h: 520, seed: 31 }), 0, Y);
   ['trade', 'outpost', 'shipyard', 'embassy', 'archive', 'habitat'].forEach((k, i) => { const x = 210 + (i % 3) * 430, y = Y + 140 + Math.floor(i / 3) * 250; place(gfx.station({ kind: k, size: 170 }), x, y); label(k, x - 20, y + 105); });
   Y += 540;
+};
+sections.feedback = () => {
+  place(gfx.starfield({ w: W, h: 420, seed: 5 }), 0, Y);
+  Object.keys(gfx.rewardStyles).forEach((k, i) => { place(gfx.rewardBadge(k, { size: 44 }), 50 + i * 90, Y + 40); label(k, 30 + i * 90, Y + 72, 10); });
+  place(gfx.rewardBadge('hull', { size: 44, negative: true }), 50 + 13 * 90, Y + 40);
+  [['safe', 0], ['mild', 1], ['risky', 2], ['deadly', 3]].forEach(([n, d], i) => { place(gfx.laneGlow(40, Y + 140 + i * 40, 440, Y + 160 + i * 40, { danger: d }), 0, 0); label(n, 450, Y + 144 + i * 40, 11); });
+  place(gfx.laneGlow(640, Y + 140, 1040, Y + 200, { hot: true }), 0, 0); label('hot lane', 1050, Y + 160, 11);
+  ['rival', 'lantern', 'distress', 'objective', 'news', 'hot'].forEach((k, i) => { place(gfx.mapMarker(k, { size: 30 }), 60 + i * 110, Y + 340); label(k, 40 + i * 110, Y + 365, 11); });
+  Y += 420;
 };
 sections.icons = () => {
   const bg = new Graphics().rect(0, Y, W, 560).fill(0x1b2140); stage.addChild(bg);

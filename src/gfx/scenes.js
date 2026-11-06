@@ -125,9 +125,9 @@ S.starfield = (w, h, R) => {
 };
 S.planet = (w, h, R, spec) => {
   const c = spaceBase(w, h, R() * 1e6 | 0, { neb: R() < 0.4 ? R() * 360 : null, nebAlpha: 0.5 });
-  const type = spec.planet || R.pick(PLANET_TYPES);
+  const type = spec.planetType || spec.planet || R.pick(PLANET_TYPES);
   const glow = glowSprite(0xffe0a0, h * 0.7, 0.35, 2); glow.position.set(-w * 0.02, h * 0.12); c.addChild(glow);
-  const p = createPlanet({ type, seed: R() * 1000 | 0, radius: h * 0.5, ringed: type === 'gas' && R() < 0.6, moons: 1, life: 'none' }); p.position.set(w * 0.68, h * 0.7); c.addChild(p);
+  const p = createPlanet({ type, seed: R() * 1000 | 0, radius: h * 0.5, ringed: type === 'gas' && R() < 0.6, moons: type === 'barren' ? 0 : 1, life: spec.life || 'none' }); p.position.set(w * 0.68, h * 0.7); c.addChild(p);
   c.onUpdate(upd(c)); return c;
 };
 S.derelict = (w, h, R) => {
@@ -137,7 +137,7 @@ S.derelict = (w, h, R) => {
 };
 S.station = (w, h, R, spec) => {
   const c = spaceBase(w, h, R() * 1e6 | 0, { neb: R() < 0.3 ? R() * 360 : null, nebAlpha: 0.4 });
-  const p = createPlanet({ type: R.pick(PLANET_TYPES), seed: R() * 1000 | 0, radius: h * 0.7, life: 'civilized' }); p.position.set(w * 0.2, h * 0.95); c.addChild(p);
+  const p = createPlanet({ type: spec.planetType || R.pick(['terran', 'ocean', 'desert', 'ice', 'jungle']), seed: R() * 1000 | 0, radius: h * 0.7, life: 'civilized' }); p.position.set(w * 0.2, h * 0.95); c.addChild(p);
   const st = createStation({ kind: spec.station || R.pick(['trade', 'outpost', 'shipyard', 'embassy', 'archive', 'habitat']), size: h * 0.55 }); st.position.set(w * 0.62, h * 0.46); c.addChild(st);
   c.onUpdate(upd(c)); return c;
 };
@@ -331,16 +331,18 @@ S.market = (w, h, R) => {
 };
 S.landing = (w, h, R, spec) => {
   const c = animated();
-  const gt = spec.planet || spec.planetType;
+  const gt = spec.planetType || spec.planet;
   const warm = gt === 'barren' || gt === 'desert' || gt === 'lava' ? true : gt === 'ice' || gt === 'ocean' || gt === 'jungle' || gt === 'toxic' ? false : R() < 0.5;
   c.addChild(gradRect(w, h, warm ? [[0, '#2a2a5e'], [0.5, '#c46a70'], [1, '#f2b070']] : [[0, '#0f2a4a'], [0.5, '#2f7a8a'], [1, '#a8e0c0']]));
   const sf = createStarfield({ w, h: h * 0.5, seed: R() * 99 | 0, bg: false, density: 0.7 }); sf.alpha = 0.6; c.addChild(sf);
   const sun = glowSprite(warm ? 0xffe0a0 : 0xe8fff0, h * 0.5, 0.7, 2); sun.position.set(w * 0.2, h * 0.58); c.addChild(sun);
-  const bt = R.pick(['gas', 'ice', 'barren', 'gas']);
+  const bt = gt === 'gas' ? 'ice' : R.pick(['gas', 'ice', 'barren', 'gas']);
   const big = createPlanet({ type: bt, seed: R() * 999 | 0, radius: h * (bt === 'barren' ? 0.14 : 0.22), ringed: bt === 'gas' && R() < 0.5, moons: bt === 'barren' ? 0 : 1 }); big.position.set(w * 0.72, h * 0.26); c.addChild(big);
   const Nz = makeNoise(R() * 9999 | 0);
   const hills = (base, amp, col, f, off) => { const g = new Graphics(); g.moveTo(0, h); for (let i = 0; i <= 60; i++) { const x = i / 60 * w; g.lineTo(x, h * base - Nz.fbm(i * f + off, 1, 2, 3) * amp); } g.lineTo(w, h).closePath().fill(col); return g; };
-  c.addChild(hills(0.72, h * 0.18, warm ? 0x6a3a5a : 0x1f5a6a, 0.09, 1), hills(0.8, h * 0.14, warm ? 0x4a2a48 : 0x164a58, 0.12, 9), hills(0.9, h * 0.09, warm ? 0x2a1a30 : 0x0d2a3a, 0.16, 20));
+  const GP = { barren: [0x6a6470, 0x4a4652, 0x2a2832], desert: [0x9a5a3a, 0x7a4430, 0x3a2220], lava: [0x6a2a2a, 0x4a1a1e, 0x20100f], ice: [0x8aa8c8, 0x6a88a8, 0x3a5470], ocean: [0x2a7a8a, 0x1f5a70, 0x0d2a40], jungle: [0x2a7a4a, 0x1f5a3a, 0x0d2a20], terran: [0x4a8a52, 0x3a6a46, 0x1a3a28], toxic: [0x7a8a2a, 0x566a2a, 0x2a3414], crystal: [0x7a5ab8, 0x5a4290, 0x2a1f4a] };
+  const gp = GP[gt] || (warm ? [0x6a3a5a, 0x4a2a48, 0x2a1a30] : [0x1f5a6a, 0x164a58, 0x0d2a3a]);
+  c.addChild(hills(0.72, h * 0.18, gp[0], 0.09, 1), hills(0.8, h * 0.14, gp[1], 0.12, 9), hills(0.9, h * 0.09, gp[2], 0.16, 20));
   const ship = createShip({ kind: 'tender', scale: h / 300, thrust: 0 }); const sh = new Container(); sh.addChild(ship); sh.position.set(w * 0.4, h * 0.74);
   const legs = new Graphics().moveTo(-20, 12).lineTo(-30, 28).moveTo(20, 12).lineTo(30, 28).stroke({ width: 3, color: 0x2a3566, cap: 'round' }); legs.scale.set(h / 300 * 1.2); sh.addChildAt(legs, 0); c.addChild(sh);
   const fig = new Graphics(); for (const [x, y] of [[w * 0.52, h * 0.86], [w * 0.55, h * 0.87]]) { fig.roundRect(x - 3, y - 14, 6, 14, 3).fill(0x120a1a); fig.circle(x, y - 17, 3.4).fill(0x120a1a); } c.addChild(fig);
@@ -369,6 +371,21 @@ S.ruins = (w, h, R) => {
   return c;
 };
 
+// region-specific viewscreen props (spec.region: gate|shoals|veil|choir|archive|rim)
+function regionProps(region, w, h, R) {
+  const c = animated();
+  const add = (o) => { c.addChild(o); return o; };
+  let t = 0; const fns = [];
+  if (region === 'veil') { const v = gradRect(w, h, [[0, 'rgba(140,90,200,0.22)'], [1, 'rgba(60,160,200,0.12)']]); v.blendMode = 'add'; add(v); for (let i = 0; i < 10; i++) { const m = glowSprite(0xc8a8ff, R.range(3, 6), 0.5); m.position.set(R() * w, R() * h); add(m); fns.push((tt) => { m.alpha = 0.25 + 0.25 * Math.sin(tt * 0.6 + i); m.y += 0.04; if (m.y > h) m.y = 0; }); } }
+  else if (region === 'choir') { for (let i = 0; i < 3; i++) { const g = new Graphics().circle(0, 0, h * 0.3).stroke({ width: 1.5, color: 0xb9e0ff, alpha: 0.5 }); g.position.set(w * 0.85, h * 0.2); add(g); fns.push((tt) => { const p = (tt * 0.12 + i / 3) % 1; g.scale.set(0.3 + p * 2.2); g.alpha = (1 - p) * 0.5; }); } }
+  else if (region === 'archive') { for (let i = 0; i < 7; i++) { const b = new Graphics().roundRect(-6, -4, 12, 8, 1.5).fill(0xd9a441).stroke({ width: 0.8, color: 0xf2e3b8, alpha: 0.7 }); b.moveTo(0, -4).lineTo(0, 4).stroke({ width: 0.7, color: 0x8a6a2a }); const g = glowSprite(0xffe08a, 9, 0.35, 2); const holder = new Container(); holder.addChild(g, b); holder.position.set(R() * w, R() * h); add(holder); const sp = R.range(2, 6), ph = R() * 6; fns.push((tt) => { holder.x += 0.02 * sp; if (holder.x > w + 10) holder.x = -10; holder.y += Math.sin(tt * 0.5 + ph) * 0.08; holder.rotation = Math.sin(tt * 0.3 + ph) * 0.4; }); } }
+  else if (region === 'rim') { for (let i = 0; i < 4; i++) { const l = glowSprite(0xffd070, R.range(7, 11), 0.8, 1.8); l.position.set(R() * w, h * R.range(0.55, 0.9)); add(l); const d = new Graphics().circle(0, 0, 1.6).fill(0xfff2c0); const sp = R.range(0.6, 1.4), ph = R() * 6; fns.push((tt) => { l.x += 0.05 * sp; if (l.x > w + 10) l.x = -10; l.alpha = 0.6 + 0.3 * Math.sin(tt * 2 + ph); }); } }
+  else if (region === 'shoals') { for (let i = 0; i < 2; i++) { const sh = createShip({ kind: 'concord', scale: Math.min(0.28, w / 560 * 0.22), thrust: 0.5 }); sh.position.set(R() * w, h * R.range(0.15, 0.35)); add(sh); const sp = R.range(8, 16); fns.push((tt, dt) => { sh.x += dt * sp; if (sh.x > w + 40) sh.x = -40; sh.update(dt); }); } }
+  else if (region === 'gate') { const g = new Graphics().circle(0, 0, h * 0.09).stroke({ width: 2, color: 0x8fe0ff, alpha: 0.6 }).circle(0, 0, h * 0.06).stroke({ width: 1, color: 0xffffff, alpha: 0.4 }); g.position.set(w * 0.12, h * 0.22); const gl = glowSprite(0x6ab4ff, h * 0.14, 0.4, 2); gl.position.set(w * 0.12, h * 0.22); add(gl); add(g); fns.push((tt) => { g.alpha = 0.7 + 0.3 * Math.sin(tt * 1.2); gl.alpha = 0.35 + 0.15 * Math.sin(tt * 1.2); }); }
+  c.update = (dt) => { t += dt; for (const f of fns) f(t, dt); };
+  return c;
+}
+
 const INTERIOR = new Set(['bridge', 'lounge', 'market', 'engine_room', 'sickbay', 'landing', 'ruins']);
 
 export function createSceneArt(spec = {}, w = 560, h = 300) {
@@ -381,6 +398,7 @@ export function createSceneArt(spec = {}, w = 560, h = 300) {
   // palette tint
   const tints = { warm: [0xffb060, 0.1], cool: [0x5aa0e0, 0.1], dusk: [0x8c5a8a, 0.14], alarm: [0xef6f5e, 0.12], teal: [0x3fc1b0, 0.08], gold: [0xe8b94a, 0.1], dark: [0x000000, 0.25] };
   const tn = tints[spec.palette]; if (tn) content.addChild(new Graphics().rect(0, 0, w, h).fill({ color: tn[0], alpha: tn[1] }));
+  if (spec.region && !['bridge', 'lounge', 'engine_room', 'sickbay', 'market'].includes(kind)) { const rp = regionProps(spec.region, w, h, R); content.addChild(rp); root._rp = rp; }
   let accent = null;
   const sp = spec.species;
   if (sp && sp !== 'none') {
@@ -407,7 +425,7 @@ export function createSceneArt(spec = {}, w = 560, h = 300) {
   root.addChild(scan, vig, bars, rec, rdot, frame);
   let t = 0;
   root.update = (dt) => {
-    t += dt; if (scene.update) scene.update(dt);
+    t += dt; if (scene.update) scene.update(dt); if (root._rp) root._rp.update(dt);
     scan.update(dt); const on = (t % 2) < 1.2; rec.alpha = on ? 0.9 : 0.15; rdot.alpha = on ? 1 : 0.2;
     if (accent && accent.update) accent.update(dt);
     if (accent && accent._base != null) accent.x = accent._base + Math.sin(t * 0.25) * w * 0.03;
