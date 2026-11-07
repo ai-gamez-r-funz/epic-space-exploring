@@ -44,6 +44,6 @@ export async function showBriefing(g, toId) {
   y += (b.tiers || []).length * 40 + 8;
   const lh = new Label({ text: 'HOW TO IMPROVE YOUR ODDS', preset: 'headSm', size: 10, color: C.brassLight }); lh.y = y; m.body.addChild(lh); y += 20;
   for (const lv of (b.levers || []).slice(0, 3)) { const ic = ico(lv.icon, 18, C.tealLight); ic.y = y; m.body.addChild(ic); const l = new Label({ text: lv.text, preset: 'small', size: 13, color: C.cream, w: W - 30, h: 34, fit: true }); l.x = 26; l.y = y; m.body.addChild(l); y += 34; }
-  m.addButtons([{ label: 'Not today', w: 150, onClick: () => m.close(false), hotkey: 'n' }, { label: 'Run the lane', variant: 'primary', icon: 'jump', w: 200, onClick: () => m.close(true), hotkey: 'Enter' }]);
+  m.addButtons([{ label: 'Not today', w: 150, onClick: () => m.close(false), hotkey: 'n' }, { label: 'Run the lane', variant: 'primary', icon: 'jump', w: 240, onClick: () => m.close(true), hotkey: 'Enter' }]);
   m.open(); return !!(await m.closed);
 }

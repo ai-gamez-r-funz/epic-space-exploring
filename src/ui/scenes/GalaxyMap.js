@@ -58,7 +58,7 @@ export class GalaxyMap extends Scene {
     Input.bind(v, ['+', '='], () => this.zoomAt(W / 2, H / 2, 1.25)); Input.bind(v, ['-', '_'], () => this.zoomAt(W / 2, H / 2, 0.8));
     Input.bind(v, 'Home', () => this.centerOn(here.x, here.y, true)); Input.bind(v, 'f', () => this.centerOn(g.here().x, g.here().y, true));
     Input.bind(v, 'm', () => this.onEscape());
-    Input.bind(v, 'c', () => this.onEscape());
+    Input.bind(v, ['c', 'b'], () => this.onEscape());
     this.hud.refresh();
   }
   onEscape() { if (this.jumping) return; this.ui.goto('Bridge', {}, { kind: 'wipe', dir: 'right', ms: 350 }); }
