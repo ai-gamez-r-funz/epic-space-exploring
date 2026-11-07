@@ -48,6 +48,7 @@ export const Input = {
   },
   /** Register a hotkey: keys 'c' | 'Escape' | 'Enter' | 'Space' | '1'... or array. `owner` = container (scope + visibility). */
   bind(owner, keys, fn, when) {
+    for (let i = hotkeys.length - 1; i >= 0; i--) if (hotkeys[i].owner.destroyed) hotkeys.splice(i, 1); // drop bindings of destroyed owners (overlays never unbind theirs)
     const h = { keys: [].concat(keys).map((k) => (k.length === 1 ? k.toLowerCase() : k)), owner, fn, when };
     hotkeys.push(h);
     return () => { const i = hotkeys.indexOf(h); if (i >= 0) hotkeys.splice(i, 1); };
