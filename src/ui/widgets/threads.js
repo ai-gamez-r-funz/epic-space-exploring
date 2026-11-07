@@ -43,21 +43,14 @@ export function dockBulletin(g) {
   } catch (e) { return null; }
 }
 
-/** "You could spend that" nudge. ENGINE g.spendHints() when present, else derived from scrip, refits and training at this station. */
+/** "You could spend that" nudge from ENGINE g.spendHints(): first hint within reach. */
 export function spendLine(g) {
   try {
-    const h = g.spendHints?.();
-    if (h) { const a = Array.isArray(h) ? h : h.hints || h.lines || []; if (a.length) { const f = a[0]; return { text: typeof f === 'string' ? f : f.text, overlay: f.overlay || 'Shipyard' }; } return null; }
-  } catch (e) { /* derive */ }
-  try {
-    const st = g.state; const sys = g.here(); if (!st.docked || !sys.station) return null;
-    const refit = (g.refits?.() || []).find((r) => r.available && !r.owned);
-    const yard = sys.station.services.includes('shipyard');
-    if (refit && yard) return { text: `Refit on offer: ${refit.name} (${refit.cost} scrip, ${refit.days}d) \u2014 open the yard`, overlay: 'Shipyard' };
-    if (st.credits >= 1000 && yard) return { text: `${Math.floor(st.credits)} scrip in the hold: the yard has upgrades, refits and training to spend it on`, overlay: 'Shipyard' };
-    if (st.credits >= 1000) return { text: `${Math.floor(st.credits)} scrip in the hold: find a shipyard to put it to work`, overlay: null };
-  } catch (e) { /* */ }
-  return null;
+    const h = (g.spendHints?.() || [])[0]; if (!h) return null;
+    const where = h.here ? 'here' : `${h.systemName} (${h.jumps} jump${h.jumps === 1 ? '' : 's'})`;
+    const verb = { refit: 'Refit', training: 'Training', commission: 'Commission', upgrade: 'Upgrade' }[h.kind] || 'Spend';
+    return { text: `Spend scrip: ${verb} \u2014 ${h.name} (${h.cost}) at ${where}`, systemId: h.here ? null : h.systemId, overlay: h.here ? 'Shipyard' : null };
+  } catch (e) { return null; }
 }
 
 /** Pill row overlaid on the viewscreen bottom. Rebuilt by update(game). */
@@ -78,7 +71,7 @@ export class ThreadsBar extends Container {
     this.removeChildren().forEach((c) => c.destroy({ children: true }));
     const focus = (id, title) => () => { if (id && this.ui.showOnMap) this.ui.showOnMap([id], title); else this.ui.openOverlay('MissionLog'); };
     let y = 0; const H = 24;
-    const sp = spendLine(g); if (sp) { this.addChild(this._pill(0, y, this.W, H, C.good, 'credits', sp.text, () => (sp.overlay ? this.ui.openOverlay(sp.overlay) : this.ui.toast('Chart a course to a shipyard.', 'info')), { title: 'Spend your scrip', body: sp.text, footer: sp.overlay ? 'Click to open it' : '' })); y += H + 6; }
+    const sp = spendLine(g); if (sp) { this.addChild(this._pill(0, y, this.W, H, C.good, 'credits', sp.text, () => (sp.overlay ? this.ui.openOverlay(sp.overlay) : focus(sp.systemId, 'Spend scrip')()), { title: 'Spend your scrip', body: sp.text, footer: sp.overlay ? 'Click to open it' : '' })); y += H + 6; }
     if (docked) { const b = dockBulletin(g); if (b) { this.addChild(this._pill(0, y, this.W, H, C.mustard, 'news', b.text, focus(b.systemId, 'Dock bulletin'), { title: 'Dock bulletin', body: b.all.map((l) => '\u2022 ' + l.text).join('\n'), footer: b.systemId ? 'Click to show it on the Chart' : '' })); y += H + 6; } }
     const r = rivalLine(g); const l = lanternLine(g); const parts = [r, l].filter(Boolean);
     let x = 0; const gap = 8; const w1 = r && l ? Math.floor((this.W - gap) * 0.46) : this.W;
