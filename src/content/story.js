@@ -394,9 +394,16 @@ export const ENDINGS = {
   },
   lantern_silent: {
     id: 'lantern_silent', kind: 'main', trigger: 'story', priority: 100, scoreBonus: 1100,
-    blurb: "Earned by answering the last Lantern with respect: leave the lamps dark and undisturbed.",
+    blurb: "Earned deliberately: carry the silence-stone (from the Vesperine Vow of Silence job) to the last Lantern and answer with silence.",
     title: 'The Quiet Respect',
     text: 'You dim the console lights, thank the Lanterns aloud, and turn away. The lamps fall softly dark one by one, undisturbed, their long vigil honoured and ended with grace. The Reach is yours to chart but not to claim, and the silence behind you sounds a great deal like a gentle goodnight.',
+    conditions: [{ flag: 'lantern_5' }, { flag: 'lantern_path_quiet' }, { item: 'silence_stone' }],
+  },
+  lantern_hush: {
+    id: 'lantern_hush', kind: 'main', trigger: 'story', priority: 90, scoreBonus: 1000,
+    title: 'The Held Breath',
+    blurb: 'Earned by answering the last Lantern quietly without taking the Vesperine\'s Vow of Silence. The lamps are left lit, and unasked.',
+    text: 'You sit beside the last Lantern and say nothing, and the Lantern, kindly, says nothing back. You leave it burning and unasked, a candle in a window, for whoever comes next. It is not silence, exactly. It is a held breath, and the Reach lets it go, softly, with a smile.',
     conditions: [{ flag: 'lantern_5' }, { flag: 'lantern_path_quiet' }],
   },
   merchant_prince: {
@@ -500,7 +507,7 @@ export const ENDINGS = {
 };
 
 export const ENDING_ORDER = [
-  'lantern_keeper', 'lantern_friend', 'lantern_silent',
+  'lantern_keeper', 'lantern_friend', 'lantern_silent', 'lantern_hush',
   'beloved_by_all', 'merchant_prince', 'drifter_adoption', 'archive_scholar', 'rival_friend', 'chart_laureate', 'friend_of_the_choir', 'quiet_gardener', 'lantern_pilgrim', 'comfortable_captain', 'honest_mapmaker', 'cartographer', 'wanderer',
   'recalled', 'resignation',
 ];
@@ -644,6 +651,7 @@ export const ITEM_DEFS = {
   scholars_pin: { id: 'scholars_pin', name: "Scholar's Pin", kind: 'key', desc: 'A tiny brass pin shaped like a question mark. Archivists nod when they see it.' },
   drifter_kin_cord: { id: 'drifter_kin_cord', name: 'Kin Cord', kind: 'gift', desc: 'A braided cord worn only by drifter-kin. Every habitat will light a lamp for you.' },
   festival_bunting: { id: 'festival_bunting', name: 'Festival Bunting', kind: 'gift', desc: 'A long string of paper pennants. Brightens any bridge.' },
+  silence_stone: { id: 'silence_stone', name: 'Silence-Stone', kind: 'artifact', desc: 'A smooth grey stone from the Vesperine. Carry it to the last Lantern if you mean to answer with silence.' },
   rare_chart_fragment: { id: 'rare_chart_fragment', name: 'Old Chart Fragment', kind: 'artifact', desc: 'A torn corner of a chart in the Fellowship\'s hand. The ink is still wet, somehow.' },
   distress_medal: { id: 'distress_medal', name: 'Meridian Rescue Medal', kind: 'artifact', desc: 'A small enamel medal for answering a call. It does not weigh much and means a great deal.' },
 };
@@ -663,4 +671,12 @@ export const RIVAL = {
     rival_beaten: 'You beat Tamsin Vell fair and square at the Reach Regatta. She promised to be unbearable about the rematch.',
   },
   systemHint: 'Tamsin Vell is usually found at a trade station in the Shoals or the Gate Shallows.',
+};
+
+// Mid-game turning point (day 40-60): missions m_turn_1_summons -> m_turn_2_convergence ("The Great Convergence").
+// ENGINE hook: from day 40, when flag `convergence_called` is not set, toast/log once: "A summons waits at any Concord station."
+export const MIDGAME = {
+  missions: ['m_turn_1_summons', 'm_turn_2_convergence'], minDay: 40,
+  flags: { called: 'convergence_called', held: 'convergence_held' },
+  nudge: 'Director Calloway has an urgent, polite summons waiting at any Concord station: the peoples of the Reach wish to meet.',
 };

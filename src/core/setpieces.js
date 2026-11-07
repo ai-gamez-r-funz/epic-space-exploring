@@ -229,15 +229,26 @@ const HOT_BEATS = [
    'Edge out one careful metre at a time', 'You inch along the last stretch, patient as a snail, until the stars come back.',
    'Have engineering coax the drive', 'Okonkwo talks to the engine and the engine, grudgingly, listens.', 'The drive coughs, stutters and dumps its heat into the plating.'],
 ];
-export function hotLaneEvent(dest, mult, bonus, fromName) {
+const HOT_INTROS = [
+  'A hot lane, flagged in red on the Meridian charts: debris, heat-shimmer and gossip all agree it is worth a fortune to whoever gets through. The first stretch lies ahead.',
+  'The relay buoy reads HAZARD PAY in cheerful capitals. Ahead the lane twists through a knot of bad weather that has eaten two survey drones this month. The first stretch lies ahead.',
+  'Every pilot in the harbour warned you off this lane; two quietly asked you to bring back the bounty. The first stretch lies ahead, glittering and unfriendly.',
+  'The chart marks this lane with a small red flame and the words "WORTH IT, PROBABLY." The first stretch lies ahead.',
+];
+const HOT_SCENES = { ionstorm: 'ionstorm', asteroids: 'asteroids', pulsar: 'pulsar', rift: 'rift', nebula: 'nebula', comet: 'comet', aurora: 'aurora' };
+/** Shared numbers for the built-in hot-lane chain (used by the briefing API too). */
+export function hotParams(dest, mult = 1) {
   const d = Math.max(1, dest.danger);
-  const hull = Math.round((4 + 3 * d) * mult);
+  return { d, hull: Math.round((4 + 3 * d) * mult), pilotDiff: 3 + d, wait: { fuel: 1 + d, days: 1 }, careDiff: 2 + d, careSkills: ['engineering', 'medicine', 'engineering'] };
+}
+export function hotLaneEvent(dest, mult, bonus, fromName, variant = 0) {
+  const { d, hull } = hotParams(dest, mult);
   const nodes = {};
   const names = ['a', 'b', 'c'];
   HOT_BEATS.forEach((b, i) => {
     const next = i < 2 ? names[i + 1] : 'p';
     nodes[names[i]] = {
-      text: i === 0 ? b[0].replace('The first stretch', `The first stretch of the ${fromName} lane`) : b[0],
+      text: i === 0 ? HOT_INTROS[Math.abs(variant) % HOT_INTROS.length].replace('The first stretch', `The first stretch of the ${fromName} lane`) : b[0],
       choices: [
         { label: b[1], tag: 'flee', check: { skill: 'piloting', diff: 3 + d },
           pass: { text: b[2], fx: [{ xp: { piloting: 1 } }], goto: next }, fail: { text: b[3], fx: [{ hull: -hull }, { fuel: -1 }], goto: next } },
@@ -251,7 +262,23 @@ export function hotLaneEvent(dest, mult, bonus, fromName) {
     text: `Through! The lane spits you out into clean space and the Meridian relay pings a hazard-pay bounty for your trouble. Dobbin counts the dents with quiet pride.`,
     fx: [{ credits: bonus }, { cargo: { curios: 1 } }, { reveal: 'nearest' }, { morale: 3 }, { counter: { hot_runs: 1 } }, { toast: `Hot lane cleared: +${bonus} scrip`, tone: 'good' }],
   };
-  return ev('core_hot_lane', 'travel', 'Hot Lane', { scene: 'asteroids' }, nodes, { tags: ['hazard'] });
+  const ph = dest.phenomena.find((p) => HOT_SCENES[p]);
+  return ev('core_hot_lane', 'travel', 'Hot Lane', { scene: ph ? HOT_SCENES[ph] : 'asteroids' }, nodes, { tags: ['hazard'] });
+}
+
+// ------------------------------------------------------------------ mid-game beat (day 40-90, once)
+export function midgameEvent() {
+  return ev('core_midgame', 'midgame', 'The Dispatch from Meridian', { scene: 'station', species: 'human' }, {
+    a: {
+      speaker: { name: 'Director Imogen Calloway', species: 'human' },
+      text: 'A sealed dispatch is waiting at the dock office, tied with three colours of ribbon. "Halcyon has done splendidly," writes the Director. "The Society can offer you a patron: choose carefully, because the Reach is about to get more interesting."',
+      choices: [
+        { label: 'Accept the Society grant (and its paperwork)', tag: 'diplomacy', do: { text: 'A grant letter, a stamped receipt and a very large biscuit tin. The Concord are delighted; the paperwork is, as ever, extensive.', fx: [{ credits: 400 }, { rep: { concord: 5 } }, { flag: 'midgame_patron_society' }, { flag: 'midgame_done' }] } },
+        { label: 'Sign a Quillari trade charter', tag: 'trade', do: { text: 'The charter is signed over a glass-fruit toast. Feathers are ruffled in approval. You are issued a guest feather and a fine new set of opinions about margins.', fx: [{ credits: 250 }, { rep: { quillari: 6 } }, { item: { quillari_guest_feather: 1 } }, { flag: 'midgame_patron_quillari' }, { flag: 'midgame_done' }] } },
+        { label: 'Stay independent and send a polite refusal', tag: 'wait', do: { text: 'You write "no, thank you, with warmest regards" in your best felt-tip. The crew cheer. Somewhere in Meridian, a clerk quietly respects you.', fx: [{ morale: 10 }, { xp: { diplomacy: 2 } }, { flag: 'midgame_independent' }, { flag: 'midgame_done' }] } },
+      ],
+    },
+  }, { tags: ['diplomacy', 'mystery'] });
 }
 
 // ------------------------------------------------------------------ stranded contract (timed delivery)

@@ -6,7 +6,7 @@ import { COND_KEYS } from '../src/core/conds.js';
 import { FX_KEYS } from '../src/core/effects.js';
 import { BUILTIN_BY_ID } from '../src/core/builtin.js';
 
-const CTXS = new Set(['travel', 'arrive', 'planet', 'landing', 'phenomenon', 'hail', 'station', 'crew', 'idle', 'rival', 'distress']);
+const CTXS = new Set(['travel', 'arrive', 'planet', 'landing', 'phenomenon', 'hail', 'station', 'crew', 'idle', 'rival', 'distress', 'midgame']);
 const TAGS = new Set(['diplomacy', 'trade', 'flee', 'persuade', 'science', 'mystery', 'comedy', 'relief', 'wonder', 'hazard']);
 const CHOICE_TAGS = new Set(['diplomacy', 'trade', 'flee', 'persuade', 'science', 'wait']);
 const SCENES = new Set(['nebula', 'starfield', 'planet', 'derelict', 'station', 'ship_alien', 'pulsar', 'ionstorm', 'wormhole', 'asteroids', 'comet', 'rift', 'aurora', 'beacon', 'bridge', 'landing', 'ruins', 'market', 'lounge', 'engine_room', 'sickbay', 'void']);
@@ -80,7 +80,7 @@ test('content: everything loaded and meets the quantity bar', () => {
   assert.ok(Object.keys(C.ENDINGS).length >= 6, 'endings');
   assert.deepEqual(Object.keys(C.FACTIONS).sort(), [...FACTION_IDS].sort());
   assert.ok(C.STORY_SYSTEMS.length >= 10 && C.INTRO_TEXT.length <= 5 && C.TIPS.length > 5);
-  for (const ctx of CTXS) if (!['rival', 'distress'].includes(ctx)) assert.ok(C.EVENTS.some((e) => e.ctx === ctx), `no events for ctx ${ctx}`);
+  for (const ctx of CTXS) if (!['rival', 'distress', 'midgame'].includes(ctx)) assert.ok(C.EVENTS.some((e) => e.ctx === ctx), `no events for ctx ${ctx}`);
 });
 
 test('events: ids unique, shape valid, ctx/tags/art vocabulary', () => {

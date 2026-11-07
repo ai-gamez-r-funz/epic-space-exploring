@@ -71,7 +71,7 @@ export function startEvent(g, ev, ctx = {}, opts = {}) {
   const cur = {
     eventId: event.id, node: null, phase: 'node', kind: event.ctx,
     ctx: { systemId: ctx.systemId || st.pos, planetId: ctx.planetId || null, phenomenon: ctx.phenomenon || null, feature: ctx.feature || null, crewId: ctx.crewId || null, crewRandom: ctx.crewId || (crew && crew.id) || null, eventId: event.id, tags: event.tags || [] },
-    result: null, next: null, afterArrive: !!opts.afterArrive, auto: null, setPiece: opts.setPiece || null,
+    result: null, next: null, afterArrive: !!opts.afterArrive, auto: null, setPiece: opts.setPiece || null, bonus: opts.bonus || 0,
   };
   if (event.inline || (!IDX.event[event.id] && !BUILTIN_BY_ID[event.id])) cur.inline = event;
   st.pending = cur;

@@ -58,9 +58,8 @@ function chooseEvent(g, policy, rnd) {
   if (policy === 'random') pick = rnd.pick(ok);
   else {
     const score = (c) => {
-      let s = c.odds !== undefined ? c.odds : 0.75;
+      let s = c.odds !== undefined ? c.odds : 0.65 + rnd.next() * 0.3; // unchecked options: no built-in preference (keeps story branches varied)
       if (policy === 'cautious' && c.tag === 'flee') s -= 0.15;
-      if (c.tag === 'wait') s += 0.02;
       return s + rnd.next() * ((policy === 'story' || policy === 'explorer') ? 0.4 : 0.05);
     };
     pick = ok.slice().sort((a, b) => score(b) - score(a))[0];

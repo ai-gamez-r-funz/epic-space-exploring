@@ -139,6 +139,7 @@ export function checkOdds(state, skill, diff, opts = {}) {
     if (b.trait === 'bluntly_literal' && skill === 'diplomacy' && (opts.faction === 'archivists' || opts.species === 'archivist')) total += 1;
   }
   if (state.ship && state.ship.morale < 30) bonus -= 0.05; // a glum crew fumbles
+  else if (state.ship && state.ship.morale >= 75) bonus += 0.04; // a rested, happy crew (lounge refits, shore leave) flies better
   return Math.round(clamp(0.5 + 0.11 * (total - diff) + bonus, 0.1, 0.95) * 100) / 100;
 }
 
@@ -172,6 +173,9 @@ export function upgradeStatus(state, up, opts = {}) {
 }
 
 /** Install (replacing the slot occupant). No money handling here. Returns the replaced id or null. */
+/** Hull-damage multiplier from a beefier hull (+20 hullMax over 100 = -5 %, capped at -30 %). */
+export function armorFactor(state) { return 1 - Math.min(0.3, Math.max(0, ((state.ship && state.ship.hullMax) || 100) - 100) / 400); }
+
 /** Number of crew whose trait carries a given ability id. */
 export function abilityCount(state, id) {
   let n = 0;

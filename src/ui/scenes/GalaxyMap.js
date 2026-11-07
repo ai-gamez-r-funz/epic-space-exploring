@@ -12,6 +12,7 @@ import { arcSeg } from '../kit/draw.js';
 import { Hud } from '../widgets/Hud.js';
 import { STAR_NAMES, prebakeSystem } from '../widgets/Viewscreen.js';
 import { rangeNote } from '../widgets/objective.js';
+import { showBriefing } from '../overlays/parts/briefing.js';
 import { makeBackdrop } from '../widgets/Backdrop.js';
 import { S, sfx } from '../services.js';
 
@@ -264,11 +265,12 @@ export class GalaxyMap extends Scene {
     if (Array.isArray(v)) v.forEach(add); else if (typeof v === 'object' && !(v.systemId || v.system || v.pos || v.at)) { for (const [k, x] of Object.entries(v)) { if (x && typeof x === 'object') add(x.systemId || x.system || x.pos ? x : k); else if (x) out.push(k); } } else add(v);
     return out;
   }
-  planJump() {
-    if (this.jumping || !this.sel) return; const g = this.game; const st = g.state;
+  async planJump() {
+    if (this.jumping || this.busyBrief || !this.sel) return; const g = this.game; const st = g.state;
     let to = this.sel; if (to === st.pos) return;
     if (!g.neighbors(st.pos).find((x) => x.id === to)) { const p = this._route(to); if (!p || p.length < 2) return; to = p[1]; }
     const cj = g.canJump(to); if (!cj.ok) { this.ui.toast(cj.reason || 'Cannot jump.', 'warn'); sfx('deny'); return; }
+    if (g.neighbors(st.pos).find((x) => x.id === to && x.hot)) { this.busyBrief = true; const go = await showBriefing(g, to).catch(() => true); this.busyBrief = false; if (!go || this._dead) return; }
     this.playJump(to);
   }
 

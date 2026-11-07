@@ -51,6 +51,7 @@ export class Bridge extends Scene {
     if (params.arrive) this._banner();
   }
   onOverlayClosed() { this.refresh(); }
+  resize() { try { this.hud._f = null; this.hud.refresh(); } catch (e) { /* */ } }
   // ---------------------------------------------------------------- layout pieces
   _buildCrew() {
     const P = this.crewPanel = new Panel({ w: 150, h: 470, title: 'CREW', tone: 'deep', pad: 10, lights: false }); P.x = 12; P.y = 64; this.view.addChild(P);
@@ -256,6 +257,7 @@ export class Bridge extends Scene {
     Anim.wait(2300).then(() => { if (!b.destroyed) Anim.to(b, { alpha: 0 }, 600, { onDone: () => !b.destroyed && b.destroy({ children: true }) }); });
   }
   update(dt) {
+    if (this.threads) this.threads.visible = !this.ui.tutorial?.bubble; // never fight the tutorial tip for the same screen space
     this.t += dt; this.vs.update(dt);
     // gentle engine hum while idle on the bridge
     this._hum = (this._hum ?? 0) - dt; if (this._hum <= 0) { this._hum = 2.3; if (!this.ui.overlays.length && !this.ui.busy) sfx('hum', { vol: 0.5 }); }

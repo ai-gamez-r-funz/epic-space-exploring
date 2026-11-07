@@ -18,7 +18,7 @@ export class Bar extends Container {
     this.g = new Graphics(); this.addChild(this.g);
     const iconW = this.o.icon ? this.o.h + 8 : 0; this.ox = iconW;
     if (this.o.icon) { this.ic = S.gfx.icon(this.o.icon, { size: this.o.h + 4, color: this.o.color }); const b = this.ic.getLocalBounds(); this.ic.x = (this.o.h + 4) / 2 - (b.x + b.width / 2); this.ic.y = this.o.h / 2 - (b.y + b.height / 2); this.addChild(this.ic); }
-    this.txt = new Label({ text: '', preset: 'numSm', size: Math.max(10, this.o.h - 5), color: C.cream, shadow: true });
+    this.txt = new Label({ text: '', preset: 'numSm', size: Math.max(11, this.o.h - 4), color: C.cream, shadow: true });
     this.addChild(this.txt);
     if (this.o.tooltip) Tooltip.attach(this, this.o.tooltip);
     this.eventMode = this.o.tooltip ? 'static' : 'passive';

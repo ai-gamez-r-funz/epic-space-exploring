@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { C, W, F, RES_COL } from '../kit/theme.js';
+import { C, W, F, RES_COL, Display } from '../kit/theme.js';
 import { Panel, Lights } from '../kit/Panel.js';
 import { Bar } from '../kit/Bar.js';
 import { Label } from '../kit/Label.js';
@@ -54,8 +54,16 @@ export class Hud extends Container {
     if (this.shown > 0.5) arcSeg(g, 0, 0, r, -Math.PI / 2, -Math.PI / 2 + (this.shown / 100) * Math.PI * 2).stroke({ width: 4, color: C.tealLight, cap: 'round' });
     this.ringL.setText(`${Math.round(this.shown)}%`); centerOn(this.ringL, 1226, 25);
   }
+  /** Readability: on small screens (css px of 12-logical text < ~10) or with Large UI, bump HUD type and bar height. */
+  _readable() {
+    const f = Display.largeUI ? 1.3 : (Display.scale || 1) < 0.5 ? 1.45 : (Display.scale || 1) < 0.8 ? 1.25 : 1; if (f === this._f) return; this._f = f;
+    const sz = (l, b) => l.setOpts({ size: Math.round(b * f) });
+    sz(this.nameL, 12); sz(this.capt, 12); sz(this.cred, 18); sz(this.sd, 14); sz(this.sdl, 10); sz(this.ringL, 11);
+    this.capt.y = 27 + Math.round((f - 1) * 4); this.sdl.y = 28 + Math.round((f - 1) * 6);
+    for (const b of Object.values(this.bars)) { b.o.h = Math.round(16 * Math.min(f, 1.2)); b.y = 25 - b.o.h / 2; b.txt.setOpts({ size: Math.max(11, Math.round(b.o.h - 4)) }); }
+  }
   refresh() {
-    const g = this.ui.game; if (!g) return; const st = g.state, sh = st.ship;
+    const g = this.ui.game; if (!g) return; this._readable(); const st = g.state, sh = st.ship;
     this.nameL.setText(sh.name.toUpperCase()); this.capt.setText(`Capt. ${String(st.captain.name).replace(/^(captain|capt\.?)\s+/i, '')}`);
     this.bars.fuel.set(sh.fuel, sh.fuelMax); this.bars.supplies.set(sh.supplies, sh.suppliesMax); this.bars.hull.set(sh.hull, sh.hullMax); this.bars.morale.set(sh.morale, 100);
     this.cred.setText(String(Math.round(st.credits)));

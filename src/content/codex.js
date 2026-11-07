@@ -393,4 +393,8 @@ export const CODEX = [
     text: 'A friendly, weapons-free race held between traders of the Reach, with a purse, a ribbon and a great deal of tea. Winners are announced at dinner, and the losers insist on being gracious.' },
   { id: 'shipyard_commissions', title: 'Shipyard Commissions', category: 'history', unlockedBy: { mission: 'm_comm_hull_plates' },
     text: 'Big jobs posted by the Reach\'s yards: parts in, scrip out, and no hurry unless you let there be one. A completed commission is considered a mark of a trustworthy captain.' },
+  { id: 'great_convergence', title: 'The Great Convergence', category: 'history', unlockedBy: { flag: 'convergence_held' },
+    text: 'The first meeting at which all five peoples of the Reach sat at one round table. It adjourned for pastries, and has been called, ever since, the most successful summit of the age.' },
+  { id: 'silence_stone_lore', title: 'The Silence-Stone', category: 'tech', unlockedBy: 'event',
+    text: 'A smooth grey Vesperine stone that hums only in perfect quiet. The Vesperine give it to those who have chosen silence on purpose, and to nobody else.' },
 ];

@@ -581,6 +581,83 @@ export class Game {
     }
     return out;
   }
+  /**
+   * Pre-jump briefing for a lane. For a hot lane: stage-by-stage options with live odds (crew skill, upgrades, refits/morale, training all
+   * feed checkOdds), expected and worst-case costs under best play, armour (refit/upgrade hull) mitigation and advice.
+   */
+  hotLaneBriefing(toId) {
+    const st = this.state;
+    const dest = this.system(toId);
+    if (!dest || !laneBetween(st.galaxy, st.pos, toId)) return null;
+    const dist = this._dist(st.pos, toId);
+    const base = { toId, fuel: this.fuelCostFor(dist), days: this.daysFor(dist), hot: false };
+    if (!this._laneIsHot(st.pos, toId)) return base;
+    const diff = diffOf(st);
+    const armor = Ship.armorFactor(st);
+    const mult = Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1;
+    const p = SP.hotParams(dest, mult);
+    const scale = (h) => Math.max(1, Math.round(h * diff.damage * armor));
+    const failHull = scale(p.hull);
+    const careFail = scale(Math.max(2, p.hull - 1));
+    const stages = [];
+    let exH = 0; let exF = 0; let exD = 0; let worstH = 0; let clean = 1;
+    for (let i = 0; i < 3; i++) {
+      const run = { key: 'run', label: 'Run the gauntlet', skill: 'piloting', odds: this.checkOdds('piloting', p.pilotDiff, { tag: 'flee' }), failCost: { hull: failHull, fuel: 1 }, passCost: {} };
+      const creep = { key: 'creep', label: 'Creep through', skill: null, odds: 1, failCost: {}, passCost: { fuel: p.wait.fuel, days: p.wait.days } };
+      const sk = p.careSkills[i];
+      const brace = { key: 'brace', label: sk === 'medicine' ? 'Steady the crew' : 'Reinforce / coax the drive', skill: sk, odds: this.checkOdds(sk, p.careDiff), failCost: { hull: careFail }, passCost: { hull: scale(1) } };
+      const cost = (o) => (1 - o.odds) * ((o.failCost.hull || 0) + 0.7 * (o.failCost.fuel || 0)) + o.odds * ((o.passCost.hull || 0) + 0.7 * (o.passCost.fuel || 0) + 1.5 * (o.passCost.days || 0));
+      const options = [run, creep, brace];
+      const best = options.slice().sort((a, b) => cost(a) - cost(b))[0];
+      exH += (1 - best.odds) * (best.failCost.hull || 0) + best.odds * (best.passCost.hull || 0);
+      exF += (1 - best.odds) * (best.failCost.fuel || 0) + best.odds * (best.passCost.fuel || 0);
+      exD += best.odds * (best.passCost.days || 0);
+      worstH += best.failCost.hull || (best.passCost.hull || 0);
+      clean *= best.key === 'creep' ? 1 : best.key === 'run' ? best.odds : 0; // bracing always costs a little hull
+      stages.push({ stage: i + 1, best: best.key, options: options.map((o) => ({ key: o.key, label: o.label, skill: o.skill, odds: o.odds, failCost: o.failCost, passCost: o.passCost })) });
+    }
+    const bonus = this._hotBonus(st.pos, toId);
+    const mods = [];
+    mods.push({ label: `Piloting ${this.skillTotal('piloting')}, engineering ${this.skillTotal('engineering')}, medicine ${this.skillTotal('medicine')} (crew, training, upgrades)` });
+    if (st.ship.morale >= 75) mods.push({ label: 'Rested crew', value: '+4% odds' });
+    else if (st.ship.morale < 30) mods.push({ label: 'Glum crew', value: '-5% odds' });
+    if (armor < 1) mods.push({ label: 'Reinforced hull', value: `-${Math.round((1 - armor) * 100)}% damage` });
+    return {
+      ...base, hot: true, bonus, danger: p.d, stages, armorPct: Math.round((1 - armor) * 100), modifiers: mods,
+      expected: { hull: Math.round(exH * 10) / 10, fuel: Math.round(exF * 10) / 10, days: Math.round(exD * 10) / 10 },
+      cleanChance: Math.round(clean * 100) / 100, worst: { hull: worstH }, hullNow: Math.round(st.ship.hull),
+      advice: st.ship.hull <= worstH ? 'Your hull may not survive a bad run: repair first.' : st.ship.hull < worstH * 2 ? 'Risky at this hull: a repair stop would help.' : 'Worth the bounty with this hull.',
+    };
+  }
+  /** Where could idle scrip go? [{kind:'refit'|'training'|'commission'|'upgrade', id, name, cost, systemId, systemName, jumps, here, days?}] (empty below minScrip). */
+  spendHints(minScrip = 1000) {
+    const st = this.state;
+    if (st.credits < minScrip) return [];
+    const hops = bfs(st.galaxy, st.pos);
+    const near = st.galaxy.systems.filter((s) => s.station && s.status !== 'unknown' && hops[s.id] !== undefined && hops[s.id] <= 3);
+    const out = [];
+    for (const s of near) {
+      const jumps = hops[s.id];
+      const row = (kind, id, name, cost, extra = {}) => out.push({ kind, id, name, cost, systemId: s.id, systemName: s.name, jumps, here: s.id === st.pos, ...extra });
+      for (const r of Sinks.refitList(this, s.id)) if (r.available && r.cost <= st.credits) row('refit', r.id, r.name, r.cost, { days: r.days });
+      const bestCrew = st.crew.slice().sort((a, b) => Math.min(...Object.values(a.skills)) - Math.min(...Object.values(b.skills)));
+      for (const c of bestCrew.slice(0, 2)) for (const t of Sinks.trainingOptions(this, c.id, s.id)) if (t.available) row('training', t.id, `${c.name}: ${t.name}`, t.price, { crewId: c.id, skill: t.skill, days: t.days });
+      if (s.station.services.includes('shipyard')) {
+        for (const u of C.UPGRADES) {
+          if (u.reward) continue;
+          const stt = Ship.upgradeStatus(st, u);
+          if (!stt.ok) continue;
+          const o = Sinks.yardOffer(this, s.id, u, { price: stt.price });
+          if (o.exclusiveHidden || o.price > st.credits || o.price < 300) continue;
+          row(u.commission ? 'commission' : 'upgrade', u.id, u.name, o.price, { days: o.days || 0, sale: o.sale });
+        }
+      }
+    }
+    const rank = (h) => (h.here ? 0 : 10) + h.jumps * 3 + (h.kind === 'commission' ? -2 : h.kind === 'upgrade' ? -1 : 0) - (h.sale ? 2 : 0);
+    out.sort((a, b) => rank(a) - rank(b) || b.cost - a.cost);
+    const seen = new Set();
+    return out.filter((h) => { const k = h.kind + h.id; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 6);
+  }
   /** Unexplored systems reachable along known lanes: {systems:[{id,name,jumps,status}], nearest, note}. Guarantees a clear "no more lanes" message. */
   frontier() {
     const st = this.state;
@@ -680,6 +757,10 @@ export class Game {
     if (cur && cur.lantern && !st.flags[`lantern_${cur.n}`]) {
       const s = st.galaxy.systems.find((x) => x.story === cur.lantern);
       if (s) return { kind: 'lantern', title: cur.title, text: `Investigate the Lantern at ${s.name}`, systemId: known(s.id) };
+    }
+    if (st.flags.chapter_3 && !st.flags.fellowship_known) {
+      const ah = st.galaxy.systems.find((x) => x.story === 'archive_heart');
+      if (ah) return { kind: 'story', title: 'The Fellowship Ledger', text: `Seek the Fellowship Ledger: land on the Heart Vault at ${ah.name}`, systemId: known(ah.id) };
     }
     const next = C.CHAPTERS.find((ch) => !st.flags[ch.flag]);
     if (next) {
@@ -813,6 +894,10 @@ export class Game {
           if (ch.n > 1) { this.toast(`Chapter ${ch.n}: ${ch.title}`, 'info'); this.log('event', `Chapter ${ch.n}: ${ch.title}`); }
           // the chapter's Lantern shows up on the chart so the arc is always legible
           const ls = ch.lantern && st.galaxy.systems.find((x) => x.story === ch.lantern);
+          for (const mid of ch.leadMissions || []) { // systems named by the chapter's lead missions show up on the chart too
+            const md = IDX.mission[mid];
+            for (const o of (md && md.objectives) || []) if (typeof o.target === 'string') { const ts = st.galaxy.systems.find((x) => x.story === o.target); if (ts && ts.status === 'unknown') ts.status = 'detected'; }
+          }
           if (ls && ls.status === 'unknown') { ls.status = 'detected'; if (ch.n > 1) { this.log('discovery', `A new Lantern signal bears toward ${ls.name}.`); this.toast(`A Lantern signal: ${ls.name}`, 'good'); } }
         }
       } else if (!st.flags[`${ch.flag}_done`] && evalCondsRaw(this, ch.completeWhen || [{ flag: 'never_set' }], {}, { noRandom: true }).ok) {
@@ -876,7 +961,11 @@ export class Game {
     }
     if (this._chain && !this._pendingEnding) {
       const id = this._chain; this._chain = null;
-      if (Events.startEvent(this, id, cur.ctx, { afterArrive: cur.afterArrive })) return;
+      if (Events.startEvent(this, id, cur.ctx, { afterArrive: cur.afterArrive, setPiece: cur.setPiece, bonus: cur.bonus })) return;
+    }
+    if (cur.setPiece === 'hotlane' && cur.bonus) { // authored hot-lane chains share the engine's hazard bounty
+      applyEffects(this, [{ credits: cur.bonus }, { cargo: { curios: 1 } }, { reveal: 'nearest' }, { counter: { hot_runs: 1 } }], {});
+      this.toast(`Hot lane cleared: +${cur.bonus} scrip`, 'good');
     }
     if (cur.afterArrive && !st.pending) this._arrive();
     if (this._shopAfter) { this._shopAfter = false; const s = this.here(); if (s && s.station) this.emit('shop', { systemId: s.id }); }
@@ -969,7 +1058,17 @@ export class Game {
       const key = this._laneKey(fromId, toId);
       st.counters['hot_' + key] = st.day;
       const fromName = this.system(fromId).name;
-      started = Events.startEvent(this, SP.hotLaneEvent(dest, Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1, this._hotBonus(fromId, toId), fromName), { systemId: toId }, { afterArrive: true });
+      const bonus = this._hotBonus(fromId, toId);
+      // authored chains (lane_hot_*) by region/danger, never repeating the same chain inside ~20 days; built-in chain is the fallback
+      const pool = Events.eligible(this, 'travel', { systemId: toId }).filter((e) => /^lane_hot_/.test(e.id) && !(st.counters['hotchain_' + e.id] > st.day - 20));
+      const auth = pool.length ? this.rng.weighted(pool, (e) => e.weight || 10) : null;
+      if (auth) {
+        st.counters['hotchain_' + auth.id] = st.day;
+        started = Events.startEvent(this, auth, { systemId: toId }, { afterArrive: true, setPiece: 'hotlane', bonus });
+      } else {
+        const variant = hashString(`${st.seed}|${key}|${Math.floor(st.day / 20)}`) % 4;
+        started = Events.startEvent(this, SP.hotLaneEvent(dest, Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1, bonus, fromName, variant), { systemId: toId }, { afterArrive: true, setPiece: 'hotlane-builtin', bonus });
+      }
       this.log('event', `Hot lane run: ${fromName} to ${dest.name}.`);
     } else started = this._travelHazard(dest);
     Missions.check(this);
@@ -1213,9 +1312,15 @@ export class Game {
     this.log('nav', `Docked at ${sys.station.name}.`);
     if (sys.station.faction && sys.station.faction !== 'none') this._codexTrigger('faction', sys.station.faction);
     let started = false;
+    // day 40-90 turning point: the Society's dispatch (authored ctx 'midgame' events first, built-in as fallback)
+    if (st.day >= 40 && st.day <= 90 && !st.flags.midgame_done && this.surveyProgress().pct >= 12) {
+      const ev = Events.pickEvent(this, 'midgame', { systemId: sys.id }) || SP.midgameEvent();
+      st.flags.midgame_done = true;
+      started = Events.startEvent(this, ev, { systemId: sys.id });
+    }
     // the rival trader, festival shore leave
     const rv = st.rival;
-    if (rv && rv.systemId === sys.id && st.day - (rv.lastMetDay ?? -99) >= 6 && this.rng.chance(st.counters.rival_met ? 0.6 : 1)) {
+    if (!started && rv && rv.systemId === sys.id && st.day - (rv.lastMetDay ?? -99) >= 6 && this.rng.chance(st.counters.rival_met ? 0.6 : 1)) {
       rv.lastMetDay = st.day; st.counters.rival_seen_day = st.day;
       st.counters.rival_met = (st.counters.rival_met || 0) + 1; st.flags.rival_met = true;
       const ctx = { systemId: sys.id };

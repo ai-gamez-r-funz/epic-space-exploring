@@ -168,7 +168,7 @@ export const MISSIONS = [
       { id: 'o2', type: 'have', item: 'tea_tin', qty: 1, deliverTo: 'hollow_archive', consume: true, optional: true, text: 'Present a tin of tea with your question (librarians appreciate a gift)' },
     ],
     reward: { credits: 360, rep: { archivists: 10 }, item: { archive_reader_card: 1 }, codex: 'hollow_archive' },
-    onComplete: [{ flag: 'archive_key' }],
+    onComplete: [{ flag: 'archive_key' }, { flag: 'met_archivists' }],
     completeText: 'The card has a due date. The due date is, you notice, in a very long time.',
   },
   {
@@ -430,6 +430,7 @@ export const MISSIONS = [
       { id: 'o2', type: 'goto', target: { faction: 'archivists', station: true }, docked: true, text: 'Bring Quire-Nine home' },
     ],
     reward: { credits: 540, rep: { archivists: 8, quillari: 4 }, codex: 'quillari_markets' },
+    onComplete: [{ flag: 'met_archivists' }],
     deadlineDays: 40,
   },
   {
@@ -515,6 +516,7 @@ export const MISSIONS = [
       { id: 'o2', type: 'goto', target: { faction: 'vesperine', station: true, notHere: true }, docked: true, text: 'Tow the choir to safe harbour' },
     ],
     reward: { credits: 670, rep: { vesperine: 10 }, codex: 'vesperine_choirs' },
+    onComplete: [{ flag: 'choir_message' }],
     deadlineDays: 30,
   },
   {
@@ -763,6 +765,55 @@ export const MISSIONS = [
   },
 
   // ===========================================================================
+  // MID-GAME TURNING POINT (day 40+): "The Great Convergence"
+  // The Society asks Halcyon to host the first meeting of all five peoples. Offered at ANY Concord station from day 40
+  // (or earlier if survey >= 30). It reshapes goals: it pays, it raises every standing, and it unlocks the Quiet Vow side job.
+  // ===========================================================================
+  {
+    id: 'm_turn_1_summons', title: 'The Great Convergence (I): A Summons', kind: 'story', arc: 'turning',
+    giver: { name: 'Director Imogen Calloway', species: 'human', faction: 'concord' },
+    blurb: 'Word has spread that the Lanterns are lit. All five peoples have asked, politely and at once, to meet. The Society wants Halcyon, the one ship everybody likes, to carry the invitations to three embassies and host the first meeting.',
+    accept: 'Calloway lays out five cups and a very large map. "Nobody else is trusted by everyone. Bring them in. Gently."',
+    offerWhen: [{ any: [{ day: [40, 999] }, { survey: 30 }] }], offerAt: { faction: 'concord', station: true }, ordered: true,
+    objectives: [
+      { id: 'o1', type: 'goto', target: 'lyra_landing', docked: true, text: 'Collect the Concord seal at Lyra Landing' },
+      { id: 'o2', type: 'goto', target: 'pennywhistle', docked: true, text: 'Carry the invitation to Pennywhistle Exchange' },
+      { id: 'o3', type: 'goto', target: 'cantabile', docked: true, text: 'Carry the invitation to Cantabile' },
+    ],
+    reward: { credits: 900, rep: { concord: 4, quillari: 4, vesperine: 4 }, item: { festival_ribbon: 1 } },
+    deadlineDays: 60,
+    onComplete: [{ flag: 'convergence_called' }],
+    completeText: 'Three delegations accept. A fourth and a fifth, hearing of it, simply show up with luggage.',
+  },
+  {
+    id: 'm_turn_2_convergence', title: 'The Great Convergence (II): The Table', kind: 'diplomacy', arc: 'turning',
+    giver: { name: 'Ambassador Linnea Okoro', species: 'human', faction: 'concord' },
+    blurb: 'All five peoples are at Pennywhistle, the tea is on, and the seating chart is a matter of galactic importance. Host the first Convergence, and the Reach will have a table to sit at for generations.',
+    accept: 'Okoro adjusts a place card by a millimetre. "The table must be round. Nobody is at the head. Everybody is at the head."',
+    offerWhen: [{ flag: 'convergence_called' }], offerAt: { station: true }, ordered: true,
+    objectives: [
+      { id: 'o1', type: 'have', item: 'tea_tin', qty: 1, deliverTo: 'pennywhistle', consume: true, text: 'Host the Convergence at Pennywhistle with a tin of Meridian tea' },
+    ],
+    reward: { credits: 1500, rep: { concord: 5, quillari: 5, vesperine: 5, archivists: 5, drifters: 5 }, codex: 'great_convergence' },
+    deadlineDays: 45,
+    failFx: [{ morale: -4 }],
+    onComplete: [{ flag: 'convergence_held' }],
+    completeText: 'The Convergence adjourns at midnight, by unanimous vote, for pastries. The Reach has a table.',
+  },
+  {
+    id: 'm_ch5_quiet_vow', title: 'A Vow of Silence', kind: 'diplomacy', arc: 'main',
+    giver: { name: 'Chorister Aelwyn-of-the-Third-Verse', species: 'vesperine', faction: 'vesperine' },
+    blurb: 'Some captains wish to answer the last Lantern with silence: no sharing, no carrying, only respect. The Vesperine will give you a silence-stone, but only if you sit through a full rest at Cantabile first. It is a conscious choice, and they want you to make it consciously.',
+    accept: '"It is the hardest note," says Aelwyn. "Do not choose it by accident."',
+    offerWhen: [{ flag: 'chapter_4' }, { rep: { vesperine: 8 } }, { notFlag: 'lantern_5' }], offerAt: { faction: 'vesperine', station: true },
+    objectives: [
+      { id: 'o1', type: 'goto', target: 'cantabile', docked: true, text: 'Sit through a full rest at Cantabile' },
+    ],
+    reward: { credits: 200, rep: { vesperine: 6 }, item: { silence_stone: 1 }, codex: 'silence_stone_lore' },
+    completeText: 'Aelwyn hands you a smooth grey stone. "Carry it to the Taper, if you mean it. Leave it at home, if you do not."',
+  },
+
+  // ===========================================================================
   // SURVEY CONTRACTS (big payouts, longer deadlines)
   // ===========================================================================
   {
@@ -788,7 +839,7 @@ export const MISSIONS = [
       { id: 'o1', type: 'chart', target: { region: 'choir', count: 3 }, text: 'Chart three systems in the Pulsar Choir' },
       { id: 'o2', type: 'scan', target: { phenomenon: 'pulsar' }, what: 'phenomenon', phenomenon: 'pulsar', text: 'Take a pulsar reading' },
     ],
-    reward: { credits: 2080, rep: { concord: 6, vesperine: 4 }, codex: 'codex_pulsar_radio' },
+    reward: { credits: 2080, rep: { concord: 6, vesperine: 4 }, item: { pulsar_tape: 1 }, codex: 'codex_pulsar_radio' },
     deadlineDays: 75,
     failFx: [{ rep: { concord: -2 } }],
   },
@@ -951,7 +1002,7 @@ export const MISSIONS = [
     ],
     reward: { credits: 800, rep: { quillari: 6, concord: 4 }, item: { festival_ribbon: 1 } },
     deadlineDays: 70,
-    onComplete: [{ morale: 15 }, { flag: 'festival_chain_done' }],
+    onComplete: [{ morale: 15 }, { flag: 'festival_chain_done' }, { flag: 'gus_stew_solved' }],
     completeText: 'Confetti, pastries, and a flotilla of paper lanterns. Even Gus-7 cries a little, which is very out of character for a galley bot.',
   },
 ];
