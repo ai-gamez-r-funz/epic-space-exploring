@@ -80,6 +80,7 @@ function manage(g, policy, mem, rnd) {
   if (!st.docked) g.dock();
   if (st.pending || st.phase === 'ended') return;
   const svc = (n) => s.services.includes(n);
+  if (g.freeRepairOffer().available) g.claimFreeRepair(); // the Society's one-time patch, as any player would take
   // sell cargo (greedy/cautious sell everything they hold that's profitable or aged)
   if (svc('trade')) {
     const m = g.market();

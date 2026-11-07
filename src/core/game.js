@@ -1147,7 +1147,7 @@ export class Game {
     // everyday wear and tear grows with the danger of the space you fly through
     if (diff.damage > 0.6 && this.rng.chance(Math.min(0.9, 0.3 + 0.18 * dest.danger))) {
       // strain: the longer since the last dock, the harder the lanes bite (an incentive to turn back for repairs)
-      const strain = 1 + 0.15 * Math.min(6, st.counters.sinceDock || 0);
+      const strain = 1 + 0.12 * Math.min(6, st.counters.sinceDock || 0);
       const wear = Math.max(1, Math.round(1.8 * strain * (this.rng.int(1, 2) + dest.danger) * diff.damage * (Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1)));
       applyEffects(this, [{ hull: -wear }], { noScale: true });
     }
