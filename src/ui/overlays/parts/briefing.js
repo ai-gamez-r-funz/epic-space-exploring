@@ -25,15 +25,15 @@ export function hotBriefing(g, toId) {
 /** Resolves true if the player wants to run it. */
 export async function showBriefing(g, toId) {
   const b = hotBriefing(g, toId); if (!b) return true;
-  const dest = g.system(toId); const m = new Modal({ w: 640, h: 500, title: 'HOT LANE BRIEFING', tone: 'coral' }); const W = m.bodyW;
+  const dest = g.system(toId); const m = new Modal({ w: 640, h: 520, title: 'HOT LANE BRIEFING', tone: 'plum' }); const W = m.bodyW;
   const t = new Label({ text: `${g.here().name} → ${dest.name}`, preset: 'head', size: 17, color: C.brassLight, w: W, h: 26, fit: true, upper: true }); m.body.addChild(t);
   const s = new Label({ text: `Danger ${b.danger}/3 · ${b.fuel} fuel · ${b.days} day${b.days === 1 ? '' : 's'} · a multi-stage run that pays a hazard bounty of ${num(b.bonus)} scrip for a clean finish.`, preset: 'small', size: 14, color: C.cream, w: W }); s.y = 32; m.body.addChild(s);
   let y = 78;
-  const box = well(W, 78); box.y = y; m.body.addChild(box);
-  const pl = new Label({ text: `PILOTING ${b.piloting}`, preset: 'headSm', size: 11, color: 0xb58be0 }); pl.x = 16; pl.y = 12; m.body.addChild(pl);
-  const ol = new Label({ text: b.officer ? `${b.officer} at the helm` : 'No pilot aboard', preset: 'small', size: 13, color: C.textDim }); ol.x = 16; ol.y = 32; m.body.addChild(ol);
-  const hl = new Label({ text: `Expect about ${b.hullEstimate} hull and ${Math.max(1, Math.round(b.fuel / 2))} extra fuel if things go sideways.`, preset: 'small', size: 13, color: C.mustard, w: W - 32 }); hl.x = 16; hl.y = 52; m.body.addChild(hl);
-  y += 90;
+  const box = well(W, 80); box.y = y; m.body.addChild(box);
+  const pl = new Label({ text: `PILOTING ${b.piloting}`, preset: 'headSm', size: 11, color: 0xb58be0 }); pl.x = 16; pl.y = y + 10; m.body.addChild(pl);
+  const ol = new Label({ text: b.officer ? `${b.officer} at the helm` : 'No pilot aboard', preset: 'small', size: 13, color: C.textDim }); ol.x = 16; ol.y = y + 30; m.body.addChild(ol);
+  const hl = new Label({ text: `Expect about ${b.hullEstimate} hull and ${Math.max(1, Math.round(b.fuel / 2))} extra fuel if things go sideways.`, preset: 'small', size: 13, color: C.mustard, w: W - 32 }); hl.x = 16; hl.y = y + 52; m.body.addChild(hl);
+  y += 92;
   (b.tiers || []).forEach((tr, i) => {
     const col = tr.odds >= 70 ? C.good : tr.odds >= 40 ? C.mustard : C.coral; const r = new Container(); r.y = y + i * 40; m.body.addChild(r);
     const nm = new Label({ text: tr.name, preset: 'bodyB', size: 16, color: C.cream }); nm.y = 4; r.addChild(nm);

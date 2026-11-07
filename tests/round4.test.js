@@ -29,8 +29,9 @@ test('hot-lane briefing: stages with odds, expected/worst cost, and odds move wi
   const o0 = run(b);
   g.state.crew[0].skills.piloting = 5;
   assert.ok(run(g.hotLaneBriefing(hot.toId)) > o0, 'training moves odds');
+  const trained = run(g.hotLaneBriefing(hot.toId));
   g.state.ship.morale = 20;
-  assert.ok(run(g.hotLaneBriefing(hot.toId)) < run(b) + 0.2);
+  assert.ok(run(g.hotLaneBriefing(hot.toId)) < trained, 'a glum crew flies worse');
   g.state.ship.morale = 100;
   g.state.upgrades = ['riveted_plating'];
   const b2 = g.hotLaneBriefing(hot.toId);
