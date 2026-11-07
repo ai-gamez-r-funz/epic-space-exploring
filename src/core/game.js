@@ -494,6 +494,8 @@ export class Game {
     const st = this.state;
     const lines = [];
     const here = this.here();
+    const hp = Math.round((st.ship.hull / st.ship.hullMax) * 100);
+    if (hp < 40) lines.push({ kind: 'hull', text: hp < 25 ? `Hull at ${hp}%: repair before the next lane${this.freeRepairOffer().available ? ' (a free Society patch is on offer)' : ''}.` : `Hull at ${hp}%: a repair stop is wise before any hot lane.`, systemId: null });
     const m = this.market(here.id);
     if (m && m.bestSell && m.bestSell.length) {
       const buyable = m.bestSell.filter((r) => { const gd = m.goods.find((x) => x.id === r.goodId); return gd && gd.buy && !gd.held; });
@@ -635,6 +637,40 @@ export class Game {
       advice: st.ship.hull <= worstH ? 'Your hull may not survive a bad run: repair first.' : st.ship.hull < worstH * 2 ? 'Risky at this hull: a repair stop would help.' : 'Worth the bounty with this hull.',
     };
   }
+  /** Limping guard: call before a jump. {warn, hullPct, message, freeRepair}. Warns below 25 % hull (does not block; UI confirms). */
+  departureCheck(toId) {
+    const st = this.state;
+    const pct = Math.round((st.ship.hull / st.ship.hullMax) * 100);
+    const lane = toId ? this.hotLaneBriefing(toId) : null;
+    const warn = pct < 25;
+    return {
+      warn, hullPct: pct, hot: !!(lane && lane.hot),
+      message: warn ? `Hull at ${pct}%: ${lane && lane.hot ? 'a hot lane could finish the Halcyon. ' : ''}${this.freeRepairOffer().available ? 'The Society will patch you up for free, once.' : 'Repair before you go.'}` : '',
+      freeRepair: this.freeRepairOffer(),
+    };
+  }
+  /** One-time free emergency repair (to 60 % hull) when docked at a repair station with hull under 25 %. */
+  freeRepairOffer() {
+    const st = this.state;
+    const s = this.here();
+    const low = st.ship.hull / st.ship.hullMax < 0.25;
+    const ok = low && !st.flags.free_repair_used && st.docked && s && s.station && s.station.services.includes('repair');
+    return { available: !!ok, usedAlready: !!st.flags.free_repair_used, toHull: Math.round(st.ship.hullMax * 0.6) };
+  }
+  claimFreeRepair() {
+    const g0 = this._guard(); if (g0) return g0;
+    const o = this.freeRepairOffer();
+    if (!o.available) return { ok: false, reason: this.state.flags.free_repair_used ? 'The Society only does this once' : 'Needs hull under 25% and a docked repair station' };
+    const st = this.state;
+    st.flags.free_repair_used = true;
+    const gain = o.toHull - st.ship.hull;
+    st.ship.hull = o.toHull;
+    this.emit('sfx', { name: 'repair' });
+    this.log('ship', `Meridian emergency patch: +${Math.round(gain)} hull, free of charge (once).`);
+    this.toast(`Meridian emergency patch: hull restored to ${o.toHull}`, 'good');
+    this._settle();
+    return { ok: true, gain: Math.round(gain) };
+  }
   /** Where could idle scrip go? [{kind:'refit'|'training'|'commission'|'upgrade', id, name, cost, systemId, systemName, jumps, here, days?}] (empty below minScrip). */
   spendHints(minScrip = 1000) {
     const st = this.state;
@@ -736,9 +772,11 @@ export class Game {
   }
   /** What should the player do next? {kind, text, systemId?, title?} or null. */
   nextObjective() {
-    const o = this._nextObjectiveRaw();
-    if (!o) return o;
+    const o0 = this._nextObjectiveRaw();
+    if (!o0) return o0;
     const st = this.state;
+    const hp = Math.round((st.ship.hull / st.ship.hullMax) * 100);
+    const o = hp < 25 ? { ...o0, warning: `Hull at ${hp}%: repair first.` } : o0;
     if (o.systemId === undefined || o.systemId === null) {
       // target not on the chart yet: still tease distance for Lantern targets
       return { ...o, jumps: null, fuel: null, rangeNote: 'Not yet on your chart: explore toward the unknown.' };
@@ -1600,7 +1638,7 @@ Game.strict = false;
 // Safety net: UI-facing actions never throw; they return { ok:false, reason } and the error is logged.
 const ACTIONS = ['jump', 'enterOrbit', 'leaveOrbit', 'scanPlanet', 'scanSystem', 'landingParty', 'investigate', 'hail', 'dock', 'undock', 'buy', 'sell',
   'buyUpgrade', 'sellUpgrade', 'repair', 'refuel', 'restock', 'acceptMission', 'abandonMission', 'hireCrew', 'dismissCrew', 'crewTalk', 'rest',
-  'resolveChoice', 'emergency', 'retire', 'buyRefit', 'trainCrew'];
+  'resolveChoice', 'emergency', 'retire', 'buyRefit', 'trainCrew', 'claimFreeRepair'];
 for (const name of ACTIONS) {
   const orig = Game.prototype[name];
   Game.prototype[name] = function (...args) {
