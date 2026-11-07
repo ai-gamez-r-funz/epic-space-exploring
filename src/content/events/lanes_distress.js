@@ -11,7 +11,7 @@ const k = (label, tag, skill, diff, pt, pfx, ft, ffx, goto) => ({ label, tag, ch
 const CLEAR = [{ clearFlag: 'hl_a' }, { clearFlag: 'hl_b' }, { clearFlag: 'hl_c' }];
 
 // A hot lane: stage nodes a, b, c then payout d. st = [{text, safe, check:[skill,diff, passText, failText, failFx], speak}]
-function hot(id, title, scene, when, st) {
+export function hot(id, title, scene, when, st) {
   const pay = st[3];
   const stage = (i, nextNode) => {
     const s = st[i], flag = ['hl_a', 'hl_b', 'hl_c'][i];

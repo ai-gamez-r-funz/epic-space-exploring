@@ -20,7 +20,8 @@ test('follow-ups: at least 35 single-beat vignettes became multi-beat with a per
 
 test('hot lanes: lane_hot_* chains have 4 nodes, pay out, and always clear their temporary flags', () => {
   const hot = C.EVENTS.filter((e) => e.id.startsWith('lane_hot_'));
-  assert.ok(hot.length >= 4);
+  assert.ok(hot.length >= 12, `hot lanes ${hot.length}`);
+  assert.equal(new Set(hot.map((e) => e.nodes.a.text)).size, hot.length);
   for (const e of hot) {
     assert.equal(Object.keys(e.nodes).length, 4, e.id);
     for (const c of e.nodes.d.choices) {

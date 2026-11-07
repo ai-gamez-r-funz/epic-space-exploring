@@ -8,8 +8,9 @@ import rival from './rival.js';
 import { deepen } from './deepen.js';
 import hazards from './hazards.js';
 import { HOT_LANES, DISTRESS } from './lanes_distress.js';
+import { HOT_LANES_2 } from './hot_lanes2.js';
 import { applyFollowups } from './followups.js';
 
-export const EVENTS = applyFollowups(deepen([...travel, ...diplomacy, ...planets, ...phenomena, ...station_crew, ...scans, ...rival, ...hazards, ...HOT_LANES, ...DISTRESS]));
+export const EVENTS = applyFollowups(deepen([...travel, ...diplomacy, ...planets, ...phenomena, ...station_crew, ...scans, ...rival, ...hazards, ...HOT_LANES, ...HOT_LANES_2, ...DISTRESS]));
 export const EVENT_BY_ID = Object.fromEntries(EVENTS.map((e) => [e.id, e]));
 export default EVENTS;

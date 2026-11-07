@@ -1,0 +1,131 @@
+// EVENTS-A (fix round 4): eight more hot-lane chains (ids lane_hot_*), each with its own setting, three stages and a payout,
+// keyed by region / phenomenon / danger. Crew skills and refits matter: several stages offer an extra option gated on an
+// upgrade or a specialist, which counts as a clean crossing. Same flag contract as lanes_distress.js (hl_a/hl_b/hl_c cleared at payout).
+import { hot } from './lanes_distress.js';
+
+// Gated extra choice that counts as a clean crossing: ex(label, tag, cond, text, fx)
+const ex = (label, tag, cond, text, fx = []) => (next) => ({ label, tag, if: cond, do: { text, fx, goto: next } });
+const FL = (n) => ({ flag: n });
+
+export const HOT_LANES_2 = [
+  hot('lane_hot_dust_shoals', 'The Toll-Tug Dust Shoals', 'asteroids', [{ system: { region: 'shoals' } }, { system: { danger: 1 } }], [
+    { speaker: { name: 'Toll-Tug Marl', species: 'quillari' }, text: 'Stage one. The Shoals lane is a dust-bank patrolled by toll-tugs, who sweep a path and charge for it. "Clear channel, Captain, ten scrip a boat length!" The dust behind them is thick enough to write in.',
+      check: ['diplomacy', 3, 'Haggle the toll down to a story', 'persuade', 'Marl takes a tale about the lost tea-cosy in lieu of coin, wipes an eye, and sweeps you a private channel.', 'Marl is unmoved. You pay the full toll and eat the dust anyway.', [{ credits: -25 }, { hull: -2 }]],
+      safe: ['Pay the toll like a gentleman (20 scrip)', 'The tugs sweep a respectable path. Marl tips an imaginary hat.', [{ credits: -20 }]],
+      extra: ex('Sweep the dust ahead with the cargo net', 'science', [{ upgrade: 'cargo_net' }], 'The net trails the bow like a bridal veil and scoops the worst of the grit. Marl whistles, impressed, and waives the toll.', [FL('hl_a'), { cargo: { curios: 1 } }]) },
+    { text: 'Stage two. The dust has found the intake. A fine grey mist is coming through the vents and the reactor is beginning to cough like a grandfather. {crew:engineering} reaches for a pair of tweezers and the good tea-strainer.',
+      check: ['engineering', 3, 'Strain the intake clean while underway', 'science', 'The tea-strainer proves its worth. The intake breathes, and the reactor sings in relief.', 'The strainer clogs, the reactor sulks, and fuel leaks away with the grit.', [{ fuel: -2 }, { hull: -2 }]],
+      safe: ['Slow to a crawl and let the dust settle', 'You lose half a day, but nothing breaks.', [{ days: 1 }]] },
+    { text: 'Stage three. At the end of the bank sits a toll-gate hung with bells, and a long queue of Quillari barges, each arguing about whose turn it is. A whole convoy is blocking your exit.',
+      check: ['piloting', 3, 'Slip along the outside of the queue', 'flee', 'You glide past thirty barges to a chorus of outraged bells and one admiring whistle.', 'A barge swings out, and you scrape the gate-post with a ringing clang.', [{ hull: -4 }]],
+      safe: ['Wait for the queue to clear', 'You wait. It takes a day and a thermos, and you learn more about the barges than you wished.', [{ days: 1 }, { supplies: -1 }]] },
+    { text: 'On the far side, the toll-keepers have a bounty notice on the post: "FOR CLEAN PASSAGE OF THE SHOALS DUST." They wave a pen.',
+      full: ['Claim the Shoals hazard bounty', 'A purse, a basket of glass-fruit and a parting hoot from Marl. "Clean as a whistle! Come again, I will lose the toll with joy."', [{ credits: 100 }, { cargo: { glass_brandy: 1 } }, { rep: { quillari: 3 } }, { morale: 5 }]],
+      some: ['Accept a sack of sugared tea-cakes', 'The keepers press them into your hands out of pity. They are very good cakes.', [{ supplies: 2 }, { credits: 15 }]] }]),
+
+  hot('lane_hot_pulsar_flare', 'The Pulsar Flare Corridor', 'pulsar', [{ system: { phenomenon: 'pulsar' } }, { system: { danger: 1 } }], [
+    { text: 'Stage one. A pulsar shouts a flare across the lane every ninety seconds, an arc of radiation bright enough to read by. The trick is to cross between flares. The trouble is knowing when.',
+      check: ['science', 3, 'Predict the next flare from its precursor', 'science', '{crew:science} spots the precursor ripple. You cross a full four seconds ahead of the flare, grinning.', 'The prediction is a beat off. The flare clips your tail and the hull blushes.', [{ hull: -5 }]],
+      safe: ['Wait for a long gap and cross slowly', 'A lengthy wait, a long shadow of fuel, and a safe passage.', [{ fuel: -2 }, { days: 1 }]],
+      extra: ex('Run the numbers on the slide-rule array', 'science', [{ upgrade: 'slide_rule_array' }], 'The array clicks and whirs, and flare times roll out neatly. You cross at the exact optimum. A tiny brass bell rings.', [FL('hl_a'), { xp: { science: 1 } }]) },
+    { text: 'Stage two. Mid-lane, a flare comes early. There is a large rock off the port bow, just big enough to hide behind, just far enough to be difficult. The helm says, "Pick one, Captain."',
+      check: ['piloting', 3, 'Duck into the rock\'s shadow', 'flee', 'You snug in behind the rock like a mouse behind a skirting-board. The flare passes overhead, a golden curtain.', 'You are half a metre short. The flare licks the stern.', [{ hull: -6 }]],
+      safe: ['Shut everything down and ride it out', 'A long dark moment, a hot hull, and a very still crew.', [{ hull: -3 }, { morale: -1 }]],
+      extra: ex('Fly the barrel-roll to shed the heat', 'flee', [{ upgrade: 'barrel_roll_gyro' }], 'The gyro hums and the Halcyon rolls like a swimming dog, spreading the flare across the whole hull. Nothing is hurt, and everyone cheers.', [FL('hl_b'), { morale: 3 }]) },
+    { text: 'Stage three. The shield grid is cooked, the lights are red, and the last flare of the corridor is building. The grid needs to be rebooted without losing the helm.',
+      check: ['engineering', 3, 'Reboot the grid under fire', 'science', 'Okonkwo hot-swaps the grid and the shields flash bright in time. The flare breaks on them like a wave on a seawall.', 'The reboot is a half-second late. The flare finds every seam.', [{ hull: -5 }, { morale: -1 }]],
+      safe: ['Reduce power and hide in the lee of the ship', 'The ship hunkers behind its own tail. It is not graceful, and it works.', [{ fuel: -1 }, { hull: -2 }]] },
+    { text: 'The corridor lets go. A Meridian listening post has been logging your run, and sends a congratulatory message with a hazard purse attached, if you earned it.',
+      full: ['Collect the flare-runner\'s purse', 'A purse, a reel of the pulsar\'s song from the listening post, and a warm note: "You make it look easy."', [{ credits: 110 }, { item: { pulsar_tape: 1 } }, { morale: 6 }]],
+      some: ['Take a thank-you and a lukewarm tea', 'The post sends over a flask and a handshake by radio.', [{ credits: 20 }, { morale: 1 }]] }]),
+
+  hot('lane_hot_derelict_maze', 'The Derelict Maze', 'derelict', [{ system: { phenomenon: 'derelict' } }, { system: { danger: 1 } }], [
+    { text: 'Stage one. A graveyard of old hulls lies across the lane, a hundred wrecks, locked in a slow dance. Their transponders mutter in many languages. Somewhere in the mess is a clear path.',
+      check: ['science', 3, 'Sort the transponders and find the corridor', 'science', 'Wreck by wreck, {crew:science} marks the drift. A clean lane appears, drawn in grease pencil on the glass.', 'The transponders argue and the sorting fails. You crawl, bumping a hull or two.', [{ hull: -4 }]],
+      safe: ['Follow the oldest wreck\'s drift', 'It is slow but dependable, like an old dog on a familiar walk.', [{ days: 1 }, { fuel: -1 }]] },
+    { text: 'Stage two. A hulk blocks the lane, hung with cables and half-spun in a ruined orbit. A tow-line from the Halcyon might nudge it aside, if the crew were quick and the cable sound.',
+      check: ['piloting', 4, 'Nudge the hulk aside with a careful touch', 'flee', 'Barely a graze. The hulk turns slowly like a dancer, and lets you pass.', 'The hulk swings round and clips the keel. A shower of old paint.', [{ hull: -6 }]],
+      safe: ['Go round the long way', 'Plenty of wrecks, plenty of room, plenty of fuel gone.', [{ fuel: -2 }, { days: 1 }]],
+      extra: ex('Hook the hulk with the tow gear and haul it clear', 'science', [{ upgrade: 'tow_hook' }], 'The hook bites, the hulk swings aside like a gate, and the lane opens. Dobbin reports "excellent leverage".', [FL('hl_b'), { xp: { engineering: 1 } }]) },
+    { text: 'Stage three. In the last hull, a faint warm light blinks. Somebody left a stasis cabin running, and the cabin\'s alarm is chirping. There may be someone in it, or something that merely feels like someone.',
+      check: ['medicine', 3, 'Open the cabin and see to its occupant', 'science', 'Inside sleeps a very elderly cat, and a note: "PLEASE FEED. THANK YOU." The cat wakes, offended and alive.', 'The cabin is empty, and the alarm falls silent in relief. A cold draught, a sadness.', [{ morale: -1 }]],
+      safe: ['Log the signal and fly on', 'You log it and promise to tell someone. The alarm chirps as you go.', [{ morale: -2 }]] },
+    { text: 'Through the maze, the Meridian salvage office has a bounty for the new lane data. A clerk waves a form.',
+      full: ['Claim the salvage-lane bounty', 'A purse, a crate of recovered parts and a ghost-log cube from a wreck, humming apologetically. The cat, if you saved it, purrs.', [{ credits: 90 }, { cargo: { machine_parts: 2 } }, { item: { ghost_log_cube: 1 } }, { morale: 5 }]],
+      some: ['Take a finder\'s note and a cup of cocoa', 'The clerk offers a signed note and a dubious cocoa.', [{ credits: 20 }, { supplies: 1 }]] }]),
+
+  hot('lane_hot_comet_ice_run', 'The Comet Ice Run', 'comet', [{ system: { phenomenon: 'comet' } }, { system: { danger: 1 } }], [
+    { text: 'Stage one. A comet has thrown a long glittering stream of ice across the lane. It is lovely and enormous, and the ice is the size of dinner plates, moving at the speed of an unkind letter.',
+      check: ['piloting', 3, 'Weave through the stream at speed', 'flee', 'You weave between plates of ice with the poise of a pastry chef. Not a scratch.', 'A plate catches the shoulder of the ship with a clang that rings all the way down the corridor.', [{ hull: -5 }]],
+      safe: ['Ride the edge of the tail, slowly', 'The edge is thinner. It costs fuel and time but spares the plating.', [{ fuel: -2 }, { days: 1 }]] },
+    { text: 'Stage two. The tail is hot as a kettle and the hull is starting to ping. Frost forms and sublimates in strange patterns on the viewport. {crew:engineering} adjusts the heat-exchanger and mutters.',
+      check: ['engineering', 3, 'Balance the heat-exchangers', 'science', 'The exchangers hum into balance. The hull stops pinging and the galley smells of toast.', 'The exchangers overshoot; the lounge turns into a sauna for an hour.', [{ morale: -2 }, { supplies: -1 }]],
+      safe: ['Vent heat and slow down', 'The hull cools, the fuel gauge winces.', [{ fuel: -1 }, { days: 1 }]],
+      extra: ex('Open the lamp mast and shed heat through it', 'science', [{ upgrade: 'lamp_mast' }], 'The lamp mast glows cherry-red and drinks the heat like a straw. The hull hums in relief.', [FL('hl_b'), { xp: { engineering: 1 } }]) },
+    { text: 'Stage three. The comet\'s head swings across the lane, a great glittering mass of ice and rock. The sensors want to know what, precisely, the captain intends to do about it.',
+      check: ['science', 4, 'Chart the head\'s spin and ride its shadow', 'science', '{crew:science} computes the spin in ninety seconds. You ride the comet\'s shadow like a glider.', 'The spin is faster than computed. You get a face full of ice and a lurch.', [{ hull: -5 }, { fuel: -1 }]],
+      safe: ['Burn clear of the head', 'A hard burn away. The comet is unimpressed.', [{ fuel: -3 }]] },
+    { text: 'Out of the tail, you find a Society water-hauler waiting with a bounty: a clean route through the Comet Run is worth money to anyone who sells ice.',
+      full: ['Claim the Ice-Run bounty', 'A purse, a jar of comet-ice from the hauler\'s own stock, and a ship-wide cup of the best tea anyone can remember.', [{ credits: 100 }, { item: { comet_ice: 1 } }, { fuel: 3 }, { morale: 6 }]],
+      some: ['Take a flask of meltwater and a handshake', 'The hauler hands over a flask. It is, honestly, delicious.', [{ credits: 15 }, { fuel: 1 }]] }]),
+
+  hot('lane_hot_choir_feedback', 'The Choir Feedback Strait', 'rift', [{ system: { region: 'choir' } }, { system: { danger: 1 } }], [
+    { text: 'Stage one. The lane runs past a hundred singing rifts, and the sound feeds back on itself, a shriek of harmonics that sets teeth ringing. A Vesperine pilot hums a warning from the far shore: "FIND THE KEY. FIND THE KEY."',
+      check: ['diplomacy', 3, 'Hum the key and ask the choirs to hold it', 'diplomacy', 'The nearest choir takes your note and spreads it through the strait. The shriek mellows to a chord.', 'Your note sours. The strait sneers in unison, and the ship shudders.', [{ hull: -4 }, { morale: -1 }]],
+      safe: ['Plug your ears and fly low', 'Dull, wincing, cautious. The strait passes by in a long headache.', [{ morale: -2 }, { fuel: -1 }]],
+      extra: ex('Ask the translator parrot to find the key', 'diplomacy', [{ upgrade: 'translator_parrot' }], 'The parrot ruffles, whistles a B-flat, and the nearest choir swells with joy. The strait falls in line behind the note.', [FL('hl_a'), { rep: { vesperine: 1 } }]) },
+    { text: 'Stage two. A feedback squall builds, sound folded over on itself until the hull begins to sing. {crew:science} suggests detuning the ship by a quarter-tone before the strain cracks something.',
+      check: ['science', 3, 'Detune the hull against the squall', 'science', 'A quarter-tone of adjustment and the hull stops singing. A calm patch opens, and you slip through.', 'The detune overshoots. The hull rings a flat note and the plating complains.', [{ hull: -4 }]],
+      safe: ['Cut the engines and drift', 'The squall passes over a quiet ship, like a wave over a rock.', [{ days: 1 }, { supplies: -1 }]],
+      extra: ex('Strike the chime array to cancel the note', 'science', [{ upgrade: 'chime_array' }], 'The array rings its own answer, a perfect anti-phase. The squall falls quiet like a child told to hush.', [FL('hl_b'), { xp: { science: 1 } }]) },
+    { text: 'Stage three. At the end of the strait, a large choir has gathered to sing the Long Chord, and you are in the middle of it, with an engine that hums at the wrong pitch. Move quietly.',
+      check: ['piloting', 3, 'Glide out on thrusters alone', 'flee', 'Silent as a moth. The choir does not notice you leave, which is the nicest thing a choir can do.', 'A thruster pings. The choir shifts a half-tone and gives you a reproachful look.', [{ rep: { vesperine: -1 } }, { hull: -2 }]],
+      safe: ['Wait out the Long Chord', 'A long, beautiful hour. You stay for the whole chord, and nobody minds.', [{ days: 1 }, { morale: 3 }]] },
+    { text: 'Beyond the strait, a Vesperine navigator named Fa-Do hands over a reed and a small sack of crystal, a guild gift for those who cross in tune.',
+      full: ['Accept the Strait-Singer\'s gift', 'A hollow reed that hums back when you speak kindly, a sack of tuning crystals, and a standing welcome in the choirs.', [{ item: { choir_reed: 1 } }, { cargo: { tuning_crystals: 2 } }, { rep: { vesperine: 4 } }, { morale: 6 }]],
+      some: ['Accept a humming goodbye', 'Fa-Do hums a short, kind phrase. It is a gift of its own.', [{ rep: { vesperine: 1 } }, { morale: 2 }]] }]),
+
+  hot('lane_hot_archive_book_tide', 'The Tide of Loose Pages', 'asteroids', [{ system: { region: 'archive' } }, { system: { danger: 1 } }], [
+    { text: 'Stage one. An overturned Archive barge has spilled its cargo across the lane, ten thousand loose pages tumbling in the void like a blizzard. Each page is a priceless record. Each page is also a hazard to navigation.',
+      check: ['piloting', 3, 'Weave between the pages without touching a single one', 'flee', 'Barely a rustle. Pages swirl behind you like a flock of white birds.', 'A flurry of pages sticks to the hull and the intake coughs a sheaf of poetry.', [{ hull: -3 }, { fuel: -1 }]],
+      safe: ['Stop and collect pages until the cloud thins', 'You net a few hundred, gentle as a gardener. It takes hours.', [{ days: 1 }, { rep: { archivists: 2 } }]] },
+    { speaker: { name: 'Warden 2-of-8', species: 'archivist' }, text: 'Stage two. An Archive warden drifts out, polite and deeply distressed. "THE PAGES ARE OUT OF ORDER. THE ORDER IS SACRED. WE MUST NOT LEAVE THEM SCATTERED. PLEASE DO NOT FLY THROUGH THEM. OR IF YOU MUST, DO SO ELEGANTLY."',
+      check: ['diplomacy', 3, 'Offer to help the warden collect pages in order', 'diplomacy', 'The warden hums with gratitude and sends a work-party. The lane clears in an hour and the pages are saved.', 'The warden demands a recount of the pages. It takes a while, and nobody is happy.', [{ days: 1 }, { morale: -1 }]],
+      safe: ['Apologise and take the long way', 'The warden accepts with a stately bow.', [{ fuel: -2 }, { days: 1 }]] },
+    { text: 'Stage three. The last of the cloud is the thickest, a wall of white. The sensors see nothing but paper. You could navigate it by feel, or you could read your way out: the pages themselves hold a map.',
+      check: ['science', 4, 'Read the page-markings and follow their index', 'science', 'The pages are numbered. You follow the numerals like a trail of breadcrumbs, and the wall parts.', 'The numbers are in a script you cannot read. You push through on blind luck and a few papercuts.', [{ hull: -3 }, { morale: -1 }]],
+      safe: ['Wait for the cloud to disperse', 'You wait. It thins, eventually, with a sound like applause.', [{ days: 1 }]] },
+    { text: 'At the edge of the cloud, the Archive has a small counter. A tiny machine presses a stamp onto your hand. "THE ARCHIVE THANKS YOU FOR YOUR GRACE."',
+      full: ['Accept the Archive\'s thanks', 'A bronze riddle token, a packet of charts, and a long, formal letter of regard, filed under \'Kindnesses\'.', [{ item: { riddle_coin: 1 } }, { reveal: { radius: 3 } }, { rep: { archivists: 5 } }, { credits: 60 }, { morale: 5 }]],
+      some: ['Take a bookmark and a bow', 'The machine hands over a ribbon bookmark. It is a very nice bookmark.', [{ rep: { archivists: 1 } }, { morale: 2 }]] }]),
+
+  hot('lane_hot_rim_lantern_fair', 'The Lantern Fair Lane', 'station', [{ system: { region: 'rim' } }, { system: { danger: 1 } }], [
+    { speaker: { name: 'Fair-Marshal Odd', species: 'drifter' }, text: 'Stage one. The Rim lane is a lantern fair: ten thousand paper lanterns, tied to ships, drifting over the route. "Mind the lanterns, Captain! It\'s bad luck to pop one. It\'s worse luck to be seen popping one."',
+      check: ['piloting', 3, 'Thread the lanterns without popping any', 'flee', 'You slip through the lantern-field like a thought through a dream. Nothing so much as flickers.', 'A lantern catches the antenna and pops with a puff. A hundred drifters gasp.', [{ rep: { drifters: -1 } }, { morale: -1 }]],
+      safe: ['Join the procession at its own pace', 'You trail the fair for an hour, waving at children. It is a delightful delay.', [{ days: 1 }, { morale: 3 }]] },
+    { text: 'Stage two. A string of lanterns has tangled round a mooring cable, dragging a whole hab sideways in the lane. A drifter hangs from it, waving. "A hand with the knots, please?"',
+      check: ['engineering', 3, 'Untangle the cable with a cutter and a steady hand', 'science', 'You free the string without popping a single lantern. The hab swings home, cheering.', 'The cable parts with a snap and a few lanterns burst. Nobody holds a grudge, but everyone sighs.', [{ rep: { drifters: -1 } }, { hull: -2 }]],
+      safe: ['Ask the drifters to untie it themselves', 'They grumble, then do. It takes time.', [{ days: 1 }]],
+      extra: ex('Use the grapple cradle to lift the hab free', 'science', [{ upgrade: 'grapple_cradle' }], 'The cradle cups the hab gently, like a baby in a basket, and lifts it clear of the knots. The drifters cheer for a full minute.', [FL('hl_b'), { rep: { drifters: 2 } }]) },
+    { text: 'Stage three. The procession stops. Someone is calling for a speech, and all eyes are on the Halcyon. You are the guest of honour, apparently, in a ship held in the middle of the lane by the crowd.',
+      check: ['diplomacy', 3, 'Give a short, warm speech', 'persuade', '"To the lanterns, and the hands that tie them." Cheers. The crowd parts like a curtain and a hundred children wave you out.', 'The speech is long and wanders. A kindly grandmother rescues you with a song.', [{ morale: 1 }]],
+      safe: ['Wave and bow, with a grin', 'You bow, wave and grin, and the crowd, charmed, lets you through.', [{ morale: 2 }]] },
+    { text: 'Out of the fair, Odd presses a knot-cord into your hand. "Take this, from the Marshal. Every lantern lit tonight has your name in it."',
+      full: ['Accept the Marshal\'s cord', 'A story-knot with seven tales in it, a basket of festival food, and a lantern lit just for the ship.', [{ item: { story_knot: 1 } }, { supplies: 3 }, { rep: { drifters: 4 } }, { morale: 6 }]],
+      some: ['Take a paper lantern and a wave', 'A small lantern, hand-folded, glows on the bridge.', [{ rep: { drifters: 1 } }, { morale: 3 }]] }]),
+
+  hot('lane_hot_wormhole_swell', 'The Wormhole Swell', 'wormhole', [{ system: { phenomenon: 'wormhole' } }, { system: { danger: 1 } }], [
+    { text: 'Stage one. A swell runs along the wormhole\'s throat, a slow gravity wave, high as a house. The instruments disagree about which end of it is up. The helm has put on a pair of motoring goggles.',
+      check: ['science', 3, 'Time the swell and ride its crest', 'science', 'You ride the crest like a surfer, and the swell hands you onward at no charge.', 'You time it wrong and take the trough on the nose. Everything not bolted down is briefly airborne.', [{ hull: -4 }, { supplies: -1 }]],
+      safe: ['Drift into a still pocket and wait', 'A pocket opens, and you rest in it while the swell rolls by.', [{ days: 1 }]] },
+    { text: 'Stage two. Inside the throat, time goes odd: the clock runs slow, then fast. Your hair is longer in the mirror for a moment. {crew:piloting} says the helm feels like steering a dream.',
+      check: ['piloting', 4, 'Keep the heading steady against the drift', 'flee', 'You hold the heading with a steady hand and a thoughtful tongue. The dream settles and you glide on.', 'The helm drifts, and the Halcyon gets a bad crick in her time.', [{ days: 1 }, { fuel: -1 }]],
+      safe: ['Let the throat carry you and trim afterwards', 'It carries you somewhat off course, gently.', [{ fuel: -2 }]],
+      extra: ex('Fire the emergency beacon to anchor your position', 'science', [{ upgrade: 'emergency_beacon' }], 'The beacon pings, the Meridian relay pings back, and the heading holds as steady as a lighthouse.', [FL('hl_b')]) },
+    { text: 'Stage three. The throat narrows and a wave of time-sickness hits the crew: disorientation, giddiness, an urge to laugh and cry in alternation. {crew:medicine} is already moving down the corridor with a tray of mint tea.',
+      check: ['medicine', 3, 'Treat the crew through the narrows', 'science', 'Mint, quiet, and firm cheer. The crew come through hale and slightly tearful.', 'The remedy is a touch too strong; half the crew nap through the narrows.', [{ morale: -2 }, { days: 1 }]],
+      safe: ['Everyone holds hands and sings', 'A hearty, wobbly chorus. It sees you through, more or less.', [{ morale: 2 }, { supplies: -1 }]] },
+    { text: 'Out at the far mouth, a wormhole warden in a striped hat waves you to a stop. "Clean passage! I have a token for it, and a standing offer for anyone who can ride a swell."',
+      full: ['Claim the Warden\'s token and bounty', 'A purse, a toll token that clinks cheerfully, and a chart of two lanes you did not know existed.', [{ credits: 100 }, { item: { toll_token: 1 } }, { reveal: { radius: 3 } }, { morale: 5 }]],
+      some: ['Take a postcard of the wormhole', 'A postcard with the warden\'s signature and a small stain of jam.', [{ credits: 15 }, { morale: 2 }]] }]),
+];
