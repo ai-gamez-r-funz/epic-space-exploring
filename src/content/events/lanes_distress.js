@@ -10,6 +10,9 @@ const o = (label, tag, text, fx = [], goto) => ({ label, tag, do: { text, fx, ..
 const k = (label, tag, skill, diff, pt, pfx, ft, ffx, goto) => ({ label, tag, check: { skill, diff }, pass: { text: pt, fx: pfx, ...(goto ? { goto } : {}) }, fail: { text: ft, fx: ffx, ...(goto ? { goto } : {}) } });
 const CLEAR = [{ clearFlag: 'hl_a' }, { clearFlag: 'hl_b' }, { clearFlag: 'hl_c' }];
 
+// Bold success pays a little extra at each stage.
+const BONUS = [[{ credits: 15 }], [{ credits: 15 }, { supplies: 1 }], [{ credits: 20 }, { cargo: { curios: 1 } }]];
+
 // A hot lane: stage nodes a, b, c then payout d. st = [{text, safe, check:[skill,diff, passText, failText, failFx], speak}]
 export function hot(id, title, scene, when, st) {
   const pay = st[3];
@@ -19,8 +22,12 @@ export function hot(id, title, scene, when, st) {
       ...(s.speaker ? { speaker: s.speaker } : {}),
       text: s.text,
       choices: [
-        k(s.check[2], s.check[3], s.check[0], s.check[1], s.check[4], [{ flag }, { xp: { [s.check[0]]: 1 } }], s.check[5], s.check[6], nextNode),
-        o(s.safe[0], 'wait', s.safe[1], s.safe[2], nextNode),
+        k(s.check[2], s.check[3], s.check[0], s.check[1], s.check[4], [{ flag }, { xp: { [s.check[0]]: 1 } }, ...(BONUS[i])], s.check[5], s.check[6], nextNode),
+        // careful play is not free: it costs what the text says, and one time in four the lane stalls you for another day
+        { label: s.safe[0] + ' (slow; may stall)', tag: 'wait', rand: [
+          [3, { text: s.safe[1], fx: s.safe[2], goto: nextNode }],
+          [1, { text: 'The lane has other ideas. ' + s.safe[1] + ' Then something drifts into the way and you sit out a long, tedious extra day.', fx: [...s.safe[2], { days: 1 }, { supplies: -1 }, { morale: -1 }], goto: nextNode }],
+        ] },
         ...(s.extra ? [s.extra(nextNode)] : []),
       ],
     };
@@ -42,7 +49,7 @@ export function hot(id, title, scene, when, st) {
 }
 
 export const HOT_LANES = [
-  hot('lane_hot_ion_gauntlet', 'The Ion Gauntlet', 'ionstorm', [{ system: { phenomenon: 'ionstorm' } }, { system: { danger: 2 } }], [
+  hot('lane_hot_ion_gauntlet', 'The Ion Gauntlet', 'ionstorm', [{ system: { phenomenon: 'ionstorm' } }], [
     { speaker: { name: 'Dobbin', species: 'robot' }, text: 'Stage one. The leading front of an ion squall bars the lane, a curtain of violet lightning with one narrow, flickering gap. Dobbin has laid a Meridian bounty notice on the console: "CLEAR CROSSING OF THE GAUNTLET: HANDSOME."',
       check: ['piloting', 3, 'Thread the gap at speed', 'flee', 'You slide through on the flicker of the gap. Lightning licks the hull and the hull stays whole.', 'The gap closes a hair early. A hundred sparks go through the plating like a jug of wasps.', [{ hull: -6 }]],
       safe: ['Skirt the front, long and slow', 'You spend fuel and an afternoon going round the edge. Safe, expensive and quiet.', [{ fuel: -2 }, { days: 1 }]] },
@@ -56,7 +63,7 @@ export const HOT_LANES = [
       full: ['Claim the full Gauntlet bounty', 'Two clean crossings earn the full stamp, a purse of scrip and a storm glass from the weather office. The crew are insufferable about it all evening.', [{ credits: 120 }, { item: { storm_glass: 1 } }, { morale: 6 }]],
       some: ['Claim the consolation chit', 'The clerk looks at the damage, sighs, and stamps a small "SURVIVOR\'S ALLOWANCE".', [{ credits: 25 }, { morale: 1 }]] }]),
 
-  hot('lane_hot_asteroid_slalom', 'The Rock Slalom', 'asteroids', [{ system: { phenomenon: 'asteroids' } }, { system: { danger: 2 } }], [
+  hot('lane_hot_asteroid_slalom', 'The Rock Slalom', 'asteroids', [{ system: { phenomenon: 'asteroids' } }], [
     { text: 'Stage one. The lane threads a tumbling field of rocks, each the size of a barn and none of them in the same place twice. A sign on a nav-buoy reads: "SLALOM. TIMES POSTED AT THE DOCK. NO PRIZES, BUT GLORY."',
       check: ['piloting', 3, 'Run the slalom at speed', 'flee', 'You carve the course like a skier, and the rocks wheel past in a stately blur. Nothing scrapes.', 'A rock clips the stern. The hull gongs, and the helm swears in a gentle, poetic way.', [{ hull: -6 }]],
       safe: ['Pick through slowly, nose-first', 'An hour of patient nudging. Nothing hits you, and nobody is impressed.', [{ days: 1 }, { fuel: -1 }]] },
@@ -70,7 +77,7 @@ export const HOT_LANES = [
       full: ['Collect the slalom purse', 'The Foreman\'s purse, a crate of spare parts, and a stamp in the guild book. You are, in a minor sense, a local legend.', [{ credits: 90 }, { cargo: { machine_parts: 2 } }, { rep: { drifters: 3 } }, { morale: 5 }]],
       some: ['Take a polite pat on the back', 'The Foreman offers a handshake and half a sandwich. You accept both.', [{ supplies: 1 }, { rep: { drifters: 1 } }]] }]),
 
-  hot('lane_hot_rift_run', 'The Rift Run', 'rift', [{ system: { phenomenon: 'rift' } }, { system: { danger: 2 } }], [
+  hot('lane_hot_rift_run', 'The Rift Run', 'rift', [{ system: { phenomenon: 'rift' } }], [
     { text: 'Stage one. A first crease of the rift lies across the lane. Stars double on either side of the fold and the helm reports that left is, for the moment, also right. It is a very bad moment to be indecisive.',
       check: ['piloting', 4, 'Pick a side and fly confidently', 'flee', 'You commit to a heading, and the fold accepts it. The stars slide back to one apiece.', 'You choose the wrong half of the fold. It spits you out with a sharp shove.', [{ hull: -6 }, { fuel: -1 }]],
       safe: ['Back off and wait for it to settle', 'The fold relaxes by itself within the hour. You lose time but not paint.', [{ days: 1 }]] },
@@ -84,7 +91,7 @@ export const HOT_LANES = [
       full: ['Claim the Rift Run bounty', 'A purse, a plotted lane and a chime of rift-glass sent by the Archive in thanks. The helm\'s name goes on the plaque.', [{ credits: 100 }, { item: { rift_chime: 1 } }, { reveal: { radius: 2 } }, { morale: 6 }]],
       some: ['Take the courtesy stamp', 'The clerk marks a star next to your name and wishes you a restful week.', [{ credits: 20 }, { morale: 2 }]] }]),
 
-  hot('lane_hot_nebula_brownout', 'The Nebula Brownout', 'nebula', [{ system: { phenomenon: 'nebula' } }, { system: { danger: 2 } }], [
+  hot('lane_hot_nebula_brownout', 'The Nebula Brownout', 'nebula', [{ system: { phenomenon: 'nebula' } }], [
     { text: 'Stage one. The nebula thickens until the sensors give up and the running lights shine back at you from the glass. "Brownout," says the helm. "We are flying by memory, Captain, and mine is poor."',
       check: ['science', 3, 'Rebuild the picture from the pulse echoes', 'science', 'Pulse by pulse the fog resolves into a corridor of clear gas. {crew:science} draws it on the glass in grease pencil.', 'The echoes smear into noise. You crawl through the murk and scrape a rock you cannot see.', [{ hull: -5 }]],
       safe: ['Idle at quarter speed', 'An hour of cribbage. The nebula thins slightly, then thickens again out of spite.', [{ days: 1 }]] },

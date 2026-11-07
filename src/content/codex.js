@@ -397,4 +397,6 @@ export const CODEX = [
     text: 'The first meeting at which all five peoples of the Reach sat at one round table. It adjourned for pastries, and has been called, ever since, the most successful summit of the age.' },
   { id: 'silence_stone_lore', title: 'The Silence-Stone', category: 'tech', unlockedBy: 'event',
     text: 'A smooth grey Vesperine stone that hums only in perfect quiet. The Vesperine give it to those who have chosen silence on purpose, and to nobody else.' },
+  { id: 'codex_night_of_lamps', title: 'The Night of a Thousand Lamps', category: 'history', unlockedBy: 'event',
+    text: 'Once a generation, Pennywhistle puts out every light and launches a thousand paper lamps at once. Those who have flown at the head of the flotilla say the sky afterwards looks permanently a little kinder.' },
 ];

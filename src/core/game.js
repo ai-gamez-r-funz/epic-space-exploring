@@ -63,7 +63,7 @@ export class Game {
     const names = (C.NAMES && C.NAMES.SHIP_NAME_SUGGESTIONS) || GOODS_FALLBACK_NAMES;
     const state = {
       v: STATE_VERSION, seed, day: 1, phase: 'play', rng: hashString('play:' + seed) || 1,
-      captain: { name: String(opts.captainName || 'Captain').slice(0, 32) },
+      captain: { name: Game.cleanCaptainName(opts.captainName) },
       difficulty,
       ship: { name: String(opts.shipName || names[0] || 'Halcyon').slice(0, 32), hull: res.hull, hullMax: 100, fuel: res.fuel, fuelMax: 40, supplies: res.supplies, suppliesMax: 40, morale: res.morale, cargoMax: 16 },
       credits: Math.round(res.credits + (legacy.bonus || 0)),
@@ -91,6 +91,12 @@ export class Game {
     g._chapters();
     g._codexSweep();
     return g;
+  }
+
+  /** Strip a leading rank so UI can always prefix "Captain"/"Capt." without doubling it. */
+  static cleanCaptainName(raw) {
+    const n = String(raw || '').replace(/^\s*((captain|capt\.?|cap\.?)\s+)+/i, '').trim().slice(0, 32);
+    return n || 'Voyager';
   }
 
   /** Returns a Game, or null if the save is unusable (see Game.lastLoadError). */
@@ -602,8 +608,8 @@ export class Game {
     const stages = [];
     let exH = 0; let exF = 0; let exD = 0; let worstH = 0; let clean = 1;
     for (let i = 0; i < 3; i++) {
-      const run = { key: 'run', label: 'Run the gauntlet', skill: 'piloting', odds: this.checkOdds('piloting', p.pilotDiff, { tag: 'flee' }), failCost: { hull: failHull, fuel: 1 }, passCost: {} };
-      const creep = { key: 'creep', label: 'Creep through', skill: null, odds: 1, failCost: {}, passCost: { fuel: p.wait.fuel, days: p.wait.days } };
+      const run = { key: 'run', label: 'Run the gauntlet', bonusPct: 20, skill: 'piloting', odds: this.checkOdds('piloting', p.pilotDiff, { tag: 'flee' }), failCost: { hull: failHull, fuel: 1 }, passCost: {} };
+      const creep = { key: 'creep', label: 'Creep through', skill: null, odds: 1 - p.creepFail, failCost: { hull: scale(Math.max(2, Math.round(p.hull * 0.6))), fuel: p.wait.fuel, days: p.wait.days }, passCost: { fuel: p.wait.fuel, days: p.wait.days }, bonusPct: -25 };
       const sk = p.careSkills[i];
       const brace = { key: 'brace', label: sk === 'medicine' ? 'Steady the crew' : 'Reinforce / coax the drive', skill: sk, odds: this.checkOdds(sk, p.careDiff), failCost: { hull: careFail }, passCost: { hull: scale(1) } };
       const cost = (o) => (1 - o.odds) * ((o.failCost.hull || 0) + 0.7 * (o.failCost.fuel || 0)) + o.odds * ((o.passCost.hull || 0) + 0.7 * (o.passCost.fuel || 0) + 1.5 * (o.passCost.days || 0));
@@ -613,8 +619,8 @@ export class Game {
       exF += (1 - best.odds) * (best.failCost.fuel || 0) + best.odds * (best.passCost.fuel || 0);
       exD += best.odds * (best.passCost.days || 0);
       worstH += best.failCost.hull || (best.passCost.hull || 0);
-      clean *= best.key === 'creep' ? 1 : best.key === 'run' ? best.odds : 0; // bracing always costs a little hull
-      stages.push({ stage: i + 1, best: best.key, options: options.map((o) => ({ key: o.key, label: o.label, skill: o.skill, odds: o.odds, failCost: o.failCost, passCost: o.passCost })) });
+      clean *= best.key === 'creep' ? creep.odds : best.key === 'run' ? best.odds : 0; // bracing always costs a little hull
+      stages.push({ stage: i + 1, best: best.key, options: options.map((o) => ({ key: o.key, label: o.label, bonusPct: o.bonusPct || 0, skill: o.skill, odds: o.odds, failCost: o.failCost, passCost: o.passCost })) });
     }
     const bonus = this._hotBonus(st.pos, toId);
     const mods = [];
@@ -963,9 +969,12 @@ export class Game {
       const id = this._chain; this._chain = null;
       if (Events.startEvent(this, id, cur.ctx, { afterArrive: cur.afterArrive, setPiece: cur.setPiece, bonus: cur.bonus })) return;
     }
-    if (cur.setPiece === 'hotlane' && cur.bonus) { // authored hot-lane chains share the engine's hazard bounty
-      applyEffects(this, [{ credits: cur.bonus }, { cargo: { curios: 1 } }, { reveal: 'nearest' }, { counter: { hot_runs: 1 } }], {});
-      this.toast(`Hot lane cleared: +${cur.bonus} scrip`, 'good');
+    if (cur.setPiece === 'hotlane' && cur.bonus) { // every hot-lane chain shares the engine's hazard bounty: bold flying pays more, creeping forfeits some
+      const mult = clamp(1 + 0.2 * (st.counters.hotBold || 0) - 0.25 * (st.counters.hotCreep || 0), 0.4, 1.6);
+      const pay = Math.round((cur.bonus * mult) / 5) * 5;
+      applyEffects(this, [{ credits: pay }, { cargo: { curios: 1 } }, { reveal: 'nearest' }, { counter: { hot_runs: 1 } }], {});
+      this.toast(`Hot lane cleared: +${pay} scrip${mult > 1.05 ? ' (bold flying bonus)' : mult < 0.95 ? ' (creeping cost you part of the bounty)' : ''}`, 'good');
+      st.counters.hotBold = 0; st.counters.hotCreep = 0;
     }
     if (cur.afterArrive && !st.pending) this._arrive();
     if (this._shopAfter) { this._shopAfter = false; const s = this.here(); if (s && s.station) this.emit('shop', { systemId: s.id }); }
@@ -1060,14 +1069,19 @@ export class Game {
       const fromName = this.system(fromId).name;
       const bonus = this._hotBonus(fromId, toId);
       // authored chains (lane_hot_*) by region/danger, never repeating the same chain inside ~20 days; built-in chain is the fallback
-      const pool = Events.eligible(this, 'travel', { systemId: toId }).filter((e) => /^lane_hot_/.test(e.id) && !(st.counters['hotchain_' + e.id] > st.day - 20));
+      // strict match (region / phenomenon / danger) first; otherwise ANY authored chain; the built-in is only for "none authored at all"
+      const fresh = (e) => !(st.counters['hotchain_' + e.id] > st.day - 20);
+      let pool = Events.eligible(this, 'travel', { systemId: toId }).filter((e) => /^lane_hot_/.test(e.id) && fresh(e));
+      if (!pool.length) pool = C.EVENTS.filter((e) => /^lane_hot_/.test(e.id) && fresh(e));
+      if (!pool.length) pool = C.EVENTS.filter((e) => /^lane_hot_/.test(e.id)).sort((a, b) => (st.counters['hotchain_' + a.id] || 0) - (st.counters['hotchain_' + b.id] || 0)).slice(0, 1);
       const auth = pool.length ? this.rng.weighted(pool, (e) => e.weight || 10) : null;
+      st.counters.hotBold = 0; st.counters.hotCreep = 0;
       if (auth) {
         st.counters['hotchain_' + auth.id] = st.day;
         started = Events.startEvent(this, auth, { systemId: toId }, { afterArrive: true, setPiece: 'hotlane', bonus });
       } else {
         const variant = hashString(`${st.seed}|${key}|${Math.floor(st.day / 20)}`) % 4;
-        started = Events.startEvent(this, SP.hotLaneEvent(dest, Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1, bonus, fromName, variant), { systemId: toId }, { afterArrive: true, setPiece: 'hotlane-builtin', bonus });
+        started = Events.startEvent(this, SP.hotLaneEvent(dest, Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1, bonus, fromName, variant), { systemId: toId }, { afterArrive: true, setPiece: 'hotlane', bonus });
       }
       this.log('event', `Hot lane run: ${fromName} to ${dest.name}.`);
     } else started = this._travelHazard(dest);

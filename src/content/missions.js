@@ -764,6 +764,21 @@ export const MISSIONS = [
     deadlineDays: 70,
   },
 
+  {
+    id: 'm_setpiece_night_of_lamps', title: 'The Night of a Thousand Lamps', kind: 'story', arc: 'turning',
+    giver: { name: 'Festival Marshal Dott', species: 'quillari', faction: 'quillari' },
+    blurb: 'Once a generation the Bazaar at Pennywhistle puts out every light and launches a thousand paper lamps at once, and this year it wants Halcyon at the head of the flotilla. There will be a choice of gift, and it will be a good one.',
+    accept: 'Dott tucks a paper lamp into your pocket. "Come in dark. Leave in lamplight."',
+    offerWhen: [{ any: [{ day: [12, 999] }, { survey: 10 }] }], offerAt: { station: true }, ordered: true,
+    objectives: [
+      { id: 'o1', type: 'goto', target: 'pennywhistle', optional: true, text: 'Sail to Pennywhistle Exchange in the Brightwater Shoals' },
+      { id: 'o2', type: 'event', event: 'setpiece_night_of_lamps', text: 'Join the flotilla on arrival and choose your gift' },
+    ],
+    reward: { credits: 500, rep: { quillari: 4 }, item: { festival_ribbon: 1 } },
+    deadlineDays: 90,
+    completeText: 'The lamps are still rising somewhere over the Shoals, and will be for a very long time.',
+  },
+
   // ===========================================================================
   // MID-GAME TURNING POINT (day 40+): "The Great Convergence"
   // The Society asks Halcyon to host the first meeting of all five peoples. Offered at ANY Concord station from day 40

@@ -680,3 +680,27 @@ export const MIDGAME = {
   flags: { called: 'convergence_called', held: 'convergence_held' },
   nudge: 'Director Calloway has an urgent, polite summons waiting at any Concord station: the peoples of the Reach wish to meet.',
 };
+
+// -----------------------------------------------------------------------------
+// SHIP_RANKS: the ship's rank title grows with the number of installed upgrades (UI: show on the HUD, Ship screen
+// and End screen). Use shipRank(upgradeCount, tierSum) below. `log` is a line to write once when a rank is reached.
+export const SHIP_RANKS = [
+  { minUpgrades: 0, title: 'Survey Cutter', log: 'Halcyon is a modest survey cutter, comfortable and a little scuffed.', flavour: 'Smells of cardamom. Rattles at warp seven.' },
+  { minUpgrades: 2, title: 'Scout Sloop', log: 'With a few upgrades fitted, Halcyon feels like a proper scout sloop.', flavour: 'The kettle now has its own bracket.' },
+  { minUpgrades: 4, title: 'Meridian Courier', log: 'Halcyon has become a Meridian courier: quick, reliable and decorated with stickers.', flavour: 'Other ships wave first.' },
+  { minUpgrades: 6, title: 'Explorer-Class Cruiser', log: 'Halcyon now rates as an explorer-class cruiser. The harbour masters salute.', flavour: 'Her charts have charts of their own.' },
+  { minUpgrades: 8, title: 'Flagship of the Reach', log: 'Halcyon is the flagship of the Reach: a warm, shining ship that every people knows by sight.', flavour: 'Children draw her on harbour walls.' },
+  { minUpgrades: 10, title: 'Lamplighter of the Reach', log: 'Halcyon is a lamplighter, a legend in brass and teal.', flavour: 'Tea is served at the dock before she even arrives.' },
+];
+export function shipRank(upgradeCount = 0) {
+  let best = SHIP_RANKS[0];
+  for (const r of SHIP_RANKS) if (upgradeCount >= r.minUpgrades) best = r;
+  return best;
+}
+// UPGRADE_TIER_NOTES: one-line log/flavour text when a first upgrade of each tier is installed.
+export const UPGRADE_TIER_NOTES = {
+  1: 'A first refit. The engineers pat the new fittings the way one pats a sleepy dog.',
+  2: 'A serious upgrade. The ship hums a half-tone lower, which the crew take as approval.',
+  3: 'A masterwork fitting. The old hands come to the bridge just to look at it.',
+  reward: 'A gift from the Reach itself. The log lists it as "priceless", which the accountants resent.',
+};

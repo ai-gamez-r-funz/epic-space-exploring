@@ -5,7 +5,11 @@ import { C } from '../kit/theme.js';
 import { Label } from '../kit/Label.js';
 import { Tooltip } from '../kit/Tooltip.js';
 import { S } from '../services.js';
+import { Display } from '../kit/theme.js';
 import { jumpsTo } from './objective.js';
+
+/** Type scale so the smallest HUD text stays >= ~11.5 css px on phones (and 1.2x with Large UI). */
+export function readScale() { const sc = Display.scale || 1; return Math.min(1.7, Math.max(1, 11.5 / (12 * sc))) * (Display.largeUI ? 1.2 : 1); }
 
 const sysName = (g, id) => g.system(id)?.name || id;
 
@@ -63,14 +67,14 @@ export class ThreadsBar extends Container {
     const g = new Graphics().roundRect(0, 0, w, h, h / 2).fill({ color: 0x05060f, alpha: 0.78 }).roundRect(0, 0, w, h, h / 2).stroke({ width: 1.5, color: col, alpha: 0.85 }); c.addChild(g);
     let tx = 10;
     if (iconName) { try { const ic = S.gfx.icon(iconName, { size: 16, color: col }); const b = ic.getLocalBounds(); ic.x = 18 - (b.x + b.width / 2); ic.y = h / 2 - (b.y + b.height / 2); c.addChild(ic); tx = 32; } catch (e) { /* */ } }
-    c.tx = tx; const l = new Label({ text, preset: 'small', size: 12, color: C.cream, w: w - tx - 10, h: h - 4, fit: true }); l.x = tx; l.y = (h - l.textHeight) / 2; c.addChild(l); c.label = null;
+    c.tx = tx; const l = new Label({ text, preset: 'small', size: Math.round(12 * Math.min(readScale(), h / 18)), color: C.cream, w: w - tx - 10, h: h - 4, fit: true }); l.x = tx; l.y = (h - l.textHeight) / 2; c.addChild(l); c.label = null;
     c.on('pointertap', () => onTap?.()); if (tip) Tooltip.attach(c, tip);
     return c;
   }
   update(g, docked) {
     this.removeChildren().forEach((c) => c.destroy({ children: true }));
     const focus = (id, title) => () => { if (id && this.ui.showOnMap) this.ui.showOnMap([id], title); else this.ui.openOverlay('MissionLog'); };
-    let y = 0; const H = 24;
+    const f = readScale(); let y = 0; const H = Math.round(24 * Math.min(1.45, f));
     const sp = spendLine(g); if (sp) { this.addChild(this._pill(0, y, this.W, H, C.good, 'credits', sp.text, () => (sp.overlay ? this.ui.openOverlay(sp.overlay) : focus(sp.systemId, 'Spend scrip')()), { title: 'Spend your scrip', body: sp.text, footer: sp.overlay ? 'Click to open it' : '' })); y += H + 6; }
     if (docked) { const b = dockBulletin(g); if (b) { this.addChild(this._pill(0, y, this.W, H, C.mustard, 'news', b.text, focus(b.systemId, 'Dock bulletin'), { title: 'Dock bulletin', body: b.all.map((l) => '\u2022 ' + l.text).join('\n'), footer: b.systemId ? 'Click to show it on the Chart' : '' })); y += H + 6; } }
     const r = rivalLine(g); const l = lanternLine(g); const parts = [r, l].filter(Boolean);

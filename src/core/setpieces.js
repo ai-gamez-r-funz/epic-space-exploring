@@ -141,7 +141,7 @@ export function hailEvent(g, factionId, rng) {
   const rumour = rng.pick(rumours);
   const name = `${F.adjective || prettify(factionId)} Harbour Voice`;
   const choices = [
-    one('Exchange pleasantries', `${F.farewell ? F.farewell + ' ' : ''}A small, warm exchange. Goodwill accrues quietly.`, [{ rep: { [factionId]: 1 } }, { morale: 1 }], 'diplomacy'),
+    one('Exchange pleasantries', `${F.farewell ? F.farewell + ' ' : ''}${rng.pick(['A small, warm exchange. Goodwill accrues quietly.', 'Pleasantries are traded like good cards. Everyone leaves a little taller.', 'The call ends with real laughter on both ends. That counts for something out here.', 'A courteous, unhurried chat. Both sides pronounce it a pleasure and mean it.'])}`, [{ rep: { [factionId]: 1 } }, { morale: 1 }], 'diplomacy'),
     one('Ask for local gossip', `${trunc(rumour, 55)} You jot down a coordinate and a raised eyebrow.`, [{ reveal: 'nearest' }, { xp: { diplomacy: 1 } }], 'diplomacy'),
   ];
   choices.push({ label: 'Offer a copy of the sector charts', tag: 'trade', if: [{ item: 'sector_charts' }], do: { text: 'The charts are received with real delight. A gift basket is promised and, remarkably, delivered.', fx: [{ item: { sector_charts: -1 } }, { rep: { [factionId]: 3 } }, { credits: 20 }] } });
@@ -204,7 +204,7 @@ export { DISTRESS_KINDS };
 export function festivalEvent(news, sys) {
   return ev('core_festival', 'station', news.title, { scene: 'market' }, {
     a: {
-      text: `${news.text} Stalls spill onto the docking ring; somebody hands you a paper lantern and a skewer of something fried.`,
+      text: `${news.text} ${['Stalls spill onto the docking ring; somebody hands you a paper lantern and a skewer of something fried.', 'Bunting zigzags across the concourse and a brass band is losing a friendly argument with a choir.', 'Children race between the stalls with paper kites, and the air smells of cinnamon and hot solder.', 'Somebody has hung fairy lights from the docking clamps. Somebody else is selling them back to you.'][Math.abs(news.startDay + sys.id.length) % 4]}`,
       choices: [
         one('Join the festivities', 'You dance badly, eat enthusiastically and sign a stranger\'s guest book. The crew come back glowing.', [{ morale: 6 }, { credits: -8 }]),
         one('Work the crowd for news', 'Festival crowds talk freely. You pick up prices, rumours and one excellent recipe.', [{ reveal: 'nearest' }, { xp: { diplomacy: 1 } }], 'diplomacy'),
@@ -239,10 +239,11 @@ const HOT_SCENES = { ionstorm: 'ionstorm', asteroids: 'asteroids', pulsar: 'puls
 /** Shared numbers for the built-in hot-lane chain (used by the briefing API too). */
 export function hotParams(dest, mult = 1) {
   const d = Math.max(1, dest.danger);
-  return { d, hull: Math.round((4 + 3 * d) * mult), pilotDiff: 3 + d, wait: { fuel: 1 + d, days: 1 }, careDiff: 2 + d, careSkills: ['engineering', 'medicine', 'engineering'] };
+  // creeping is safer, not safe: 15-35 % of the time the lane catches a slow ship broadside (and creeping forfeits part of the bounty)
+  return { d, hull: Math.round((4 + 3 * d) * mult), pilotDiff: 3 + d, wait: { fuel: 1 + d, days: 1 }, careDiff: 2 + d, careSkills: ['engineering', 'medicine', 'engineering'], creepFail: Math.min(0.35, 0.15 + 0.07 * (d - 1)) };
 }
 export function hotLaneEvent(dest, mult, bonus, fromName, variant = 0) {
-  const { d, hull } = hotParams(dest, mult);
+  const { d, hull, creepFail } = hotParams(dest, mult);
   const nodes = {};
   const names = ['a', 'b', 'c'];
   HOT_BEATS.forEach((b, i) => {
@@ -251,8 +252,9 @@ export function hotLaneEvent(dest, mult, bonus, fromName, variant = 0) {
       text: i === 0 ? HOT_INTROS[Math.abs(variant) % HOT_INTROS.length].replace('The first stretch', `The first stretch of the ${fromName} lane`) : b[0],
       choices: [
         { label: b[1], tag: 'flee', check: { skill: 'piloting', diff: 3 + d },
-          pass: { text: b[2], fx: [{ xp: { piloting: 1 } }], goto: next }, fail: { text: b[3], fx: [{ hull: -hull }, { fuel: -1 }], goto: next } },
-        { label: b[4], tag: 'wait', do: { text: b[5], fx: [{ fuel: -(1 + d) }, { days: 1 }], goto: next } },
+          pass: { text: b[2], fx: [{ xp: { piloting: 1 } }, { counter: { hotBold: 1 } }], goto: next }, fail: { text: b[3], fx: [{ hull: -hull }, { fuel: -1 }], goto: next } },
+        { label: b[4], tag: 'wait', rand: [[Math.round((1 - creepFail) * 100), { text: b[5], fx: [{ fuel: -(1 + d) }, { days: 1 }, { counter: { hotCreep: 1 } }], goto: next }],
+          [Math.round(creepFail * 100), { text: 'You creep along, and the lane takes its time with you: a slow ship is a big target for shear and grit. The hull complains at length.', fx: [{ fuel: -(1 + d) }, { days: 1 }, { hull: -Math.max(2, Math.round(hull * 0.6)) }, { counter: { hotCreep: 1 } }], goto: next }]] },
         { label: b[6], tag: 'science', check: { skill: i === 1 ? 'medicine' : 'engineering', diff: 2 + d },
           pass: { text: b[7], fx: [{ hull: -1 }, { morale: 2 }], goto: next }, fail: { text: b[8], fx: [{ hull: -Math.max(2, hull - 1) }, { morale: -2 }], goto: next } },
       ],
@@ -260,7 +262,7 @@ export function hotLaneEvent(dest, mult, bonus, fromName, variant = 0) {
   });
   nodes.p = {
     text: `Through! The lane spits you out into clean space and the Meridian relay pings a hazard-pay bounty for your trouble. Dobbin counts the dents with quiet pride.`,
-    fx: [{ credits: bonus }, { cargo: { curios: 1 } }, { reveal: 'nearest' }, { morale: 3 }, { counter: { hot_runs: 1 } }, { toast: `Hot lane cleared: +${bonus} scrip`, tone: 'good' }],
+    fx: [{ morale: 3 }], // the engine pays the bounty (scaled by how boldly you flew)
   };
   const ph = dest.phenomena.find((p) => HOT_SCENES[p]);
   return ev('core_hot_lane', 'travel', 'Hot Lane', { scene: ph ? HOT_SCENES[ph] : 'asteroids' }, nodes, { tags: ['hazard'] });

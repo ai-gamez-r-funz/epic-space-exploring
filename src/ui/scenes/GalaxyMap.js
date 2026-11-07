@@ -11,6 +11,7 @@ import { centerOn } from '../kit/layout.js';
 import { arcSeg } from '../kit/draw.js';
 import { Hud } from '../widgets/Hud.js';
 import { STAR_NAMES, prebakeSystem } from '../widgets/Viewscreen.js';
+import { Modal } from '../kit/Modal.js';
 import { rangeNote } from '../widgets/objective.js';
 import { showBriefing } from '../overlays/parts/briefing.js';
 import { makeBackdrop } from '../widgets/Backdrop.js';
@@ -270,6 +271,20 @@ export class GalaxyMap extends Scene {
     let to = this.sel; if (to === st.pos) return;
     if (!g.neighbors(st.pos).find((x) => x.id === to)) { const p = this._route(to); if (!p || p.length < 2) return; to = p[1]; }
     const cj = g.canJump(to); if (!cj.ok) { this.ui.toast(cj.reason || 'Cannot jump.', 'warn'); sfx('deny'); return; }
+    const sh = st.ship; if (sh.hull / sh.hullMax < 0.25) { // limp warning: the one genuinely sad ending is leaving port in pieces
+      let free = null; try { free = g.freeRepairOffer?.(); } catch (e) { /* ENGINE hook, optional */ }
+      const canRepair = st.docked && g.here().station?.services?.includes('repair');
+      const msg = `The hull is at ${Math.round(sh.hull)}/${sh.hullMax} (${Math.round(sh.hull / sh.hullMax * 100)}%). One rough lane could end the voyage.` + (st.credits > 0 && canRepair ? ' Repairs are available right here.' : ' Find a station with repairs, or rest a few days to mend.');
+      const m = new Modal({ w: 560, h: 330, title: 'LIMPING OUT OF PORT?', tone: 'coral' });
+      m.body.addChild(new Label({ text: msg, preset: 'body', size: 17, color: C.cream, w: m.bodyW }));
+      const btns = [{ label: 'Stay and mend', w: 170, variant: 'primary', hotkey: 'Enter', onClick: () => m.close('stay') }, { label: 'Depart anyway', w: 170, variant: 'coral', onClick: () => m.close('go') }];
+      if (free && free.ok !== false && g.acceptFreeRepair) btns.unshift({ label: 'Free patch-up (once)', w: 200, variant: 'teal', onClick: () => m.close('free') });
+      else if (canRepair) btns.unshift({ label: 'Repairs', w: 130, variant: 'teal', onClick: () => m.close('repair') });
+      m.addButtons(btns); m.open(); this.busyBrief = true; const ans = await m.closed; this.busyBrief = false;
+      if (ans === 'free') { try { g.acceptFreeRepair(); } catch (e) { /* */ } return; }
+      if (ans === 'repair') { this.ui.openOverlay('Trade', { tab: 'services' }); return; }
+      if (ans !== 'go' || this._dead) return;
+    }
     if (g.neighbors(st.pos).find((x) => x.id === to && x.hot)) { this.busyBrief = true; const go = await showBriefing(g, to).catch(() => true); this.busyBrief = false; if (!go || this._dead) return; }
     this.playJump(to);
   }

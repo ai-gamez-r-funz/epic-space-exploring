@@ -8,7 +8,7 @@ const ex = (label, tag, cond, text, fx = []) => (next) => ({ label, tag, if: con
 const FL = (n) => ({ flag: n });
 
 export const HOT_LANES_2 = [
-  hot('lane_hot_dust_shoals', 'The Toll-Tug Dust Shoals', 'asteroids', [{ system: { region: 'shoals' } }, { system: { danger: 1 } }], [
+  hot('lane_hot_dust_shoals', 'The Toll-Tug Dust Shoals', 'asteroids', [{ system: { region: 'shoals' } }], [
     { speaker: { name: 'Toll-Tug Marl', species: 'quillari' }, text: 'Stage one. The Shoals lane is a dust-bank patrolled by toll-tugs, who sweep a path and charge for it. "Clear channel, Captain, ten scrip a boat length!" The dust behind them is thick enough to write in.',
       check: ['diplomacy', 3, 'Haggle the toll down to a story', 'persuade', 'Marl takes a tale about the lost tea-cosy in lieu of coin, wipes an eye, and sweeps you a private channel.', 'Marl is unmoved. You pay the full toll and eat the dust anyway.', [{ credits: -25 }, { hull: -2 }]],
       safe: ['Pay the toll like a gentleman (20 scrip)', 'The tugs sweep a respectable path. Marl tips an imaginary hat.', [{ credits: -20 }]],
@@ -23,7 +23,7 @@ export const HOT_LANES_2 = [
       full: ['Claim the Shoals hazard bounty', 'A purse, a basket of glass-fruit and a parting hoot from Marl. "Clean as a whistle! Come again, I will lose the toll with joy."', [{ credits: 100 }, { cargo: { glass_brandy: 1 } }, { rep: { quillari: 3 } }, { morale: 5 }]],
       some: ['Accept a sack of sugared tea-cakes', 'The keepers press them into your hands out of pity. They are very good cakes.', [{ supplies: 2 }, { credits: 15 }]] }]),
 
-  hot('lane_hot_pulsar_flare', 'The Pulsar Flare Corridor', 'pulsar', [{ system: { phenomenon: 'pulsar' } }, { system: { danger: 1 } }], [
+  hot('lane_hot_pulsar_flare', 'The Pulsar Flare Corridor', 'pulsar', [{ system: { phenomenon: 'pulsar' } }], [
     { text: 'Stage one. A pulsar shouts a flare across the lane every ninety seconds, an arc of radiation bright enough to read by. The trick is to cross between flares. The trouble is knowing when.',
       check: ['science', 3, 'Predict the next flare from its precursor', 'science', '{crew:science} spots the precursor ripple. You cross a full four seconds ahead of the flare, grinning.', 'The prediction is a beat off. The flare clips your tail and the hull blushes.', [{ hull: -5 }]],
       safe: ['Wait for a long gap and cross slowly', 'A lengthy wait, a long shadow of fuel, and a safe passage.', [{ fuel: -2 }, { days: 1 }]],
@@ -39,7 +39,7 @@ export const HOT_LANES_2 = [
       full: ['Collect the flare-runner\'s purse', 'A purse, a reel of the pulsar\'s song from the listening post, and a warm note: "You make it look easy."', [{ credits: 110 }, { item: { pulsar_tape: 1 } }, { morale: 6 }]],
       some: ['Take a thank-you and a lukewarm tea', 'The post sends over a flask and a handshake by radio.', [{ credits: 20 }, { morale: 1 }]] }]),
 
-  hot('lane_hot_derelict_maze', 'The Derelict Maze', 'derelict', [{ system: { phenomenon: 'derelict' } }, { system: { danger: 1 } }], [
+  hot('lane_hot_derelict_maze', 'The Derelict Maze', 'derelict', [{ system: { phenomenon: 'derelict' } }], [
     { text: 'Stage one. A graveyard of old hulls lies across the lane, a hundred wrecks, locked in a slow dance. Their transponders mutter in many languages. Somewhere in the mess is a clear path.',
       check: ['science', 3, 'Sort the transponders and find the corridor', 'science', 'Wreck by wreck, {crew:science} marks the drift. A clean lane appears, drawn in grease pencil on the glass.', 'The transponders argue and the sorting fails. You crawl, bumping a hull or two.', [{ hull: -4 }]],
       safe: ['Follow the oldest wreck\'s drift', 'It is slow but dependable, like an old dog on a familiar walk.', [{ days: 1 }, { fuel: -1 }]] },
@@ -54,7 +54,7 @@ export const HOT_LANES_2 = [
       full: ['Claim the salvage-lane bounty', 'A purse, a crate of recovered parts and a ghost-log cube from a wreck, humming apologetically. The cat, if you saved it, purrs.', [{ credits: 90 }, { cargo: { machine_parts: 2 } }, { item: { ghost_log_cube: 1 } }, { morale: 5 }]],
       some: ['Take a finder\'s note and a cup of cocoa', 'The clerk offers a signed note and a dubious cocoa.', [{ credits: 20 }, { supplies: 1 }]] }]),
 
-  hot('lane_hot_comet_ice_run', 'The Comet Ice Run', 'comet', [{ system: { phenomenon: 'comet' } }, { system: { danger: 1 } }], [
+  hot('lane_hot_comet_ice_run', 'The Comet Ice Run', 'comet', [{ system: { phenomenon: 'comet' } }], [
     { text: 'Stage one. A comet has thrown a long glittering stream of ice across the lane. It is lovely and enormous, and the ice is the size of dinner plates, moving at the speed of an unkind letter.',
       check: ['piloting', 3, 'Weave through the stream at speed', 'flee', 'You weave between plates of ice with the poise of a pastry chef. Not a scratch.', 'A plate catches the shoulder of the ship with a clang that rings all the way down the corridor.', [{ hull: -5 }]],
       safe: ['Ride the edge of the tail, slowly', 'The edge is thinner. It costs fuel and time but spares the plating.', [{ fuel: -2 }, { days: 1 }]] },
@@ -69,7 +69,7 @@ export const HOT_LANES_2 = [
       full: ['Claim the Ice-Run bounty', 'A purse, a jar of comet-ice from the hauler\'s own stock, and a ship-wide cup of the best tea anyone can remember.', [{ credits: 100 }, { item: { comet_ice: 1 } }, { fuel: 3 }, { morale: 6 }]],
       some: ['Take a flask of meltwater and a handshake', 'The hauler hands over a flask. It is, honestly, delicious.', [{ credits: 15 }, { fuel: 1 }]] }]),
 
-  hot('lane_hot_choir_feedback', 'The Choir Feedback Strait', 'rift', [{ system: { region: 'choir' } }, { system: { danger: 1 } }], [
+  hot('lane_hot_choir_feedback', 'The Choir Feedback Strait', 'rift', [{ system: { region: 'choir' } }], [
     { text: 'Stage one. The lane runs past a hundred singing rifts, and the sound feeds back on itself, a shriek of harmonics that sets teeth ringing. A Vesperine pilot hums a warning from the far shore: "FIND THE KEY. FIND THE KEY."',
       check: ['diplomacy', 3, 'Hum the key and ask the choirs to hold it', 'diplomacy', 'The nearest choir takes your note and spreads it through the strait. The shriek mellows to a chord.', 'Your note sours. The strait sneers in unison, and the ship shudders.', [{ hull: -4 }, { morale: -1 }]],
       safe: ['Plug your ears and fly low', 'Dull, wincing, cautious. The strait passes by in a long headache.', [{ morale: -2 }, { fuel: -1 }]],
@@ -85,7 +85,7 @@ export const HOT_LANES_2 = [
       full: ['Accept the Strait-Singer\'s gift', 'A hollow reed that hums back when you speak kindly, a sack of tuning crystals, and a standing welcome in the choirs.', [{ item: { choir_reed: 1 } }, { cargo: { tuning_crystals: 2 } }, { rep: { vesperine: 4 } }, { morale: 6 }]],
       some: ['Accept a humming goodbye', 'Fa-Do hums a short, kind phrase. It is a gift of its own.', [{ rep: { vesperine: 1 } }, { morale: 2 }]] }]),
 
-  hot('lane_hot_archive_book_tide', 'The Tide of Loose Pages', 'asteroids', [{ system: { region: 'archive' } }, { system: { danger: 1 } }], [
+  hot('lane_hot_archive_book_tide', 'The Tide of Loose Pages', 'asteroids', [{ system: { region: 'archive' } }], [
     { text: 'Stage one. An overturned Archive barge has spilled its cargo across the lane, ten thousand loose pages tumbling in the void like a blizzard. Each page is a priceless record. Each page is also a hazard to navigation.',
       check: ['piloting', 3, 'Weave between the pages without touching a single one', 'flee', 'Barely a rustle. Pages swirl behind you like a flock of white birds.', 'A flurry of pages sticks to the hull and the intake coughs a sheaf of poetry.', [{ hull: -3 }, { fuel: -1 }]],
       safe: ['Stop and collect pages until the cloud thins', 'You net a few hundred, gentle as a gardener. It takes hours.', [{ days: 1 }, { rep: { archivists: 2 } }]] },
@@ -99,7 +99,7 @@ export const HOT_LANES_2 = [
       full: ['Accept the Archive\'s thanks', 'A bronze riddle token, a packet of charts, and a long, formal letter of regard, filed under \'Kindnesses\'.', [{ item: { riddle_coin: 1 } }, { reveal: { radius: 3 } }, { rep: { archivists: 5 } }, { credits: 60 }, { morale: 5 }]],
       some: ['Take a bookmark and a bow', 'The machine hands over a ribbon bookmark. It is a very nice bookmark.', [{ rep: { archivists: 1 } }, { morale: 2 }]] }]),
 
-  hot('lane_hot_rim_lantern_fair', 'The Lantern Fair Lane', 'station', [{ system: { region: 'rim' } }, { system: { danger: 1 } }], [
+  hot('lane_hot_rim_lantern_fair', 'The Lantern Fair Lane', 'station', [{ system: { region: 'rim' } }], [
     { speaker: { name: 'Fair-Marshal Odd', species: 'drifter' }, text: 'Stage one. The Rim lane is a lantern fair: ten thousand paper lanterns, tied to ships, drifting over the route. "Mind the lanterns, Captain! It\'s bad luck to pop one. It\'s worse luck to be seen popping one."',
       check: ['piloting', 3, 'Thread the lanterns without popping any', 'flee', 'You slip through the lantern-field like a thought through a dream. Nothing so much as flickers.', 'A lantern catches the antenna and pops with a puff. A hundred drifters gasp.', [{ rep: { drifters: -1 } }, { morale: -1 }]],
       safe: ['Join the procession at its own pace', 'You trail the fair for an hour, waving at children. It is a delightful delay.', [{ days: 1 }, { morale: 3 }]] },
@@ -114,7 +114,7 @@ export const HOT_LANES_2 = [
       full: ['Accept the Marshal\'s cord', 'A story-knot with seven tales in it, a basket of festival food, and a lantern lit just for the ship.', [{ item: { story_knot: 1 } }, { supplies: 3 }, { rep: { drifters: 4 } }, { morale: 6 }]],
       some: ['Take a paper lantern and a wave', 'A small lantern, hand-folded, glows on the bridge.', [{ rep: { drifters: 1 } }, { morale: 3 }]] }]),
 
-  hot('lane_hot_wormhole_swell', 'The Wormhole Swell', 'wormhole', [{ system: { phenomenon: 'wormhole' } }, { system: { danger: 1 } }], [
+  hot('lane_hot_wormhole_swell', 'The Wormhole Swell', 'wormhole', [{ system: { phenomenon: 'wormhole' } }], [
     { text: 'Stage one. A swell runs along the wormhole\'s throat, a slow gravity wave, high as a house. The instruments disagree about which end of it is up. The helm has put on a pair of motoring goggles.',
       check: ['science', 3, 'Time the swell and ride its crest', 'science', 'You ride the crest like a surfer, and the swell hands you onward at no charge.', 'You time it wrong and take the trough on the nose. Everything not bolted down is briefly airborne.', [{ hull: -4 }, { supplies: -1 }]],
       safe: ['Drift into a still pocket and wait', 'A pocket opens, and you rest in it while the swell rolls by.', [{ days: 1 }]] },

@@ -12,7 +12,7 @@ import { Input } from '../kit/input.js';
 import { Anim } from '../kit/anim.js';
 import { S, sfx } from '../services.js';
 import { quoteBuy, quoteSell } from '../../core/economy.js';
-import { dockBulletin } from '../widgets/threads.js';
+import { dockBulletin, spendLine } from '../widgets/threads.js';
 import { ico, pill, well, hr, emblem, goodIco, live, num, cap, sgn, countTo, fadeIn, shake, factionOf, factionName, factionCol, goodDef, RES_COL } from './parts/common.js';
 
 const TW = 700; // table width
@@ -48,7 +48,7 @@ export class Trade extends Overlay {
     try { const act = (this.g.marketNews?.(sys.id) || []).filter((n) => n.active); const room = modal.bodyW - 130 - 548 - 12;
       if (act.length && room > 140) { const n = act[0]; const p = pill({ text: `${n.title} · ${n.daysLeft}d`, color: n.mult > 1 ? C.good : C.mustard, h: 26, size: 11, padX: 10, preset: 'headSm', tip: { title: n.title, body: n.text, tone: 'info' } }); p.x = 548; p.y = 101; this.root.addChild(p); }
     } catch (e) { /* news is optional */ }
-    try { const bl = dockBulletin(g); if (bl) { const bp = pill({ icon: 'news', text: bl.text, color: C.mustard, h: 30, size: 12, padX: 12, preset: 'small', tip: { title: 'Why jump now', body: bl.all.map((l) => '\u2022 ' + l.text).join('\n') } }); const mw = 440; if (bp.w > mw) { bp.destroy({ children: true }); } else { bp.x = 540; bp.y = 99; this.root.addChild(bp); } if (bp.w > mw) { const l = new Label({ text: bl.text, preset: 'small', size: 12, color: C.mustard, w: mw, h: 30, fit: true }); l.x = 540; l.y = 102; this.root.addChild(l); } } } catch (e) { /* optional */ }
+    try { const sp = spendLine(g); const bl0 = dockBulletin(g); const bl = sp ? { text: sp.text, all: [{ text: sp.text }, ...(bl0?.all || [])] } : bl0; if (bl) { const bp = pill({ icon: sp ? 'credits' : 'news', text: bl.text, color: sp ? C.good : C.mustard, h: 30, size: 12, padX: 12, preset: 'small', tip: { title: 'Why jump now', body: bl.all.map((l) => '\u2022 ' + l.text).join('\n') } }); const mw = 440; if (bp.w > mw) { bp.destroy({ children: true }); } else { bp.x = 540; bp.y = 99; this.root.addChild(bp); } if (bp.w > mw) { const l = new Label({ text: bl.text, preset: 'small', size: 12, color: C.mustard, w: mw, h: 30, fit: true }); l.x = 540; l.y = 102; this.root.addChild(l); } } } catch (e) { /* optional */ }
     this.PH = modal.bodyH - 96 - 46;
     this.marketPane = this.tabs.panes.market; this.svcPane = this.tabs.panes.services;
     this.marketPane.y = this.svcPane.y = 96 + 46;

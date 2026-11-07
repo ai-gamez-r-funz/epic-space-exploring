@@ -60,7 +60,7 @@ export class EndScreen extends Overlay {
     const kind = { main: 'THE LANTERNS ANSWER', survey: 'THE CHART IS COMPLETE', special: 'A VOYAGE REMEMBERED', loss: 'A GENTLE RECALL' }[this.e.kind] || 'VOYAGE COMPLETE';
     const kl = new Label({ text: kind, preset: 'headSm', size: 10, color: C.tealLight, w: W, align: 'center' }); kl.y = 2; h.addChild(kl);
     const t = new Label({ text: this.e.title || 'The End', preset: 'title', size: 28, color: C.brassLight, w: W - 220, h: 40, fit: true, align: 'center', shadow: true }); t.x = 110; t.y = 22; h.addChild(t);
-    const d = new Label({ text: `ISV ${String(st_name(this.game)).replace(/^ISV\s+/i, '')}  ·  Captain ${this.game.state.captain?.name || ''}  ·  Day ${this.e.day ?? this.game.state.day}`, preset: 'tiny', size: 12, color: C.textDim, w: W, align: 'center' }); d.y = 62; h.addChild(d);
+    const d = new Label({ text: `ISV ${String(st_name(this.game)).replace(/^ISV\s+/i, '')}  ·  Captain ${String(this.game.state.captain?.name || '').replace(/^(captain|capt\.?)\s+/i, '')}  ·  Day ${this.e.day ?? this.game.state.day}`, preset: 'tiny', size: 12, color: C.textDim, w: W, align: 'center' }); d.y = 62; h.addChild(d);
     h.addChild(Object.assign(hr(W), { y: 82 }));
     this.title_ = t; h.alpha = 0; Anim.to(h, { alpha: 1 }, 700, { ease: 'linear' });
     if (!this.loss) try { const sp = S.gfx.sparkle(h, 18, { w: W, h: 80 }); } catch (er) { /* */ }
