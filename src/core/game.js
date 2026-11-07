@@ -619,7 +619,7 @@ export class Game {
     const bonus = this._hotBonus(st.pos, toId);
     const mods = [];
     mods.push({ label: `Piloting ${this.skillTotal('piloting')}, engineering ${this.skillTotal('engineering')}, medicine ${this.skillTotal('medicine')} (crew, training, upgrades)` });
-    if (st.ship.morale >= 75) mods.push({ label: 'Rested crew', value: '+4% odds' });
+    if (st.ship.morale >= 90) mods.push({ label: 'Rested crew', value: '+4% odds' });
     else if (st.ship.morale < 30) mods.push({ label: 'Glum crew', value: '-5% odds' });
     if (armor < 1) mods.push({ label: 'Reinforced hull', value: `-${Math.round((1 - armor) * 100)}% damage` });
     return {
@@ -1095,7 +1095,7 @@ export class Game {
     // everyday wear and tear grows with the danger of the space you fly through
     if (diff.damage > 0.6 && this.rng.chance(Math.min(0.9, 0.3 + 0.18 * dest.danger))) {
       // strain: the longer since the last dock, the harder the lanes bite (an incentive to turn back for repairs)
-      const strain = 1 + 0.2 * Math.min(6, st.counters.sinceDock || 0);
+      const strain = 1 + 0.15 * Math.min(6, st.counters.sinceDock || 0);
       const wear = Math.max(1, Math.round(1.8 * strain * (this.rng.int(1, 2) + dest.danger) * diff.damage * (Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1)));
       applyEffects(this, [{ hull: -wear }], { noScale: true });
     }

@@ -139,7 +139,7 @@ export function checkOdds(state, skill, diff, opts = {}) {
     if (b.trait === 'bluntly_literal' && skill === 'diplomacy' && (opts.faction === 'archivists' || opts.species === 'archivist')) total += 1;
   }
   if (state.ship && state.ship.morale < 30) bonus -= 0.05; // a glum crew fumbles
-  else if (state.ship && state.ship.morale >= 75) bonus += 0.04; // a rested, happy crew (lounge refits, shore leave) flies better
+  else if (state.ship && state.ship.morale >= 90) bonus += 0.04; // a rested, happy crew (lounge refits, shore leave) flies better
   return Math.round(clamp(0.5 + 0.11 * (total - diff) + bonus, 0.1, 0.95) * 100) / 100;
 }
 

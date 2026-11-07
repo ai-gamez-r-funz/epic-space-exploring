@@ -283,3 +283,5 @@ Queries: `nextObjective()` (+`jumps`,`fuel`,`days`,`rangeNote`), `routeInfo(id)`
 Actions: `buyRefit(id)`, `trainCrew(crewId, programId)`, `retire({anywhere})`, `spawnDistress(days)`; `buyUpgrade` takes `commission.days` days for bespoke items.
 State extras: `rng`, `docked`, `evt`, `boards`, `rival`, `distress`, `refits`, `savedAt`; markets carry `impact`, `depth`.
 Event contexts added: `rival`, `distress` (authored events may use them); cond keys `rival`, `distress`, `ringed`, `counter`; fx `distress`.
+
+Round 4: `hotLaneBriefing(toId)` (pre-jump odds/cost briefing), `spendHints(minScrip)`, authored `lane_hot_*` chains + `ctx:'midgame'` events, armour (`hullMax` over 100 reduces hull damage), morale >= 90 gives +4 points on checks.

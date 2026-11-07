@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { newGame, freshStorage, drain, teleportForTest, dockClean } from './helpers.js';
 import { setContent, C } from '../src/core/content.js';
 import * as Events from '../src/core/events.js';
+import { recompute } from '../src/core/ship.js';
 
 const G = (seed = 41, o = {}) => { freshStorage(); return newGame({ seed, ...o }); };
 const live = (g) => { g.state.ship.supplies = g.state.ship.suppliesMax; g.state.ship.morale = 100; g.state.ship.fuel = g.state.ship.fuelMax; };
@@ -33,7 +34,8 @@ test('hot-lane briefing: stages with odds, expected/worst cost, and odds move wi
   g.state.ship.morale = 20;
   assert.ok(run(g.hotLaneBriefing(hot.toId)) < trained, 'a glum crew flies worse');
   g.state.ship.morale = 100;
-  g.state.upgrades = ['riveted_plating'];
+  g.state.upgrades = ['riveted_plating', 'dust_shield_lattice', 'bulwark_frame'];
+  recompute(g.state);
   const b2 = g.hotLaneBriefing(hot.toId);
   assert.ok(b2.armorPct > 0 && b2.stages[0].options[0].failCost.hull <= b.stages[0].options[0].failCost.hull);
   assert.equal(g.hotLaneBriefing(g.neighbors().find((n) => !n.hot).id).hot, false);
