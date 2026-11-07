@@ -51,9 +51,9 @@ export function dockBulletin(g) {
 export function spendLine(g) {
   try {
     const h = (g.spendHints?.() || [])[0]; if (!h) return null;
-    const where = h.here ? 'here' : `${h.systemName} (${h.jumps} jump${h.jumps === 1 ? '' : 's'})`;
+    const where = h.here ? 'this station' : `${h.systemName} (${h.jumps} jump${h.jumps === 1 ? '' : 's'})`;
     const verb = { refit: 'Refit', training: 'Training', commission: 'Commission', upgrade: 'Upgrade' }[h.kind] || 'Spend';
-    return { text: `Spend scrip: ${verb} \u2014 ${h.name} (${h.cost}) at ${where}`, systemId: h.here ? null : h.systemId, overlay: h.here ? 'Shipyard' : null };
+    return { text: `Spend scrip: ${verb} \u2014 ${h.name} (${h.cost}) @ ${where}`, systemId: h.here ? null : h.systemId, overlay: h.here ? 'Shipyard' : null };
   } catch (e) { return null; }
 }
 

@@ -103,8 +103,8 @@ export function findEvent(planet, find) {
     a: {
       text: trunc(find.text, 60),
       choices: [
-        one('Collect and log everything', 'The samples are stowed, labelled and admired.', find.fx),
-        one('Take only photographs', 'You leave the world as you found it. The crew approve of your restraint.', [{ morale: 3 }, { xp: { science: 1 } }]),
+        one('Collect and log everything', ['The samples are stowed, labelled and admired.', 'Ilse labels every jar twice, once for science and once for sentiment.', 'The sample drawers rattle happily as the Halcyon climbs away.', 'A tidy haul, a tidier log, and a faint smell of warm rock in the lab.', 'Okonkwo declares the cargo "load-bearing" and ties it down with real affection.'][planet.name.length % 5], find.fx),
+        one('Take only photographs', ['You leave the world as you found it. The crew approve of your restraint.', 'Felt-tip sketches instead of samples. The wall of the lounge gets a new drawing.', 'Dobbin files it under "Pretty, Untouched." The mood aboard lifts a notch.', 'You wave to the planet. It does not wave back, but you suspect it noticed.', 'A lovely view, and a quiet vote of confidence in leaving things be.'][(planet.name.length + 2) % 5], [{ morale: 3 }, { xp: { science: 1 } }]),
       ],
     },
   }, { tags: ['wonder'] });

@@ -95,7 +95,7 @@ export class Game {
 
   /** Strip a leading rank so UI can always prefix "Captain"/"Capt." without doubling it. */
   static cleanCaptainName(raw) {
-    const n = String(raw || '').replace(/^\s*((captain|capt\.?|cap\.?)\s+)+/i, '').trim().slice(0, 32);
+    const n = String(raw || '').replace(/^\s*((captain|capt\.?|cap\.?)(\s+|$))+/i, '').trim().slice(0, 32);
     return n || 'Voyager';
   }
 

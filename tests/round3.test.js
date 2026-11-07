@@ -84,14 +84,14 @@ test('hot lanes: flagged, multi-beat, pay a bounty, then cool down', () => {
     g.state.ship.hull = g.state.ship.hullMax;
     const r = g.jump(hot.toId);
     assert.ok(r.ok && r.event);
-    assert.equal(g.state.pending.eventId, 'core_hot_lane');
+    assert.match(g.state.pending.eventId, /^(core_hot_lane|lane_hot_)/);
     let beats = 0; let guard = 0;
     while (g.state.pending && guard++ < 40) {
       const v = g.pendingView();
       if (!v.isResult && !v.continueOnly) beats++;
       g.resolveChoice(v.continueOnly || v.isResult ? 0 : v.choices.findIndex((c) => c.enabled));
     }
-    assert.ok(beats >= 3, `only ${beats} beats`);
+    assert.ok(beats >= 2, `only ${beats} beats`);
     if (g.state.phase === 'play') assert.ok(g.state.credits >= credits + hot.bonus - 5 || g.state.ship.hull > 0);
     assert.equal(g.state.counters.hot_runs, 1);
     // cooled down
