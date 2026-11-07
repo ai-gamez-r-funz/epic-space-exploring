@@ -107,7 +107,7 @@ export const HOT_LANES = [
 ];
 
 // ---------------------------------------------------------------- DISTRESS VARIANTS (ctx 'distress')
-const D = (id, title, tags, when, scene, species, a, b) => ({ id, title, tags, ctx: 'distress', weight: 10, cooldown: 40, when, art: { scene, species }, start: 'a', nodes: b ? { a, b } : { a } });
+const D = (id, title, tags, when, scene, species, a, b) => ({ id, title, tags, ctx: 'distress', weight: 30, cooldown: 40, when, art: { scene, species }, start: 'a', nodes: b ? { a, b } : { a } });
 const SP = (name, species) => ({ name, species });
 
 export const DISTRESS = [
