@@ -278,10 +278,10 @@ export class GalaxyMap extends Scene {
       const m = new Modal({ w: 600, h: 250, title: 'LIMPING OUT OF PORT?', tone: 'coral' });
       m.body.addChild(new Label({ text: msg, preset: 'body', size: 17, color: C.cream, w: m.bodyW }));
       const btns = [{ label: 'Stay and mend', w: 200, variant: 'primary', hotkey: 'Enter', onClick: () => m.close('stay') }, { label: 'Depart anyway', w: 200, variant: 'coral', onClick: () => m.close('go') }];
-      if (free && free.ok !== false && g.acceptFreeRepair) btns.unshift({ label: 'Free patch-up (once)', w: 200, variant: 'teal', onClick: () => m.close('free') });
+      if (free && free.ok !== false && g.claimFreeRepair) btns.unshift({ label: 'Free patch-up (once)', w: 200, variant: 'teal', onClick: () => m.close('free') });
       else if (canRepair) btns.unshift({ label: 'Repairs', w: 150, variant: 'teal', onClick: () => m.close('repair') });
       m.addButtons(btns); m.open(); this.busyBrief = true; const ans = await m.closed; this.busyBrief = false;
-      if (ans === 'free') { try { g.acceptFreeRepair(); } catch (e) { /* */ } return; }
+      if (ans === 'free') { try { g.claimFreeRepair(); } catch (e) { /* */ } return; }
       if (ans === 'repair') { this.ui.openOverlay('Trade', { tab: 'services' }); return; }
       if (ans !== 'go' || this._dead) return;
     }
