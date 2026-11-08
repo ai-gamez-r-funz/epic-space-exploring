@@ -42,7 +42,7 @@ export class App {
     app.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     app.stage.eventMode = 'static';
     const L = this.layers = {};
-    for (const n of ['scene', 'hints', 'toast', 'overlay', 'tooltip', 'fader', 'glitch']) { L[n] = new Container(); L[n].label = n; app.stage.addChild(L[n]); }
+    for (const n of ['scene', 'hints', 'overlay', 'toast', 'tooltip', 'fader', 'glitch']) { L[n] = new Container(); L[n].label = n; app.stage.addChild(L[n]); }
     this.fader = new Fader(); L.fader.addChild(this.fader);
     Modal.layer = L.overlay; Toasts.init(L.toast, () => this.overlays.length > 0 || Modal.stack.length > 0 || this.busy || this.holdEvents); Tooltip.init(L.tooltip);
     Anim.onError = (e) => this.fail(e);

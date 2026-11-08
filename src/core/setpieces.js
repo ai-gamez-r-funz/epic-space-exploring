@@ -103,8 +103,8 @@ export function findEvent(planet, find) {
     a: {
       text: trunc(find.text, 60),
       choices: [
-        one('Collect and log everything', 'The samples are stowed, labelled and admired.', find.fx),
-        one('Take only photographs', 'You leave the world as you found it. The crew approve of your restraint.', [{ morale: 3 }, { xp: { science: 1 } }]),
+        one('Collect and log everything', ['The samples are stowed, labelled and admired.', 'Ilse labels every jar twice, once for science and once for sentiment.', 'The sample drawers rattle happily as the Halcyon climbs away.', 'A tidy haul, a tidier log, and a faint smell of warm rock in the lab.', 'Okonkwo declares the cargo "load-bearing" and ties it down with real affection.'][planet.name.length % 5], find.fx),
+        one('Take only photographs', ['You leave the world as you found it. The crew approve of your restraint.', 'Felt-tip sketches instead of samples. The wall of the lounge gets a new drawing.', 'Dobbin files it under "Pretty, Untouched." The mood aboard lifts a notch.', 'You wave to the planet. It does not wave back, but you suspect it noticed.', 'A lovely view, and a quiet vote of confidence in leaving things be.'][(planet.name.length + 2) % 5], [{ morale: 3 }, { xp: { science: 1 } }]),
       ],
     },
   }, { tags: ['wonder'] });
@@ -141,7 +141,7 @@ export function hailEvent(g, factionId, rng) {
   const rumour = rng.pick(rumours);
   const name = `${F.adjective || prettify(factionId)} Harbour Voice`;
   const choices = [
-    one('Exchange pleasantries', `${F.farewell ? F.farewell + ' ' : ''}A small, warm exchange. Goodwill accrues quietly.`, [{ rep: { [factionId]: 1 } }, { morale: 1 }], 'diplomacy'),
+    one('Exchange pleasantries', `${F.farewell ? F.farewell + ' ' : ''}${rng.pick(['A small, warm exchange. Goodwill accrues quietly.', 'Pleasantries are traded like good cards. Everyone leaves a little taller.', 'The call ends with real laughter on both ends. That counts for something out here.', 'A courteous, unhurried chat. Both sides pronounce it a pleasure and mean it.'])}`, [{ rep: { [factionId]: 1 } }, { morale: 1 }], 'diplomacy'),
     one('Ask for local gossip', `${trunc(rumour, 55)} You jot down a coordinate and a raised eyebrow.`, [{ reveal: 'nearest' }, { xp: { diplomacy: 1 } }], 'diplomacy'),
   ];
   choices.push({ label: 'Offer a copy of the sector charts', tag: 'trade', if: [{ item: 'sector_charts' }], do: { text: 'The charts are received with real delight. A gift basket is promised and, remarkably, delivered.', fx: [{ item: { sector_charts: -1 } }, { rep: { [factionId]: 3 } }, { credits: 20 }] } });
@@ -204,7 +204,7 @@ export { DISTRESS_KINDS };
 export function festivalEvent(news, sys) {
   return ev('core_festival', 'station', news.title, { scene: 'market' }, {
     a: {
-      text: `${news.text} Stalls spill onto the docking ring; somebody hands you a paper lantern and a skewer of something fried.`,
+      text: `${news.text} ${['Stalls spill onto the docking ring; somebody hands you a paper lantern and a skewer of something fried.', 'Bunting zigzags across the concourse and a brass band is losing a friendly argument with a choir.', 'Children race between the stalls with paper kites, and the air smells of cinnamon and hot solder.', 'Somebody has hung fairy lights from the docking clamps. Somebody else is selling them back to you.'][Math.abs(news.startDay + sys.id.length) % 4]}`,
       choices: [
         one('Join the festivities', 'You dance badly, eat enthusiastically and sign a stranger\'s guest book. The crew come back glowing.', [{ morale: 6 }, { credits: -8 }]),
         one('Work the crowd for news', 'Festival crowds talk freely. You pick up prices, rumours and one excellent recipe.', [{ reveal: 'nearest' }, { xp: { diplomacy: 1 } }], 'diplomacy'),
@@ -212,3 +212,76 @@ export function festivalEvent(news, sys) {
     },
   }, { tags: ['wonder', 'comedy'] });
 }
+
+
+// ------------------------------------------------------------------ hot lanes (multi-beat hazard chain with a payout)
+const HOT_BEATS = [
+  ['A hot lane, flagged in red on the Meridian charts: debris, heat-shimmer and gossip all agree it is worth a fortune to whoever gets through. The first stretch lies ahead.',
+   'Run the gauntlet at full burn', 'The Halcyon screams through the first stretch and out the other side, ears ringing and paint blistered.', 'The first stretch grabs at the hull as you fly. You come out of it limping and grinning.',
+   'Creep through on thrusters', 'Slow, patient, nerve-wracking. The first stretch passes at walking pace and the fuel gauge winces.',
+   'Reinforce the plating first', 'Okonkwo bolts a spare panel to the weak spot. It holds, mostly.', 'The patch peels at the worst moment and the plating takes it all.'],
+  ['The lane narrows. Things drift in the glare that are definitely not on the chart. {crew:piloting} says a short word and tightens both hands on the controls.',
+   'Thread the gap by eye', 'Needle, meet thread. The gap swallows you and spits you out unscratched.', 'The gap is narrower than it looked. Something scrapes the keel.',
+   'Cut the engines and coast', 'Silence, drift, held breath. The ship slides through on momentum and the fuel gauge forgives you slowly.',
+   'Steady the crew and trust the helm', 'A calm word, a warm drink, a firm hand: the crew steadies and the helm does the rest.', 'Nerves jangle and the helm overcorrects. The hull pays for it.'],
+  ['The last stretch is the worst: the lane bucks, the lights flicker, and every instrument has an opinion. Beyond it, open space and a good payout.',
+   'Burn for the exit', 'Everything you have, all at once. The Halcyon bursts from the lane like a cork.', 'The exit is closer than it feels, and further than the hull would like.',
+   'Edge out one careful metre at a time', 'You inch along the last stretch, patient as a snail, until the stars come back.',
+   'Have engineering coax the drive', 'Okonkwo talks to the engine and the engine, grudgingly, listens.', 'The drive coughs, stutters and dumps its heat into the plating.'],
+];
+const HOT_INTROS = [
+  'A hot lane, flagged in red on the Meridian charts: debris, heat-shimmer and gossip all agree it is worth a fortune to whoever gets through. The first stretch lies ahead.',
+  'The relay buoy reads HAZARD PAY in cheerful capitals. Ahead the lane twists through a knot of bad weather that has eaten two survey drones this month. The first stretch lies ahead.',
+  'Every pilot in the harbour warned you off this lane; two quietly asked you to bring back the bounty. The first stretch lies ahead, glittering and unfriendly.',
+  'The chart marks this lane with a small red flame and the words "WORTH IT, PROBABLY." The first stretch lies ahead.',
+];
+const HOT_SCENES = { ionstorm: 'ionstorm', asteroids: 'asteroids', pulsar: 'pulsar', rift: 'rift', nebula: 'nebula', comet: 'comet', aurora: 'aurora' };
+/** Shared numbers for the built-in hot-lane chain (used by the briefing API too). */
+export function hotParams(dest, mult = 1) {
+  const d = Math.max(1, dest.danger);
+  // creeping is safer, not safe: 15-35 % of the time the lane catches a slow ship broadside (and creeping forfeits part of the bounty)
+  return { d, hull: Math.round((4 + 3 * d) * mult), pilotDiff: 3 + d, wait: { fuel: 1 + d, days: 1 }, careDiff: 2 + d, careSkills: ['engineering', 'medicine', 'engineering'], creepFail: Math.min(0.35, 0.15 + 0.07 * (d - 1)) };
+}
+export function hotLaneEvent(dest, mult, bonus, fromName, variant = 0) {
+  const { d, hull, creepFail } = hotParams(dest, mult);
+  const nodes = {};
+  const names = ['a', 'b', 'c'];
+  HOT_BEATS.forEach((b, i) => {
+    const next = i < 2 ? names[i + 1] : 'p';
+    nodes[names[i]] = {
+      text: i === 0 ? HOT_INTROS[Math.abs(variant) % HOT_INTROS.length].replace('The first stretch', `The first stretch of the ${fromName} lane`) : b[0],
+      choices: [
+        { label: b[1], tag: 'flee', check: { skill: 'piloting', diff: 3 + d },
+          pass: { text: b[2], fx: [{ xp: { piloting: 1 } }, { counter: { hotBold: 1 } }], goto: next }, fail: { text: b[3], fx: [{ hull: -hull }, { fuel: -1 }], goto: next } },
+        { label: b[4], tag: 'wait', rand: [[Math.round((1 - creepFail) * 100), { text: b[5], fx: [{ fuel: -(1 + d) }, { days: 1 }, { counter: { hotCreep: 1 } }], goto: next }],
+          [Math.round(creepFail * 100), { text: 'You creep along, and the lane takes its time with you: a slow ship is a big target for shear and grit. The hull complains at length.', fx: [{ fuel: -(1 + d) }, { days: 1 }, { hull: -Math.max(2, Math.round(hull * 0.6)) }, { counter: { hotCreep: 1 } }], goto: next }]] },
+        { label: b[6], tag: 'science', check: { skill: i === 1 ? 'medicine' : 'engineering', diff: 2 + d },
+          pass: { text: b[7], fx: [{ hull: -1 }, { morale: 2 }], goto: next }, fail: { text: b[8], fx: [{ hull: -Math.max(2, hull - 1) }, { morale: -2 }], goto: next } },
+      ],
+    };
+  });
+  nodes.p = {
+    text: `Through! The lane spits you out into clean space and the Meridian relay pings a hazard-pay bounty for your trouble. Dobbin counts the dents with quiet pride.`,
+    fx: [{ morale: 3 }], // the engine pays the bounty (scaled by how boldly you flew)
+  };
+  const ph = dest.phenomena.find((p) => HOT_SCENES[p]);
+  return ev('core_hot_lane', 'travel', 'Hot Lane', { scene: ph ? HOT_SCENES[ph] : 'asteroids' }, nodes, { tags: ['hazard'] });
+}
+
+// ------------------------------------------------------------------ mid-game beat (day 40-90, once)
+export function midgameEvent() {
+  return ev('core_midgame', 'midgame', 'The Dispatch from Meridian', { scene: 'station', species: 'human' }, {
+    a: {
+      speaker: { name: 'Director Imogen Calloway', species: 'human' },
+      text: 'A sealed dispatch is waiting at the dock office, tied with three colours of ribbon. "Halcyon has done splendidly," writes the Director. "The Society can offer you a patron: choose carefully, because the Reach is about to get more interesting."',
+      choices: [
+        { label: 'Accept the Society grant (and its paperwork)', tag: 'diplomacy', do: { text: 'A grant letter, a stamped receipt and a very large biscuit tin. The Concord are delighted; the paperwork is, as ever, extensive.', fx: [{ credits: 400 }, { rep: { concord: 5 } }, { flag: 'midgame_patron_society' }, { flag: 'midgame_done' }] } },
+        { label: 'Sign a Quillari trade charter', tag: 'trade', do: { text: 'The charter is signed over a glass-fruit toast. Feathers are ruffled in approval. You are issued a guest feather and a fine new set of opinions about margins.', fx: [{ credits: 250 }, { rep: { quillari: 6 } }, { item: { quillari_guest_feather: 1 } }, { flag: 'midgame_patron_quillari' }, { flag: 'midgame_done' }] } },
+        { label: 'Stay independent and send a polite refusal', tag: 'wait', do: { text: 'You write "no, thank you, with warmest regards" in your best felt-tip. The crew cheer. Somewhere in Meridian, a clerk quietly respects you.', fx: [{ morale: 10 }, { xp: { diplomacy: 2 } }, { flag: 'midgame_independent' }, { flag: 'midgame_done' }] } },
+      ],
+    },
+  }, { tags: ['diplomacy', 'mystery'] });
+}
+
+// ------------------------------------------------------------------ stranded contract (timed delivery)
+export const STRANDED_GOODS = ['fuel_cells', 'medical_kits', 'ration_bars'];

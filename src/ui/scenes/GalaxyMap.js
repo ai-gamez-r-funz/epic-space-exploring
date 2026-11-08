@@ -11,7 +11,9 @@ import { centerOn } from '../kit/layout.js';
 import { arcSeg } from '../kit/draw.js';
 import { Hud } from '../widgets/Hud.js';
 import { STAR_NAMES, prebakeSystem } from '../widgets/Viewscreen.js';
+import { Modal } from '../kit/Modal.js';
 import { rangeNote } from '../widgets/objective.js';
+import { showBriefing } from '../overlays/parts/briefing.js';
 import { makeBackdrop } from '../widgets/Backdrop.js';
 import { S, sfx } from '../services.js';
 
@@ -57,7 +59,7 @@ export class GalaxyMap extends Scene {
     Input.bind(v, ['+', '='], () => this.zoomAt(W / 2, H / 2, 1.25)); Input.bind(v, ['-', '_'], () => this.zoomAt(W / 2, H / 2, 0.8));
     Input.bind(v, 'Home', () => this.centerOn(here.x, here.y, true)); Input.bind(v, 'f', () => this.centerOn(g.here().x, g.here().y, true));
     Input.bind(v, 'm', () => this.onEscape());
-    Input.bind(v, 'c', () => this.onEscape());
+    Input.bind(v, ['c', 'b'], () => this.onEscape());
     this.hud.refresh();
   }
   onEscape() { if (this.jumping) return; this.ui.goto('Bridge', {}, { kind: 'wipe', dir: 'right', ms: 350 }); }
@@ -207,9 +209,9 @@ export class GalaxyMap extends Scene {
     zb('+', 'Zoom in (+)', () => this.zoomAt(W / 2, H / 2, 1.3), 128); zb('\u2212', 'Zoom out (-)', () => this.zoomAt(W / 2, H / 2, 0.77), 178);
     mk('ship', 'Centre on ship (F)', () => this.centerOn(this.game.here().x, this.game.here().y, true), 228);
     // legend
-    const lg = new Panel({ w: 220, h: 176, title: 'LEGEND', tone: 'deep', pad: 12 }); lg.x = 12; lg.y = H - 188; v.addChild(lg);
-    const rows = [['Charted', C.brassLight, 'ring'], ['Visited', C.cream, 'dot'], ['Detected (unexplored)', C.textDim, 'hollow'], ['Mission target', C.mustard, 'diamond'], ['Distress beacon', C.coral, 'sos'], ['Rival trader', C.mustard, 'rival']];
-    rows.forEach(([t, col, kind], i) => { const gg = new Graphics(); const y = i * 21 + 8; if (kind === 'ring') { gg.circle(8, y, 6).fill(col).circle(8, y, 8.5).stroke({ width: 2, color: col }); } else if (kind === 'dot') gg.circle(8, y, 5).fill(col); else if (kind === 'hollow') gg.circle(8, y, 5).stroke({ width: 1.8, color: col }); else if (kind === 'sos') { gg.circle(8, y, 7).stroke({ width: 1.5, color: col, alpha: 0.6 }); gg.circle(8, y, 3.5).fill(col); } else if (kind === 'rival') gg.poly([2, y - 5, 14, y, 2, y + 5]).fill(col); else gg.poly([8, y - 7, 14, y, 8, y + 7, 2, y]).fill(col); const l = new Label({ text: t, preset: 'tiny', size: 13, color: C.cream }); l.x = 26; l.y = y - 8; lg.content.addChild(gg, l); });
+    const lg = new Panel({ w: 220, h: 200, title: 'LEGEND', tone: 'deep', pad: 12 }); lg.x = 12; lg.y = H - 212; v.addChild(lg);
+    const rows = [['Charted', C.brassLight, 'ring'], ['Visited', C.cream, 'dot'], ['Detected (unexplored)', C.textDim, 'hollow'], ['Mission target', C.mustard, 'diamond'], ['Distress beacon', C.coral, 'sos'], ['Rival trader', C.mustard, 'rival'], ['Hot lane (bounty run)', 0xffe08a, 'hot']];
+    rows.forEach(([t, col, kind], i) => { const gg = new Graphics(); const y = i * 21 + 8; if (kind === 'ring') { gg.circle(8, y, 6).fill(col).circle(8, y, 8.5).stroke({ width: 2, color: col }); } else if (kind === 'dot') gg.circle(8, y, 5).fill(col); else if (kind === 'hollow') gg.circle(8, y, 5).stroke({ width: 1.8, color: col }); else if (kind === 'sos') { gg.circle(8, y, 7).stroke({ width: 1.5, color: col, alpha: 0.6 }); gg.circle(8, y, 3.5).fill(col); } else if (kind === 'rival') gg.poly([2, y - 5, 14, y, 2, y + 5]).fill(col); else if (kind === 'hot') { gg.moveTo(0, y).lineTo(16, y).stroke({ width: 3, color: col }); gg.circle(8, y, 2.5).fill(0xffffff); } else gg.poly([8, y - 7, 14, y, 8, y + 7, 2, y]).fill(col); const l = new Label({ text: t, preset: 'tiny', size: 13, color: C.cream }); l.x = 26; l.y = y - 8; lg.content.addChild(gg, l); });
     const hint = new Label({ text: 'Drag to pan · wheel to zoom · click a system', preset: 'tiny', size: 12, color: C.textDim, shadow: true }); hint.x = W / 2 - 220; hint.y = H - 28; v.addChild(hint);
   }
   select(id, fire = false) {
@@ -264,11 +266,27 @@ export class GalaxyMap extends Scene {
     if (Array.isArray(v)) v.forEach(add); else if (typeof v === 'object' && !(v.systemId || v.system || v.pos || v.at)) { for (const [k, x] of Object.entries(v)) { if (x && typeof x === 'object') add(x.systemId || x.system || x.pos ? x : k); else if (x) out.push(k); } } else add(v);
     return out;
   }
-  planJump() {
-    if (this.jumping || !this.sel) return; const g = this.game; const st = g.state;
+  async planJump() {
+    if (this.jumping || this.busyBrief || !this.sel) return; const g = this.game; const st = g.state;
     let to = this.sel; if (to === st.pos) return;
     if (!g.neighbors(st.pos).find((x) => x.id === to)) { const p = this._route(to); if (!p || p.length < 2) return; to = p[1]; }
     const cj = g.canJump(to); if (!cj.ok) { this.ui.toast(cj.reason || 'Cannot jump.', 'warn'); sfx('deny'); return; }
+    const dc = g.departureCheck?.(to) || { warn: st.ship.hull / st.ship.hullMax < 0.25, hullPct: Math.round(st.ship.hull / st.ship.hullMax * 100), message: 'Repair before you go.', freeRepair: { available: false } };
+    if (dc.warn) { // limp warning: the one genuinely sad ending is leaving port in pieces
+      const sh = st.ship; const free = dc.freeRepair?.available ? dc.freeRepair : null;
+      const canRepair = st.docked && g.here().station?.services?.includes('repair');
+      const msg = `The hull is at ${Math.round(sh.hull)}/${sh.hullMax} (${dc.hullPct}%). ${dc.message}` + (free ? ` The patch restores the hull to ${free.toHull}.` : canRepair ? ' Repairs are available right here.' : ' Find a station with repairs, or rest a few days to mend.');
+      const m = new Modal({ w: 600, h: 250, title: 'LIMPING OUT OF PORT?', tone: 'coral' });
+      m.body.addChild(new Label({ text: msg, preset: 'body', size: 17, color: C.cream, w: m.bodyW }));
+      const btns = [{ label: 'Stay and mend', w: 200, variant: 'primary', hotkey: 'Enter', onClick: () => m.close('stay') }, { label: 'Depart anyway', w: 200, variant: 'coral', onClick: () => m.close('go') }];
+      if (free) btns.unshift({ label: 'Free patch-up (once)', w: 210, variant: 'teal', onClick: () => m.close('free') });
+      else if (canRepair) btns.unshift({ label: 'Repairs', w: 150, variant: 'teal', onClick: () => m.close('repair') });
+      m.addButtons(btns); m.open(); this.busyBrief = true; const ans = await m.closed; this.busyBrief = false;
+      if (ans === 'free') { let r = null; try { r = g.claimFreeRepair(); } catch (e) { /* */ } if (r && r.ok === false) this.ui.toast(r.reason || 'Could not patch.', 'bad'); return; }
+      if (ans === 'repair') { this.ui.openOverlay('Trade', { tab: 'services' }); return; }
+      if (ans !== 'go' || this._dead) return;
+    }
+    if (g.neighbors(st.pos).find((x) => x.id === to && x.hot)) { this.busyBrief = true; const go = await showBriefing(g, to).catch(() => true); this.busyBrief = false; if (!go || this._dead) return; }
     this.playJump(to);
   }
 

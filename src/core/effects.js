@@ -2,7 +2,7 @@
 // Resource changes clamp to [0,max]; negative hull/morale respects difficulty floors; specials/traits tweak results.
 import { C, IDX, goodName, itemName, factionName, prettify } from './content.js';
 import { template } from './text.js';
-import { DIFF, diffOf, hasSpecial, clamp, recompute, installUpgrade, abilityCount } from './ship.js';
+import { DIFF, diffOf, hasSpecial, clamp, recompute, installUpgrade, abilityCount, armorFactor } from './ship.js';
 import { bfs, adjacency } from './galaxy.js';
 
 export const FX_KEYS = new Set([
@@ -98,7 +98,7 @@ export function applyEffects(g, fx, ctx = {}) {
           }
           case 'hull': {
             let d = v;
-            if (d < 0 && !ctx.noScale) d = -Math.max(1, Math.round(-d * diff.damage));
+            if (d < 0 && !ctx.noScale) d = -Math.max(1, Math.round(-d * diff.damage * armorFactor(st)));
             const before = st.ship.hull;
             const floor = d < 0 && diff.floors ? 1 : 0;
             st.ship.hull = clamp(before + d, Math.min(before, floor), st.ship.hullMax);

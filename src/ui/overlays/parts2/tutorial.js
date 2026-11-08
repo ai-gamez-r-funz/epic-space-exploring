@@ -6,6 +6,7 @@ import { Label } from '../../kit/Label.js';
 import { Button } from '../../kit/Button.js';
 import { drawPanel } from '../../kit/draw.js';
 import { Tutorial } from './prefs.js';
+import { Display } from '../../kit/theme.js';
 
 const STEPS = [
   { id: 'chart', scene: 'Bridge', text: 'Open the Chart to plan a jump. Every hop burns fuel (roughly 4-5 of your tank), so check the cost and your range first.', key: 'C', target: (s) => s.cmds?.chart, done: (g, sc) => sc === 'GalaxyMap' },
@@ -74,6 +75,7 @@ export class TutorialHints {
     r.roundRect(p.x - 5 - pulse * 3, p.y - 5 - pulse * 3, tw + 10 + pulse * 6, th + 10 + pulse * 6, 14).stroke({ width: 3, color: C.mustard, alpha: 0.9 - pulse * 0.4 });
     let bx, by;
     if (cx > 700 && p.y < 560) { bx = p.x - b.bw - 28; by = cy - b.bh / 2; }             // right-hand panels: bubble to the LEFT so it never hides the info
+    else if (p.y > 500 && (Display.scale || 1) < 0.8) { bx = 170 + 710 - b.bw - 10; by = 70 + Math.sin(this.t * 3) * 2; } // phones: keep the bottom of the viewscreen (threads pills, planet labels) clear
     else if (p.y > 500) { bx = Math.max(180, cx - b.bw / 2); by = 528 - b.bh + Math.sin(this.t * 3) * 3; } // command bar: float over the viewscreen, clear of crew list + strip
     else if (p.y < 100) { bx = cx - b.bw / 2; by = p.y + th + 22; }
     else { bx = cx - b.bw / 2; by = p.y - b.bh - 22; }

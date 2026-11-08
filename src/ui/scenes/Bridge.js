@@ -11,6 +11,7 @@ import { Anim } from '../kit/anim.js';
 import { centerOn } from '../kit/layout.js';
 import { Hud, stardate } from '../widgets/Hud.js';
 import { nextObjective, marketNewsLine, jumpsTo } from '../widgets/objective.js';
+import { ThreadsBar } from '../widgets/threads.js';
 import { Viewscreen, PLANET_NAMES, PHEN_NAMES, STAR_NAMES } from '../widgets/Viewscreen.js';
 import { S, sfx } from '../services.js';
 import { Modal } from '../kit/Modal.js';
@@ -40,6 +41,7 @@ export class Bridge extends Scene {
     this.hud = new Hud(this.ui); v.addChild(this.hud);
     // viewscreen
     this.vs = new Viewscreen({ w: 710, h: 470, onSelect: (sel) => { this.sel = sel; this.refresh(); } }); this.vs.x = 170; this.vs.y = 64; v.addChild(this.vs);
+    this.threads = new ThreadsBar(this.ui, 690); this.threads.x = 180; v.addChild(this.threads);
     this._buildCrew(); this._buildSidebar(); this._buildStrip(); this._buildCommands();
     this.sysId = null; this.sel = null; this.t = 0; this.hintI = 0;
     this._load(params.arrived !== false && !!params.arrive);
@@ -47,32 +49,9 @@ export class Bridge extends Scene {
     Input.bind(v, ['F1', '?'], () => this.ui.openOverlay('Help'));
     if (g.state.pending) setTimeout(() => this.ui.openEvent(), 50);
     if (params.arrive) this._banner();
-    this._maybeFirstOrders();
   }
-  exit() { try { this._fo?.close?.(); } catch (e) { /* */ } super.exit(); }
   onOverlayClosed() { this.refresh(); }
-  /** One-time "Captain's first orders" card on the very first Bridge of a new voyage. */
-  _maybeFirstOrders() {
-    let seen = false; try { seen = !!localStorage.getItem('halcyon.firstOrders'); } catch (e) { /* */ }
-    const st = this.game.state; if (seen || st.day > 2 || (st.stats.jumps || 0) > 0 || st.pending) return;
-    setTimeout(() => {
-      if (this.view.destroyed || this.ui.overlays.length || this.game.state.pending) return;
-      try { localStorage.setItem('halcyon.firstOrders', '1'); } catch (e) { /* */ }
-      const m = new Modal({ w: 640, h: 440, title: "CAPTAIN'S FIRST ORDERS", tone: 'indigo', closable: true });
-      const sh = this.game.state.ship; const ns = this.game.neighbors(this.game.state.pos); const cs = ns.map((n) => n.fuelCost);
-      const rows = [
-        ['star', 'Chart a course (C)', `Pick a neighbouring system on the Chart. Each hop costs fuel — about ${cs.length ? Math.min(...cs) + '–' + Math.max(...cs) : '4–5'} of your ${Math.floor(sh.fuel)}/${sh.fuelMax}. Refuel at stations.`],
-        ['scan', 'Scan every planet (S)', 'Click a planet, then Scan. Scanning pays a little scrip and charts the system, which opens the story.'],
-        ['dock', 'Dock and trade (D, T)', 'Stations repair, refuel and buy goods. Buy cheap, sell where the Trade screen says it sells higher.'],
-      ];
-      rows.forEach(([icon, head, body], i) => {
-        const y = i * 104; const ic = S.gfx.icon(icon, { size: 34, color: C.mustard }); centerOn(ic, 30, y + 36); m.body.addChild(ic);
-        const h = new Label({ text: head, preset: 'bodyB', size: 19, color: C.cream }); h.x = 70; h.y = y + 6; const b = new Label({ text: body, preset: 'small', size: 15, color: C.textDim === 0 ? C.cream : 0xd8cfae, w: m.bodyW - 80, lineHeight: 20 }); b.x = 70; b.y = y + 34; m.body.addChild(h, b);
-      });
-      m.addButtons([{ label: 'Aye aye', variant: 'primary', w: 180, hotkey: 'Enter', onClick: () => m.close() }]); m.open(); this._fo = m;
-    }, 900);
-  }
-
+  resize() { try { this.hud._f = null; this.hud.refresh(); this.refresh(); } catch (e) { /* */ } }
   // ---------------------------------------------------------------- layout pieces
   _buildCrew() {
     const P = this.crewPanel = new Panel({ w: 150, h: 470, title: 'CREW', tone: 'deep', pad: 10, lights: false }); P.x = 12; P.y = 64; this.view.addChild(P);
@@ -259,6 +238,7 @@ export class Bridge extends Scene {
     msg = msg.toUpperCase(); if (msg.length > 50) msg = msg.slice(0, 49) + '…';
     this.stripTxt.setText(msg);
     this.stripState.setText(stardate(st.day));
+    try { this.threads.update(this.game, !!st.docked); this.threads.y = 64 + 470 - this.threads.h - 8; } catch (e) { /* optional */ }
     const o = nextObjective(this.game); this._obj = o; const n = o.systemId ? (o.systemId === st.pos ? 0 : jumpsTo(this.game, o.systemId)) : null;
     const tail = n === 0 ? ' · you are here' : n ? ` · ${n} jump${n > 1 ? 's' : ''}` : '';
     this._objFull = o.text + tail + (o.systemId && n == null ? ' (route not yet charted)' : ''); this.objTxt.setText(o.text + tail);

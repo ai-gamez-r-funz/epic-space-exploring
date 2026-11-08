@@ -120,7 +120,7 @@ export function ensureMarket(state, system) {
   state.markets = state.markets || {};
   let m = state.markets[system.id];
   if (!m) {
-    m = state.markets[system.id] = { prices: {}, stock: {}, impact: {}, updatedDay: state.day };
+    m = state.markets[system.id] = { prices: {}, stock: {}, impact: {}, depth: {}, updatedDay: state.day };
     for (const g of C.GOODS) {
       const p = profile(state, system, g);
       m.stock[g.id] = p.sold ? p.targetStock : 0;
@@ -136,6 +136,10 @@ export function ensureMarket(state, system) {
       // regenerate ~7%/day of the gap (busy lanes saturate) (also drains over-stocked piles)
       m.stock[g.id] = Math.round(tgt + (cur - tgt) * Math.pow(0.93, elapsed));
       m.impact[g.id] = (m.impact[g.id] || 0) * Math.pow(0.95, elapsed);
+      // demand depth (how much more this market will absorb at a good price) recovers slowly, ~4 %/day
+      m.depth = m.depth || {};
+      const dp = m.depth[g.id] === undefined ? 1 : m.depth[g.id];
+      m.depth[g.id] = 1 - (1 - dp) * Math.pow(0.96, elapsed);
       if (Math.abs(m.impact[g.id]) < 0.002) m.impact[g.id] = 0;
     }
     m.updatedDay = state.day;
@@ -166,6 +170,8 @@ export function sideMultipliers(state, system, good) {
   return { buy, sell };
 }
 
+/** How much demand depth one unit sold uses up (a market absorbs roughly its normal stock before prices sag hard). */
+function depthStep(state, system, good) { return 0.45 / Math.max(4, profile(state, system, good).targetStock); }
 function unitImpact(good) { return 1.3 * RULES().tradeImpact * (0.6 + clamp(good.volatility ?? 0.3, 0, 1)); }
 
 /** Total cost of buying `qty` units now, walking the price up per unit. */
@@ -187,8 +193,10 @@ export function quoteSell(state, system, goodId, qty) {
   const { sell } = sideMultipliers(state, system, good);
   const mid = m.prices[goodId];
   const imp = unitImpact(good);
+  const dec = depthStep(state, system, good);
+  const dp = (m.depth && m.depth[goodId] !== undefined) ? m.depth[goodId] : 1;
   let total = 0;
-  for (let k = 0; k < qty; k++) total += mid * Math.max(0.35, 1 + (m.impact[goodId] || 0) - imp * k) * sell;
+  for (let k = 0; k < qty; k++) total += mid * Math.max(0.35, 1 + (m.impact[goodId] || 0) - imp * k) * sell * (0.55 + 0.45 * Math.max(0.25, dp - dec * k));
   return Math.floor(total);
 }
 
@@ -261,6 +269,8 @@ export function sellGoods(state, system, goodId, qty) {
   if (state.cargo[goodId] <= 0) delete state.cargo[goodId];
   m.stock[goodId] = (m.stock[goodId] || 0) + qty;
   m.impact[goodId] = clamp((m.impact[goodId] || 0) - unitImpact(good) * qty, -0.6, 0.6);
+  m.depth = m.depth || {};
+  m.depth[goodId] = Math.max(0.25, (m.depth[goodId] === undefined ? 1 : m.depth[goodId]) - depthStep(state, system, good) * qty);
   return { ok: true, qty, gain, goodId };
 }
 

@@ -241,8 +241,40 @@ export function board(g, sysId) {
       if (d) { b.proc.push(d); usedKinds.add(t.id); }
     }
   }
+  if (!b.strandedDone) {
+    b.strandedDone = true;
+    const rng2 = new RNG(hashString(`${st.seed}|stranded|${sysId}|${week}`));
+    if (rng2.chance(0.45)) { const d = strandedDraft(g, sys, rng2, week); if (d) b.proc.push(d); }
+  }
   for (const d of b.proc) if (!b.taken.includes(d.id) && !activeDefs.has(d.id)) offers.push(d);
   return offers;
+}
+
+/** Timed "stranded" relief contract: haul supplies to a ship stuck near trouble before the clock runs out. */
+function strandedDraft(g, sys, rng, week) {
+  const st = g.state;
+  const goodId = rng.pick(['fuel_cells', 'medical_kits', 'ration_bars'].filter((x) => IDX.good[x]));
+  if (!goodId) return null;
+  const hops = bfs(st.galaxy, sys.id);
+  const cands = st.galaxy.systems.filter((s) => s.id !== sys.id && s.status !== 'unknown' && hops[s.id] >= 2 && hops[s.id] <= 4 && s.danger >= 1);
+  if (!cands.length) return null;
+  const to = rng.pick(cands);
+  const qty = rng.int(4, 6);
+  const diff = diffOf(st);
+  const jumps = hops[to.id];
+  const good = IDX.good[goodId];
+  const credits = Math.round((200 + 55 * jumps) * diff.reward / 5) * 5;
+  const faction = sys.station ? sys.station.faction : sys.faction;
+  const rep = faction && faction !== 'none' && faction in st.rep ? { [faction]: 3 } : {};
+  const vars = { to: to.name };
+  return {
+    id: `gen:${sys.id}:str${week}`, defId: 'stranded_contract', title: `Stranded near ${to.name}`, giver: { name: 'Harbour Master Quill', species: 'human', faction }, faction, kind: 'relief',
+    blurb: `A hauler has run dry near ${to.name} and the weather there is turning. ${qty} ${good.name} would see her home. The Harbour Master stresses that the clock is real.`,
+    accept: '"Quick as you can," says the Harbour Master. "Slow is the one thing she cannot afford."',
+    reward: { credits, rep }, deadlineDays: Math.round((6 + 3 * jumps) * diff.deadline),
+    objectives: [{ id: 'o1', type: 'have', good: goodId, qty, deliverTo: to.name, consume: true, text: `Deliver ${qty} ${good.name} to ${to.name} before the deadline`, done: false, resolved: null, deliverResolved: to.id, n: 0 }],
+    onComplete: [{ morale: 3 }], failFx: [{ morale: -2 }], ordered: false, repeatable: true, procedural: true, originSystem: sys.id, arc: null, stranded: true,
+  };
 }
 
 /** UI-facing offer summary. */

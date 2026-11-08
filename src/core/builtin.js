@@ -24,7 +24,7 @@ export const BUILTIN = {
     nodes: {
       a: {
         speaker: { name: 'Tender Captain Wren', species: 'human' },
-        text: '"Halcyon, this is the Meridian tender Kindly Light. Your fuel is bone dry, and I do not say that to scold. We have a line ready and a kettle on. Shall we bring you in?"',
+        text: ['"Halcyon, this is the Meridian tender Kindly Light. Your fuel is bone dry, and I do not say that to scold. We have a line ready and a kettle on. Shall we bring you in?"', '"Kindly Light to Halcyon: you are drifting, Captain, in the politest possible way. We have a tow-line, a thermos and no judgement. Shall we?"', '"Meridian tender Wren here. You have the look of a ship that has run out of lane. Tea is hot and the line is ready: say the word."'][(Date.now() >> 12) % 3],
         choices: [
           { label: 'Accept the tow with thanks', tag: 'wait', do: { text: 'The tender takes your line with practised ease. A few days later you are somewhere with docking lights and a fuel pump.', fx: [{ tow: true }] } },
           { label: 'Charm the captain into a discount', tag: 'diplomacy', check: { skill: 'diplomacy', diff: 2 },

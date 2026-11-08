@@ -276,3 +276,12 @@ Autosave on arrival/dock/event end (slot 'auto'); manual save/load in Settings/p
 - Every event in content validated by `tests/content.test.js` (referenced ids exist, every choice resolves, no dead ends, no combat words).
 - Variety: ≥70 events, ≥28 missions, ≥28 upgrades, ≥14 goods, ≥18 crew, ≥40 codex entries, 6 endings; no event type repeats within 8 events of play.
 - Feel: cozy, readable, juicy (sfx on everything, gentle motion, toasts), clear affordances, no walls of text (≤ 70 words per node text, usually ≤ 45).
+
+## 11. ENGINE additions (rounds 1-3; authoritative details in docs/REQUESTS.md [ENGINE])
+
+Queries: `nextObjective()` (+`jumps`,`fuel`,`days`,`rangeNote`), `routeInfo(id)`, `frontier()`, `arcProgress()`, `dockBulletin()`, `rivalInfo()`/`rivalStatus()`, `distressSignals()`, `hotLanes()`, `mapMarkers()` (`{markers, legend}`), `marketNews(sys)`, `newsFeed()`, `market(sys).bestSell`, `yardRotation(sys)`, `refits(sys)`, `trainingOptions(crewId)`, `retirePreview()`, `canRetire()`.
+Actions: `buyRefit(id)`, `trainCrew(crewId, programId)`, `retire({anywhere})`, `spawnDistress(days)`; `buyUpgrade` takes `commission.days` days for bespoke items.
+State extras: `rng`, `docked`, `evt`, `boards`, `rival`, `distress`, `refits`, `savedAt`; markets carry `impact`, `depth`.
+Event contexts added: `rival`, `distress` (authored events may use them); cond keys `rival`, `distress`, `ringed`, `counter`; fx `distress`.
+
+Round 4: `hotLaneBriefing(toId)` (pre-jump odds/cost briefing), `spendHints(minScrip)`, authored `lane_hot_*` chains + `ctx:'midgame'` events, armour (`hullMax` over 100 reduces hull damage), morale >= 90 gives +4 points on checks.

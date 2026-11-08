@@ -16,8 +16,8 @@ export class Pause extends Overlay {
     const mk = (label, variant, fn, hk, icon) => new Button({ label, variant, w: bw, h: 52, onClick: fn, hotkey: hk, icon, fontSize: 17 });
     const btns = [
       mk('Resume', 'primary', () => modal.close(), 'Enter', 'arrow'),
-      mk('Settings', 'brass', () => { modal.close(); this.ui.openOverlay('Settings'); }, 's', 'settings'),
-      mk('Help & hotkeys', 'brass', () => { modal.close(); this.ui.openOverlay('Help'); }, 'h', 'log'),
+      mk('Settings', 'brass', () => { this.ui.openOverlay('Settings'); modal.close(); }, 's', 'settings'),
+      mk('Help & hotkeys', 'brass', () => { this.ui.openOverlay('Help'); modal.close(); }, 'h', 'log'),
     ];
     const saveRow = new Container(); saveRow.w = bw; saveRow.h = 66;
     this.saveBtns = ['1', '2'].map((slot, i) => {

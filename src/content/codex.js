@@ -170,7 +170,7 @@ export const CODEX = [
     text: 'At the end of every long watch, the crew gather in the lounge for tea, with no talk of business until the cups are empty. It is, quietly, what holds the ship together.' },
 
   // ---------------------------------------------------------------- Fix round 1: more entries
-  { id: 'tamsin_vell', title: 'Captain Tamsin Vell and the Marigold', category: 'species', unlockedBy: { mission: 'm_rival_1_wager' },
+  { id: 'tamsin_vell', title: 'Captain Tamsin Vell', category: 'species', unlockedBy: { flag: 'rival_met' },
     text: 'A free-trader with a shiny ship, a loud laugh and an unshakable belief that she can beat anyone to anywhere. She has never once been right, and has never once minded.' },
   { id: 'distress_calls', title: 'Distress Calls of the Reach', category: 'history', unlockedBy: { mission: 'm_distress_medical' },
     text: 'Small, cheerful calls for help sent by settlers and haulers who would rather not trouble anyone. Meridian answers all of them, on principle and by the order of Director Calloway.' },
@@ -386,4 +386,17 @@ export const CODEX = [
     text: "A neat booth beside the wormhole, staffed by an optimistic automaton collecting no tolls at all. It will cheerfully explain why." },
   { id: "codex_stipend_telegrams", title: "Stipend Telegrams", category: "history", unlockedBy: "event",
     text: "Brief, warm telegrams from the Society, arriving with the monthly allowance. They are always signed with a flourish, and always begin: dear captain, mind the tea." },
+
+  { id: 'vell_marigold', title: 'The Marigold', category: 'tech', unlockedBy: { mission: 'm_rival_2_tied_race' },
+    text: 'Captain Vell\'s ship: a polished free-trader painted the colour of a daffodil, with a tea urn bolted to the bridge. It is slightly faster than Halcyon, and Vell never lets you forget it.' },
+  { id: 'reach_regatta', title: 'The Reach Regatta', category: 'history', unlockedBy: { flag: 'rival_beaten' },
+    text: 'A friendly, weapons-free race held between traders of the Reach, with a purse, a ribbon and a great deal of tea. Winners are announced at dinner, and the losers insist on being gracious.' },
+  { id: 'shipyard_commissions', title: 'Shipyard Commissions', category: 'history', unlockedBy: { mission: 'm_comm_hull_plates' },
+    text: 'Big jobs posted by the Reach\'s yards: parts in, scrip out, and no hurry unless you let there be one. A completed commission is considered a mark of a trustworthy captain.' },
+  { id: 'great_convergence', title: 'The Great Convergence', category: 'history', unlockedBy: { flag: 'convergence_held' },
+    text: 'The first meeting at which all five peoples of the Reach sat at one round table. It adjourned for pastries, and has been called, ever since, the most successful summit of the age.' },
+  { id: 'silence_stone_lore', title: 'The Silence-Stone', category: 'tech', unlockedBy: 'event',
+    text: 'A smooth grey Vesperine stone that hums only in perfect quiet. The Vesperine give it to those who have chosen silence on purpose, and to nobody else.' },
+  { id: 'codex_night_of_lamps', title: 'The Night of a Thousand Lamps', category: 'history', unlockedBy: 'event',
+    text: 'Once a generation, Pennywhistle puts out every light and launches a thousand paper lamps at once. Those who have flown at the head of the flotilla say the sky afterwards looks permanently a little kinder.' },
 ];

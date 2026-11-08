@@ -541,7 +541,7 @@ export default [
     title: 'Lantern-Night',
     tags: ['wonder', 'comedy', 'diplomacy'],
     ctx: 'station',
-    weight: 40,
+    weight: 95,
     when: [{ flag: 'festival_invited' }, { any: [{ system: { faction: 'quillari' } }, { system: { faction: 'drifters' } }] }],
     once: true,
     art: { scene: 'lounge', species: 'quillari', palette: 'warm' },

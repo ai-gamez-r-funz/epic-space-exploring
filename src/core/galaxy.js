@@ -192,12 +192,16 @@ function makePlanets(rng, sys, namer) {
     const type = wpick(rng, PLANET_TYPES[sys.star] || PLANET_TYPES.yellow);
     const size = type === 'gas' ? rng.float(1.2, 2) : type === 'barren' ? rng.float(0.5, 1.1) : rng.float(0.7, 1.4);
     const features = [];
-    if (['barren', 'desert', 'lava', 'ice'].includes(type) && rng.chance(0.25)) features.push('ore');
-    if (['ocean', 'ice', 'terran'].includes(type) && rng.chance(0.1)) features.push('hot_springs');
-    if (['ice', 'gas', 'ocean'].includes(type) && rng.chance(0.1)) features.push('aurora_fields');
-    const ruinP = ['archive', 'rim'].includes(sys.region) ? 0.12 : 0.05;
-    if (type !== 'gas' && rng.chance(ruinP)) features.push('ruins');
-    if (type !== 'gas' && rng.chance(0.04)) features.push('ancient_signal');
+    // every planet type can carry every feature (authored scan/landing events key on type+feature pairs)
+    const oreP = ['barren', 'desert', 'lava', 'ice'].includes(type) ? 0.28 : type === 'gas' ? 0 : 0.14;
+    if (rng.chance(oreP)) features.push('ore');
+    const springP = ['ocean', 'ice', 'terran'].includes(type) ? 0.14 : type === 'gas' || type === 'lava' ? 0 : 0.1;
+    if (rng.chance(springP)) features.push('hot_springs');
+    const auroraP = ['ice', 'gas', 'ocean'].includes(type) ? 0.12 : 0.08;
+    if (rng.chance(auroraP)) features.push('aurora_fields');
+    const ruinP = (['archive', 'rim'].includes(sys.region) ? 0.14 : 0.07) * (type === 'gas' ? 0 : 1);
+    if (rng.chance(ruinP)) features.push('ruins');
+    if (rng.chance(type === 'gas' ? 0.05 : 0.06)) features.push('ancient_signal');
     let life = wpick(rng, LIFE[type] || { none: 1 });
     if (life === 'fauna' && sys.faction !== 'none' && rng.chance(0.08)) life = 'civilized';
     planets.push({
@@ -325,6 +329,13 @@ export function generateGalaxy(seed) {
   if (!stations.some((s) => s.station.services.includes('shipyard') && s.id !== gateSys.id)) {
     const c = stations.find((s) => s.region === 'shoals') || stations[1];
     if (c) { c.station.services.push('shipyard'); }
+  }
+  // one shipyard per region (scrip must always have somewhere to go)
+  for (const region of REGION_IDS) {
+    const inRegion = systems.filter((s) => s.region === region && s.station);
+    if (!inRegion.length || inRegion.some((s) => s.station.services.includes('shipyard'))) continue;
+    const pref = inRegion.find((s) => ['trade', 'habitat', 'embassy', 'archive'].includes(s.station.kind)) || inRegion[0];
+    pref.station.services.push('shipyard');
   }
   // start state
   gateSys.status = 'visited';
