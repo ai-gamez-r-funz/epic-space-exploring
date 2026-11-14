@@ -1,3 +1,4 @@
+import './patch.js';
 import { Container, Graphics } from 'pixi.js';
 import { palette, FACTION_COLOURS } from './palette.js';
 import { createStarfield, createNebula, createStar, nebulaTexture, STAR_COL } from './space.js';
