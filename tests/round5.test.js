@@ -98,3 +98,27 @@ test('200-day soak: state size stays bounded and the heap does not balloon', () 
     assert.ok(process.memoryUsage().heapUsed - before < 20 * 1024 * 1024, 'query calls do not leak');
   }
 });
+
+test('briefing BEST tag is expected-value based: a mixed distribution over 200 sampled briefings', async () => {
+  const tally = { run: 0, creep: 0, brace: 0 };
+  let n = 0;
+  for (let seed = 1; seed <= 40 && n < 200; seed++) {
+    const g = G(seed);
+    for (const s of g.state.galaxy.systems) if (s.status === 'unknown') s.status = 'detected';
+    for (const h of g.hotLanes().slice(0, 3)) {
+      teleportForTest(g, h.fromId);
+      for (const piloting of [1, 3, 5]) for (const hullPct of [0.2, 0.55, 1]) {
+        g.state.crew[0].skills.piloting = piloting;
+        g.state.ship.hull = Math.round(g.state.ship.hullMax * hullPct);
+        const b = g.hotLaneBriefing(h.toId);
+        if (!b.hot) continue;
+        for (const st of b.stages) { tally[st.best]++; n++; }
+      }
+    }
+  }
+  assert.ok(n >= 200, `only ${n} stage samples`);
+  const share = (k) => tally[k] / n;
+  assert.ok(share('creep') < 0.8, `creep is best ${Math.round(share('creep') * 100)}% of the time`);
+  assert.ok(share('run') > 0.05, `run is best only ${Math.round(share('run') * 100)}%`);
+  assert.ok(share('creep') > 0.05, `creep is best only ${Math.round(share('creep') * 100)}%`);
+});

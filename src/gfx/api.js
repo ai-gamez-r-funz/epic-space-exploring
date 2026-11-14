@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { palette, FACTION_COLOURS } from './palette.js';
 import { createStarfield, createNebula, createStar, nebulaTexture, STAR_COL } from './space.js';
-import { createPlanet, bakePlanet, prebakePlanet } from './planets.js';
+import { createPlanet, bakePlanet, prebakePlanet, planetCache } from './planets.js';
 import { createPhenomenon } from './phenomena.js';
 import { createShip } from './ships.js';
 import { createPortrait } from './portraits.js';
@@ -71,6 +71,8 @@ export const gfx = {
   /** non-blocking (8ms slices) bake; returns a Promise */
   prebakeAsync(type, seed, life) { return prebakePlanet(type, seed, life); },
   nebulaTexture,
+  /** debug: cache sizes (entries / entries still leased by live containers) */
+  stats() { const f = (c) => ({ n: c.m.size, leased: [...c.m.values()].filter((v) => v && v.__rc > 0).length }); return { planets: f(planetCache) }; },
 };
 
 export { palette, createStarfield as starfield, createNebula as nebula, createPlanet as planet, createStar as star, createPhenomenon as phenomenon, createShip as ship, createPortrait as portrait, createSceneArt as sceneArt, createIcon as icon, createGoodIcon as goodIcon, createFactionEmblem as factionEmblem, createVignette as vignette, createScanlines as scanlines, createPanelBg as panelBg, createStation as station };

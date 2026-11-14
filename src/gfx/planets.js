@@ -1,5 +1,5 @@
 import { Mesh, MeshGeometry, Shader, Texture, Sprite, Container, Rectangle } from 'pixi.js';
-import { rng, makeNoise, LRU, makeCanvas, glowSprite, TAU, hashStr, clamp, animated } from './util.js';
+import { rng, makeNoise, LRU, makeCanvas, glowSprite, TAU, hashStr, clamp, animated, killTex } from './util.js';
 
 // ---------------------------------------------------------------- colour ramps
 function ramp(stops) {
@@ -233,7 +233,8 @@ function makeSurface(type, seed, life) {
 // ---------------------------------------------------------------- baking + cache
 // NOTE: evicted entries are intentionally NOT destroyed: a displayed planet may still be sampling them.
 const W = 384, H = 192;
-const bakeCache = new LRU(96);
+const bakeCache = new LRU(24, (v) => { killTex(v.surf); killTex(v.data); });
+export const planetCache = bakeCache;
 function makeBaker(type, seed, life) {
   const fn = makeSurface(type, seed, life);
   const c1 = makeCanvas(W, H), c2 = makeCanvas(W, H);
@@ -272,9 +273,10 @@ function makeBaker(type, seed, life) {
 }
 const pending = new Map();
 const keyOf = (type, seed, life) => `${type}|${seed}|${life === 'civilized' ? 1 : 0}`;
-export function bakePlanet(type, seed, life) {
+export function bakePlanet(type, seed, life, owner) {
   const key = keyOf(type, seed, life);
-  return bakeCache.memo(key, () => { const b = makeBaker(type, seed, life); b.step(Infinity); return b.finish(); });
+  const mk = () => { const b = makeBaker(type, seed, life); b.step(Infinity); return b.finish(); };
+  return owner ? bakeCache.lease(key, mk, owner) : bakeCache.memo(key, mk);
 }
 /** Non-blocking bake in ~8ms slices (call during idle / loading). Returns a Promise. */
 export function prebakePlanet(type, seed, life) {
@@ -361,8 +363,8 @@ const v3 = (h) => new Float32Array([((h >> 16) & 255) / 255, ((h >> 8) & 255) / 
 const EMIS_COL = { lava: 0xff8a3a, crystal: 0xfff0ff, default: 0xffd890 };
 
 export function makeSphereMesh(opts) {
-  const { type, seed, life = 'none', light = [-0.72, 0.42, 0.55], tilt = 0, cloudK, mood = [1, 1, 1] } = opts;
-  const baked = bakePlanet(type, seed, life);
+  const { type, seed, life = 'none', light = [-0.72, 0.42, 0.55], tilt = 0, cloudK, mood = [1, 1, 1], owner } = opts;
+  const baked = bakePlanet(type, seed, life, owner);
   const atmo = ATMO[type] || ATMO.barren;
   const shader = Shader.from({
     gl: { vertex: VERT, fragment: FRAG },
@@ -379,13 +381,14 @@ export function makeSphereMesh(opts) {
   });
   const mesh = new Mesh({ geometry: quad(), shader });
   mesh._u = shader.resources.pu.uniforms;
+  mesh.once('destroyed', () => { try { shader.destroy(); } catch (e) { /* noop */ } });
   return mesh;
 }
 
 // ---------------------------------------------------------------- rings & moons
-const ringCache = new LRU(20);
-function ringTextures(seed, base) {
-  return ringCache.memo(`${seed}|${base}`, () => {
+const ringCache = new LRU(8, (v) => { killTex(v.back); try { v.front.destroy(false); } catch (e) { /* noop */ } });
+function ringTextures(seed, base, owner) {
+  return ringCache.lease(`${seed}|${base}`, () => {
     const R = rng(hashStr('ring' + seed));
     const S = 512, sq = 0.36; // texture width S, ellipse squash
     const c = makeCanvas(S, S * sq), g = c.getContext('2d');
@@ -414,12 +417,12 @@ function ringTextures(seed, base) {
       front: new Texture({ source: tex.source, frame: new Rectangle(0, hh, c.width, c.height - hh) }),
       sq,
     };
-  });
+  }, owner);
 }
 
-const moonCache = new LRU(24);
-function moonTexture(seed) {
-  return moonCache.memo(seed, () => {
+const moonCache = new LRU(16, (t) => killTex(t));
+function moonTexture(seed, owner) {
+  return moonCache.lease(seed, () => {
     const R = rng(hashStr('moon' + seed));
     const N = makeNoise(R() * 1e9 | 0);
     const S = 64, c = makeCanvas(S, S), g = c.getContext('2d'), img = g.createImageData(S, S);
@@ -439,7 +442,7 @@ function moonTexture(seed) {
     }
     g.putImageData(img, 0, 0);
     return Texture.from(c);
-  });
+  }, owner);
 }
 
 // ---------------------------------------------------------------- public factory
@@ -455,7 +458,7 @@ export function createPlanet({ type = 'terran', seed = 1, radius = 60, ringed = 
 
   let ringTilt = 0;
   if (ringed) {
-    const rt = ringTextures(seed, type);
+    const rt = ringTextures(seed, type, root);
     ringTilt = tilt * 0.6 - 0.3 + R.range(-0.1, 0.1);
     const rr = radius * 4.1; // outer diameter
     const holder = new Container(); holder.rotation = ringTilt;
@@ -467,7 +470,7 @@ export function createPlanet({ type = 'terran', seed = 1, radius = 60, ringed = 
     back.addChild(hb); front.addChild(holder);
   }
 
-  const mesh = makeSphereMesh({ type, seed, life, tilt: tilt * 0.5 });
+  const mesh = makeSphereMesh({ type, seed, life, tilt: tilt * 0.5, owner: root });
   mesh.scale.set(radius);
   mid.addChild(mesh);
   const spin = R.range(0.025, 0.06) * (R() < 0.15 ? -1 : 1);
@@ -476,7 +479,7 @@ export function createPlanet({ type = 'terran', seed = 1, radius = 60, ringed = 
   const ms = [];
   const nm = Math.min(3, moons | 0);
   for (let i = 0; i < nm; i++) {
-    const s = new Sprite(moonTexture(`${seed}${i}`)); s.anchor.set(0.5);
+    const s = new Sprite(moonTexture(`${seed}${i}`, root)); s.anchor.set(0.5);
     s.width = s.height = radius * R.range(0.16, 0.3);
     ms.push({ s, a: R() * TAU, rx: radius * (1.55 + i * 0.5 + R() * 0.2), ry: radius * (0.25 + R() * 0.2), sp: R.range(0.15, 0.45) / (1 + i * 0.6), tilt: R.range(-0.4, 0.4) });
     front.addChild(s);
