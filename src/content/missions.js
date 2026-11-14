@@ -765,7 +765,7 @@ export const MISSIONS = [
   },
 
   {
-    id: 'm_setpiece_night_of_lamps', title: 'The Night of a Thousand Lamps', kind: 'story', arc: 'turning',
+    id: 'm_setpiece_night_of_lamps', title: 'The Night of a Thousand Lamps', kind: 'story', arc: 'main',
     giver: { name: 'Festival Marshal Dott', species: 'quillari', faction: 'quillari' },
     blurb: 'Once a generation the Bazaar at Pennywhistle puts out every light and launches a thousand paper lamps at once, and this year it wants Halcyon at the head of the flotilla. There will be a choice of gift, and it will be a good one.',
     accept: 'Dott tucks a paper lamp into your pocket. "Come in dark. Leave in lamplight."',

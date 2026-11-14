@@ -5,7 +5,7 @@
 const DOTT = { name: 'Festival Marshal Dott', species: 'quillari' };
 export default [
   {
-    id: 'setpiece_night_of_lamps', title: 'The Night of a Thousand Lamps', tags: ['wonder', 'diplomacy'], ctx: 'arrive', weight: 95, once: true,
+    id: 'setpiece_night_of_lamps', title: 'The Night of a Thousand Lamps', tags: ['wonder', 'diplomacy'], ctx: 'arrive', weight: 95, once: true, guaranteed: true,
     when: [{ any: [{ mission: 'm_setpiece_night_of_lamps' }, { missionDone: 'm_setpiece_night_of_lamps' }] }, { system: { story: 'pennywhistle' } }],
     art: { scene: 'beacon', species: 'quillari', palette: 'warm' }, start: 'a',
     nodes: {
