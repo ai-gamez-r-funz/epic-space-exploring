@@ -608,13 +608,24 @@ export class Game {
     const failHull = scale(p.hull);
     const careFail = scale(Math.max(2, p.hull - 1));
     const stages = [];
+    const hp = st.ship.hull / st.ship.hullMax;
+    const hullW = hp >= 0.7 ? 1 : 1 + ((0.7 - hp) / 0.7) * 1.5;
+    const bonusNow = this._hotBonus(st.pos, toId);
     let exH = 0; let exF = 0; let exD = 0; let worstH = 0; let clean = 1;
     for (let i = 0; i < 3; i++) {
       const run = { key: 'run', label: 'Run the gauntlet', bonusPct: 20, skill: 'piloting', odds: this.checkOdds('piloting', p.pilotDiff, { tag: 'flee' }), failCost: { hull: failHull, fuel: 1 }, passCost: {} };
       const creep = { key: 'creep', label: 'Creep through', skill: null, odds: 1 - p.creepFail, failCost: { hull: scale(Math.max(2, Math.round(p.hull * 0.6))), fuel: p.wait.fuel, days: p.wait.days }, passCost: { fuel: p.wait.fuel, days: p.wait.days }, bonusPct: -25 };
       const sk = p.careSkills[i];
       const brace = { key: 'brace', label: sk === 'medicine' ? 'Steady the crew' : 'Reinforce / coax the drive', skill: sk, odds: this.checkOdds(sk, p.careDiff), failCost: { hull: careFail }, passCost: { hull: scale(1) } };
-      const cost = (o) => (1 - o.odds) * ((o.failCost.hull || 0) + 0.7 * (o.failCost.fuel || 0)) + o.odds * ((o.passCost.hull || 0) + 0.7 * (o.passCost.fuel || 0) + 1.5 * (o.passCost.days || 0));
+      // expected "hull-equivalent" cost: hull weighted up when the hull is low (risk aversion), fuel 0.7, a day 1.5, bounty 6 scrip = 1 hull
+      const cost = (o) => {
+        const q = 1 - o.odds;
+        const hullTerm = hullW * (q * (o.failCost.hull || 0) + o.odds * (o.passCost.hull || 0));
+        const fuelTerm = 0.7 * (q * (o.failCost.fuel || 0) + o.odds * (o.passCost.fuel || 0));
+        const dayTerm = 1.5 * (q * (o.failCost.days || 0) + o.odds * (o.passCost.days || 0));
+        const bonusTerm = ((o.bonusPct || 0) / 100) * bonusNow * (o.key === 'run' ? o.odds : 1) / 6;
+        return hullTerm + fuelTerm + dayTerm - bonusTerm;
+      };
       const options = [run, creep, brace];
       const best = options.slice().sort((a, b) => cost(a) - cost(b))[0];
       exH += (1 - best.odds) * (best.failCost.hull || 0) + best.odds * (best.passCost.hull || 0);
@@ -1147,7 +1158,7 @@ export class Game {
     // everyday wear and tear grows with the danger of the space you fly through
     if (diff.damage > 0.6 && this.rng.chance(Math.min(0.9, 0.3 + 0.18 * dest.danger))) {
       // strain: the longer since the last dock, the harder the lanes bite (an incentive to turn back for repairs)
-      const strain = 1 + 0.12 * Math.min(6, st.counters.sinceDock || 0);
+      const strain = 1 + 0.16 * Math.min(6, st.counters.sinceDock || 0);
       const wear = Math.max(1, Math.round(1.8 * strain * (this.rng.int(1, 2) + dest.danger) * diff.damage * (Ship.hasSpecial(st, 'brittle_array') ? 1.5 : 1)));
       applyEffects(this, [{ hull: -wear }], { noScale: true });
     }
@@ -1189,7 +1200,9 @@ export class Game {
       const first = s.visits <= 1;
       const pool = Events.eligible(this, 'arrive', { systemId: s.id });
       const p = pool.length ? (first ? 0.6 : 0.2) : 0;
-      if (pool.length && this.rng.chance(p)) {
+      const guaranteed = pool.find((e) => e.guaranteed); // story set pieces fire deterministically (bypass the random gate)
+      if (guaranteed) Events.startEvent(this, guaranteed, { systemId: s.id });
+      else if (pool.length && this.rng.chance(p)) {
         const ev = Events.pickEvent(this, 'arrive', { systemId: s.id });
         if (ev) Events.startEvent(this, ev, { systemId: s.id });
       }

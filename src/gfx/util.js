@@ -56,20 +56,36 @@ export function makeNoise(seed) {
   return { n3, fbm, ridged };
 }
 
-// ---------- LRU cache ----------
+// ---------- LRU cache (with leases so eviction never destroys a texture that is still displayed) ----------
 export class LRU {
   constructor(max = 48, onEvict) { this.max = max; this.m = new Map(); this.onEvict = onEvict; }
   get(k) { if (!this.m.has(k)) return undefined; const v = this.m.get(k); this.m.delete(k); this.m.set(k, v); return v; }
-  set(k, v) {
-    this.m.set(k, v);
-    while (this.m.size > this.max) {
-      const [ok, ov] = this.m.entries().next().value; this.m.delete(ok);
-      if (this.onEvict) try { this.onEvict(ov, ok); } catch (e) { /* noop */ }
+  set(k, v) { this.m.set(k, v); this.trim(); return v; }
+  memo(k, fn) { let v = this.get(k); if (v === undefined) v = this.set(k, fn()); return v; }
+  /** evict oldest entries over the cap, skipping any that still have live leases */
+  trim() {
+    if (this.m.size <= this.max) return;
+    for (const [k, v] of this.m) {
+      if (this.m.size <= this.max) break;
+      if (v && v.__rc > 0) continue;
+      this.m.delete(k);
+      if (this.onEvict) try { this.onEvict(v, k); } catch (e) { /* noop */ }
+    }
+  }
+  /** get/create the value and hold a lease until `owner` (a Pixi container) is destroyed */
+  lease(k, fn, owner) {
+    const v = this.memo(k, fn);
+    if (v && typeof v === 'object') {
+      v.__rc = (v.__rc || 0) + 1;
+      let done = false;
+      const rel = () => { if (done) return; done = true; v.__rc--; this.trim(); };
+      if (owner && owner.once) owner.once('destroyed', rel);
     }
     return v;
   }
-  memo(k, fn) { let v = this.get(k); if (v === undefined) v = this.set(k, fn()); return v; }
 }
+/** destroy a Texture (and its canvas-backed source) safely */
+export function killTex(t) { try { if (t && !t.destroyed) t.destroy(true); } catch (e) { /* noop */ } }
 
 // ---------- canvas helpers ----------
 export function makeCanvas(w, h) {
@@ -80,10 +96,10 @@ export const texCache = new LRU(160);
 export function canvasTex(c) { return Texture.from(c); }
 
 /** radial glow texture (white-ish -> transparent), shared */
-const glowCache = new Map();
+const glowCache = new LRU(96);
 export function glowTexture(colour = 0xffffff, size = 128, hard = 0.0, power = 2) {
   const key = `${colour}|${size}|${hard}|${power}`;
-  if (glowCache.has(key)) return glowCache.get(key);
+  const hit = glowCache.get(key); if (hit) return hit;
   const c = makeCanvas(size, size), g = c.getContext('2d');
   const gr = g.createRadialGradient(size / 2, size / 2, size * 0.5 * hard, size / 2, size / 2, size / 2);
   const col = hex(colour), steps = 12;

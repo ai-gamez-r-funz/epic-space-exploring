@@ -45,10 +45,18 @@ export class Trade extends Overlay {
     this.tabs = new Tabs({ w: 520, tabs: [{ id: 'market', label: 'Market', icon: 'credits' }, { id: 'services', label: 'Repair & Refuel', icon: 'engineering' }], selected: params.tab || (has('trade') ? 'market' : 'services'), cycleKeys: true, tabH: 36 });
     this.tabs.y = 96; this.root.addChild(this.tabs);
     this.done = new Button({ label: 'Done', icon: 'check', w: 130, h: 36, variant: 'primary', onClick: () => this.close(), fontSize: 14, tooltip: 'Close (Esc)' }); this.done.x = modal.bodyW - 130; this.done.y = 96; this.root.addChild(this.done);
-    try { const act = (this.g.marketNews?.(sys.id) || []).filter((n) => n.active); const room = modal.bodyW - 130 - 548 - 12;
-      if (act.length && room > 140) { const n = act[0]; const p = pill({ text: `${n.title} · ${n.daysLeft}d`, color: n.mult > 1 ? C.good : C.mustard, h: 26, size: 11, padX: 10, preset: 'headSm', tip: { title: n.title, body: n.text, tone: 'info' } }); p.x = 548; p.y = 101; this.root.addChild(p); }
-    } catch (e) { /* news is optional */ }
-    try { const sp = spendLine(g); const bl0 = dockBulletin(g); const bl = sp ? { text: sp.text, all: [{ text: sp.text }, ...(bl0?.all || [])] } : bl0; if (bl) { const bp = pill({ icon: sp ? 'credits' : 'news', text: bl.text, color: sp ? C.good : C.mustard, h: 30, size: 12, padX: 12, preset: 'small', tip: { title: 'Why jump now', body: bl.all.map((l) => '\u2022 ' + l.text).join('\n') } }); const mw = 440; if (bp.w > mw) { bp.destroy({ children: true }); } else { bp.x = 540; bp.y = 99; this.root.addChild(bp); } if (bp.w > mw) { const l = new Label({ text: bl.text, preset: 'small', size: 12, color: C.mustard, w: mw, h: 30, fit: true }); l.x = 540; l.y = 102; this.root.addChild(l); } } } catch (e) { /* optional */ }
+    try { // one banner pill between the tabs and Done, fixed width so it can never run under the button
+      const sp = spendLine(g); const bl0 = dockBulletin(g); const bl = sp ? { text: sp.text, all: [{ text: sp.text }, ...(bl0?.all || [])] } : bl0;
+      const x0 = 536, mw = this.done.x - 12 - x0;
+      if (bl && mw > 150) {
+        const col = sp ? C.good : C.mustard; const c = new Container(); c.x = x0; c.y = 99; c.eventMode = 'static';
+        const g2 = new Graphics().roundRect(0, 0, mw, 30, 15).fill({ color: 0x0b0d1e, alpha: 0.8 }).roundRect(0, 0, mw, 30, 15).stroke({ width: 1.5, color: col, alpha: 0.9 }); c.addChild(g2);
+        const ic = ico(sp ? 'credits' : 'news', 18, col); ic.x = 9; ic.y = 6; c.addChild(ic);
+        const l = new Label({ text: bl.text, preset: 'small', size: 12, color: C.cream, w: mw - 40, h: 26, fit: true, minSize: 9 }); l.x = 32; l.y = 15 - l.textHeight / 2; c.addChild(l);
+        Tooltip.attach(c, { title: sp ? 'Spend your scrip' : 'Why jump now', body: bl.all.map((x) => '\u2022 ' + x.text).join('\n') });
+        this.root.addChild(c);
+      }
+    } catch (e) { /* optional */ }
     this.PH = modal.bodyH - 96 - 46;
     this.marketPane = this.tabs.panes.market; this.svcPane = this.tabs.panes.services;
     this.marketPane.y = this.svcPane.y = 96 + 46;

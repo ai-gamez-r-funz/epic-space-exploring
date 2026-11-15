@@ -1,5 +1,5 @@
 import { Container, Sprite, Texture, TilingSprite, Graphics } from 'pixi.js';
-import { rng, makeNoise, LRU, makeCanvas, glowSprite, glowTexture, TAU, hashStr, clamp, lerp, animated } from './util.js';
+import { rng, makeNoise, LRU, makeCanvas, glowSprite, glowTexture, TAU, hashStr, clamp, lerp, animated, killTex } from './util.js';
 import { hex } from './palette.js';
 
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -42,9 +42,9 @@ export function streakTex(rgbCol, head = 0.9, power = 1.5) {
 }
 
 // -------------------------------------------------- starfield
-const tileCache = new LRU(24);
-function starTile(seed, layer, size, n, bright) {
-  return tileCache.memo(`${seed}|${layer}|${size}|${n}`, () => {
+const tileCache = new LRU(9, (t) => killTex(t));
+function starTile(seed, layer, size, n, bright, owner) {
+  return tileCache.lease(`${seed}|${layer}|${size}|${n}`, () => {
     const R = rng(hashStr(`st${seed}${layer}`));
     const c = makeCanvas(size, size), g = c.getContext('2d');
     const tints = ['255,250,235', '210,225,255', '255,225,190', '255,255,255'];
@@ -56,7 +56,7 @@ function starTile(seed, layer, size, n, bright) {
       if (r > 1.1 && R() < 0.5) { g.fillStyle = `rgba(255,240,220,${(a * 0.18).toFixed(2)})`; g.beginPath(); g.arc(x, y, r * 2.6, 0, TAU); g.fill(); }
     }
     const t = Texture.from(c); t.source.style.addressMode = 'repeat'; return t;
-  });
+  }, owner);
 }
 const bgStops = [[0, '#080a1a'], [0.55, '#0b0d1e'], [1, '#12132e']];
 
@@ -68,7 +68,7 @@ export function createStarfield({ w = 1280, h = 720, seed = 1, density = 1, para
   const cfg = [[0, 380, 0.012, 0.6], [1, 260, 0.03, 0.8], [2, 120, 0.06, 1]];
   for (const [li, n, par, br] of cfg) {
     const size = 512;
-    const ts = new TilingSprite({ texture: starTile(seed, li, size, Math.round(n * density), br), width: w, height: h });
+    const ts = new TilingSprite({ texture: starTile(seed, li, size, Math.round(n * density), br, root), width: w, height: h });
     ts.tileScale.set(1); root.addChild(ts); layers.push({ ts, par, drift: (li + 1) * 0.6 });
   }
   // twinkling bright stars
@@ -92,11 +92,11 @@ export function createStarfield({ w = 1280, h = 720, seed = 1, density = 1, para
 }
 
 // -------------------------------------------------- nebula
-const nebCache = new LRU(12);
-export function nebulaTexture(w, h, seed, hue) {
+const nebCache = new LRU(6, (t) => killTex(t));
+export function nebulaTexture(w, h, seed, hue, owner) {
   const sw = Math.min(512, Math.max(96, Math.round(w / 2.5))), sh = Math.max(64, Math.round(sw * h / w));
   const key = `${sw}|${sh}|${seed}|${hue}`;
-  return nebCache.memo(key, () => {
+  return nebCache.lease(key, () => {
     const R = rng(hashStr('neb' + seed));
     const N = makeNoise(R() * 1e9 | 0), N2 = makeNoise(R() * 1e9 | 0);
     const hdeg = hue == null ? R() * 360 : (hue <= 360 ? hue : null);
@@ -126,11 +126,11 @@ export function nebulaTexture(w, h, seed, hue) {
     }
     g.putImageData(img, 0, 0);
     return Texture.from(c);
-  });
+  }, owner);
 }
 export function createNebula({ w = 1280, h = 720, seed = 1, hue } = {}) {
   const root = animated();
-  const tex = nebulaTexture(w, h, seed, hue);
+  const tex = nebulaTexture(w, h, seed, hue, root);
   const a = new Sprite(tex), b = new Sprite(tex);
   a.width = w * 1.15; a.height = h * 1.15; a.anchor.set(0.5); a.position.set(w / 2, h / 2); a.alpha = 0.95;
   b.width = w * 1.35; b.height = h * 1.3; b.anchor.set(0.5); b.position.set(w / 2, h / 2); b.scale.x *= -1; b.alpha = 0.45; b.blendMode = 'add'; b.rotation = 0.2;
