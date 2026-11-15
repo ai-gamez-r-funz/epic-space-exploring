@@ -16,7 +16,7 @@ science, clever flying, or running away** — never by fighting.
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # static site in dist/ (relative base path, deployable anywhere)
-npm run preview
+npm run preview    # serves the built game at http://localhost:4173
 ```
 
 Everything (art, music, sound) is generated procedurally at runtime — there are no image or audio assets.
@@ -47,3 +47,15 @@ node tools/sim.mjs --runs 200 --policy all # headless balance simulation
 ## Licence
 
 MIT — see `LICENSE`.
+
+## Playing it / hosting it
+
+The repo root `index.html` is a **source** file (it points at `/src/main.js`) and only works through Vite.
+Do not open it from `file://`, GitHub's "raw" view, or a plain static server on the repo root: the browser will
+report `main.js ... 404`. Use one of:
+
+- `npm install && npm run dev` (or `npm run build && npm run preview`) and open the printed localhost URL.
+- Host the **`dist/`** folder produced by `npm run build` on any static host. It uses relative paths, so it also
+  works under a sub-path. `dist/index.html` itself must be served over http(s); `file://` blocks ES modules.
+- GitHub Pages: `.github/workflows/pages.yml` builds and deploys `dist/` on every push to `main`. In the repo go to
+  Settings, Pages, Source = "GitHub Actions" (one-time).
