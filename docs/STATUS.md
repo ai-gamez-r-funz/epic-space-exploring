@@ -1,44 +1,42 @@
-# Status at handoff (paused: usage limit)
+# Status at handoff (iteration cap reached)
 
-**Critic verdict after 5 rounds: "WOWED: NO", but close.** Reports: `docs/critic/iter1.md` .. `iter5.md`.
-Iteration 5 (last scored build): 11 of 12 dimensions at 8, cozy feel at 9, audio 7 (never heard). 0 blockers, 2 major.
+**Critic verdict after 7 rounds: "WOWED: NO".** The bar (FTL / Elite-class "utterly wowed") was NOT declared met.
+No blockers, no majors remain (`docs/critic/iter1.md` .. `iter7.md`). The Critic's own assessment: diminishing returns;
+what is left is taste, real hardware and human playtesting, not defects fixable from the sandbox.
 
-| Dimension | i1 | i2 | i3 | i4 | i5 |
-|---|---|---|---|---|---|
-| Visual polish | 8 | 8 | 8 | 8 | 8 |
-| Cozy feel & tone | 8 | 8 | 8 | 8 | 9 |
-| UI/UX clarity | 7 | 8 | 8 | 8 | 8 |
-| Onboarding | 5 | 6 | 7 | 8 | 8 |
-| Core loop / depth | 5 | 6 | 7 | 8 | 8 |
-| Event & writing variety | 6 | 7 | 8 | 8 | 8 |
-| Upgrades & build variety | 6 | 7 | 7 | 8 | 8 |
-| Missions & story | 6 | 7 | 8 | 8 | 8 |
-| Economy / balance | 5 | 5 | 7 | 8 | 8 |
-| Audio | 7 | 7 | 7 | 7 | 7 (never heard) |
-| Technical robustness | 7 | 8 | 8 | 8 | 8 |
-| Code structure | 6 | 7 | 8 | 8 | 8 |
+| Dimension | i1 | i2 | i3 | i4 | i5 | i6 | i7 |
+|---|---|---|---|---|---|---|---|
+| Visual polish | 8 | 8 | 8 | 8 | 8 | 8 | 8 |
+| Cozy feel & tone | 8 | 8 | 8 | 8 | 9 | 9 | 9 |
+| UI/UX clarity | 7 | 8 | 8 | 8 | 8 | 8 | 9 |
+| Onboarding | 5 | 6 | 7 | 8 | 8 | 8 | 8 |
+| Core loop / depth | 5 | 6 | 7 | 8 | 8 | 8 | 8 |
+| Event & writing variety | 6 | 7 | 8 | 8 | 8 | 9 | 9 |
+| Upgrades & build variety | 6 | 7 | 7 | 8 | 8 | 8 | 8 |
+| Missions & story | 6 | 7 | 8 | 8 | 8 | 8 | 9 |
+| Economy / balance | 5 | 5 | 7 | 8 | 8 | 8 | 8 |
+| Audio | 7 | 7 | 7 | 7 | 7 | 7 | 7 (never heard) |
+| Technical robustness | 7 | 8 | 8 | 8 | 8 | 7 | 8 |
+| Code structure | 6 | 7 | 8 | 8 | 8 | 8 | 8 |
 
-## Branch state
-- Last green, Critic-scored build: commit `bdf16bd` minus the uncommitted round-5 edits it carried (105/105 tests). The
-  true known-good point is `b78dd80` (UI wired to engine round 4) plus the iter5 report.
-- **Round 5 is half-finished.** Four agents were stopped mid-task when the usage limit hit; their partial work is
-  committed after `bdf16bd` and **3 tests currently fail** (`content` quantity bar, event vocabulary, event node-graph
-  closure) - almost certainly unfinished edits in `src/content/events/{hot_lanes2,lanes_distress,index}.js`, `missions.js`,
-  `story.js`, `codex.js`, `src/core/{builtin,game,setpieces}.js`, `src/ui/overlays/EndScreen.js`. Fix or `git revert` before shipping.
+## State
+112/112 tests pass; production build clean; 126-day real-UI playthrough: 0 console messages, 0 app errors; heap flat
+(12.5 -> 18.6 MB over 122 days after forced GC, after the Pixi `Graphics.destroy` context leak was patched in `src/gfx/patch.js`).
+Sims x50 (standard): random 92% loss, reckless 38%, cautious 6%, greedy/story/explorer 0%. Endings well spread.
 
-## Round-5 intent (from iter5 report) - not yet done/verified
-1. Hot lanes must be a real bet: "creep" currently 100% safe/0 hull (dominant strategy); add cost/failure chance.
-2. Generic `core_hot_lane` still carries ~65% of hot chains: relax region gating, add region-agnostic authored chains.
-3. One hand-built set piece before day 60; visible ship growth (rank/title) on every screen.
-4. Low-hull departure guard (<25%) + one-time free repair; "Captain Captain Ada" end-screen bug.
-5. Spend-hints pill never seen in screenshots; 844x390 readability scaling ineffective, Threads pills vanish; tip card overlaps a label.
-6. Heap grew 33 -> 77 MB over 80 days (inconclusive): do a 200-day soak.
-7. Never-fired events (11-17 on competent policies), ~8% engine-fallback result text.
-8. Audio never listened to; no real-GPU fps trace.
+## Cannot be verified without real hardware
+- Audio by ear (only offline render/soak was run). Real-GPU frame rate/pacing (sandbox is ~4 fps software GL).
+- Touch/phone ergonomics, HiDPI sharpness, memory beyond ~2 h. Whether it has real "one more jump" pull for real players.
 
-## Sim (iter5, 50 runs, standard)
-random 98% loss; reckless 34%; greedy 4%; cautious 4%; story 0%; explorer 0%. Endings varied (keeper/silent/hush/beloved).
+## Remaining minor items (Critic iter7)
+1. `hotLaneBriefing` BEST tag is "brace" in 225/225 rows - not situational. Set-piece gift choices don't preview what each grants.
+2. Limp-dialog text repeats itself ("The hull is at 12/100 (12%). Hull at 12%: ...").
+3. 8-20 events per policy still never fire (e.g. some `scan_*`, `idle_*`, `dist_*`).
+4. Humans stay poor (100-500 scrip) through ~126 days; first refit should land by ~day 25.
+5. Optional second hand-built set piece around day 90. Phone text is small (scaling added, lightly checked).
+6. Non-local spend-pill click path and a 100-jump heap soak (`tests/e2e/heap_soak.mjs`) were not run to completion.
 
 ## How to verify
-`npm test` · `npm run build` · `node tools/sim.mjs --runs 50 --policy all` · `node tests/e2e/pause_smoke.mjs`
-(needs `npx vite preview --port 4173`; Playwright needs `?debug=1` on a production build for `window.__halcyon`).
+`npm test` · `npm run build` · `node tools/sim.mjs --runs 50 --policy all` ·
+`npx vite preview --port 4173` then `node tests/e2e/pause_smoke.mjs`, `limp_dialog.mjs`, `heap_soak.mjs`
+(Playwright needs `?debug=1` on a production build for `window.__halcyon`).
